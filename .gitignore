@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Model / large data
+*.pt
+*.pth
+*.onnx
+*.pkl
+
+# Video / output 
+input_videos/
+output_videos/
+runs/
+
+# IDE
+.idea/
+.vscode/
