@@ -9,7 +9,7 @@ def main():
     tracker = Tracker('models/best.pt')
 
     tracks = tracker.get_object_tracks( video_frames, 
-                                        read_from_stub = False, 
+                                        read_from_stub = True, 
                                         stub_path='stubs/track_stubs.pkl')
     
     # Draw output video
