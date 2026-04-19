@@ -12,9 +12,12 @@ venv/
 *.pkl
 
 # Video / output 
-input_videos/
-output_videos/
-runs/
+# input_videos/
+# output_videos/
+# runs/
+*.avi
+*.jpg
+*.mp4
 
 # IDE
 .idea/
