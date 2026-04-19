@@ -16,6 +16,9 @@ def main():
                                         stub_path='stubs/track_stubs.pkl')
 
 
+    # Interpolate ball position
+    tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"])
+
     # Initialize Team Assigner
     team_assigner = TeamAssigner()
     team_assigner.assign_team_color(video_frames[0], 
