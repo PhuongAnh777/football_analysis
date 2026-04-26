@@ -153,7 +153,31 @@ class Tracker:
 
         return frame
 
-    def draw_annotations(self, video_frames, tracks):
+    def draw_team_ball_control(self, frame, frame_num, team_ball_control):
+        # Draw a semi-transparent rectangle 
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (20, 620), (640, 710), (255,255,255), -1)
+        alpha = 0.4
+        cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+        team_ball_control_till_frame = team_ball_control[:frame_num+1]
+
+        # Get the number of times each team has controlled the ball
+        team_1_num_frames = team_ball_control_till_frame[team_ball_control_till_frame==1].shape[0]
+        team_2_num_frames = team_ball_control_till_frame[team_ball_control_till_frame==2].shape[0]
+        total = team_1_num_frames + team_2_num_frames
+        if total == 0:
+            team_1, team_2 = 0, 0
+        else:
+            team_1 = team_1_num_frames / total
+            team_2 = team_2_num_frames / total
+
+        cv2.putText(frame, f"Team 1 Ball Control: {team_1*100:.2f}%", (30, 650), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,0), 2)
+        cv2.putText(frame, f"Team 2 Ball Control: {team_2*100:.2f}%", (30, 695), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,0,0), 2)
+        
+        return frame
+
+    def draw_annotations(self, video_frames, tracks, team_ball_control):
         output_video_frames = []
         for frame_num, frame in enumerate(video_frames):
             frame = frame.copy()
@@ -167,14 +191,20 @@ class Tracker:
                 color = player.get("team_color", (0,0,255))
                 frame = self.draw_ellipse(frame, player["bbox"],color, track_id)
 
+                if player.get("has_ball", False):
+                    frame = self.draw_traingle(frame, player["bbox"],(0,0,255))
+
             # Draw referee
             for track_id, referee in referee_dict.items():
-                frame = self.draw_ellipse(frame, referee["bbox"],(0,255,255))
-
-            output_video_frames.append(frame)
+                frame = self.draw_ellipse(frame, referee["bbox"],(0,0,255))
 
             # Draw ball
             for track_id, ball in ball_dict.items():
                 frame = self.draw_traingle(frame, ball["bbox"],(0,255,0))
-        
+
+            # Draw team ball control
+            frame = self.draw_team_ball_control(frame, frame_num, team_ball_control)
+
+            output_video_frames.append(frame)
+
         return output_video_frames
