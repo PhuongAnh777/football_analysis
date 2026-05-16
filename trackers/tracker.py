@@ -6,13 +6,18 @@ import numpy as np
 import cv2
 import sys
 sys.path.append('../')
-from utils import get_center_of_bbox, get_bbox_width, get_foot_position
+from utils import get_center_of_bbox, get_bbox_width, get_foot_position, blend_filled_rectangle
 import pandas as pd
 
 class Tracker:
     def __init__(self, model_path):
         self.model = YOLO(model_path)
-        self.tracker = sv.ByteTrack()
+        # Larger lost_track_buffer keeps track IDs alive longer during
+        # camera pans / cuts, reducing unnecessary ID fragmentation.
+        self.tracker = sv.ByteTrack(
+            lost_track_buffer=120,   # ~5 s at 24 fps
+            frame_rate=24,
+        )
 
     def add_position_to_tracks(self, tracks):
         for object, object_tracks in tracks.items():
@@ -165,11 +170,7 @@ class Tracker:
         return frame
 
     def draw_team_ball_control(self, frame, frame_num, team_ball_control):
-        # Draw a semi-transparent rectangle 
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (20, 620), (640, 710), (255,255,255), -1)
-        alpha = 0.4
-        cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+        blend_filled_rectangle(frame, (20, 620), (640, 710), alpha=0.4)
 
         team_ball_control_till_frame = team_ball_control[:frame_num+1]
 
@@ -189,10 +190,7 @@ class Tracker:
         return frame
 
     def draw_annotations(self, video_frames, tracks, team_ball_control):
-        output_video_frames = []
         for frame_num, frame in enumerate(video_frames):
-            frame = frame.copy()
-
             player_dict = tracks["players"][frame_num]
             referee_dict = tracks["referees"][frame_num]
             ball_dict = tracks["ball"][frame_num]
@@ -200,22 +198,19 @@ class Tracker:
             # Draw players
             for track_id, player in player_dict.items():
                 color = player.get("team_color", (0,0,255))
-                frame = self.draw_ellipse(frame, player["bbox"],color, track_id)
+                self.draw_ellipse(frame, player["bbox"], color, track_id)
 
                 if player.get("has_ball", False):
-                    frame = self.draw_traingle(frame, player["bbox"],(0,0,255))
+                    self.draw_traingle(frame, player["bbox"], (0,0,255))
 
             # Draw referee
             for track_id, referee in referee_dict.items():
-                frame = self.draw_ellipse(frame, referee["bbox"],(0,0,255))
+                self.draw_ellipse(frame, referee["bbox"], (0,0,255))
 
             # Draw ball
             for track_id, ball in ball_dict.items():
-                frame = self.draw_traingle(frame, ball["bbox"],(0,255,0))
+                self.draw_traingle(frame, ball["bbox"], (0,255,0))
 
-            # Draw team ball control
-            frame = self.draw_team_ball_control(frame, frame_num, team_ball_control)
+            self.draw_team_ball_control(frame, frame_num, team_ball_control)
 
-            output_video_frames.append(frame)
-
-        return output_video_frames
+        return video_frames

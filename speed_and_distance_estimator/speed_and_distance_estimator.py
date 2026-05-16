@@ -50,29 +50,25 @@ class SpeedAndDistance_Estimator:
                         tracks[object][frame_num_batch][track_id]["distance"] = total_distance[object][track_id]
 
     def draw_speed_and_distance(self, frames, tracks):
-        output_frame = []
         for frame_num, frame in enumerate(frames):
             for object, object_tracks in tracks.items():
                 if object == 'ball' or object == 'referees':
                     continue
                 for _, track_info in object_tracks[frame_num].items():
-                    if "speed" in track_info:
-                        speed = track_info.get("speed", None)
-                        distance = track_info.get("distance", None)
+                    if "speed" not in track_info:
+                        continue
 
-                        if speed is None and distance is None:
-                            continue
+                    speed = track_info.get("speed")
+                    distance = track_info.get("distance")
+                    if speed is None and distance is None:
+                        continue
 
-                        bbox = track_info.get("bbox", None)
-                        position = get_foot_position(bbox)
-                        position = list(position)
-                        position[1] += 40
+                    bbox = track_info.get("bbox")
+                    position = list(get_foot_position(bbox))
+                    position[1] += 40
+                    position = tuple(map(int, position))
 
-                        position = tuple(map(int, position))
+                    cv2.putText(frame, f"Speed: {speed:.2f} km/h", (position[0] + 5, position[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                    cv2.putText(frame, f"Distance: {distance:.2f} m", (position[0] + 5, position[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
-                        cv2.putText(frame, f"Speed: {speed:.2f} km/h", (position[0] +5, position[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-                        cv2.putText(frame, f"Distance: {distance:.2f} m", (position[0] +5, position[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-            
-            output_frame.append(frame)
-        
-        return output_frame
+        return frames

@@ -7,10 +7,11 @@ import numpy as np
 from camera_movement_estimator import CameraMovementEstimator
 from view_transformer import ViewTransformer
 from speed_and_distance_estimator import SpeedAndDistance_Estimator
+from visualization import generate_heatmap, generate_passing_network
 
 def main():
     # Read video
-    video_frames = read_video("input_videos/100.mp4")
+    video_frames = read_video("input_videos/input_video.mp4")
 
     # Initialize Tracker
     tracker = Tracker('models/best.pt')
@@ -86,18 +87,25 @@ def main():
     
     team_ball_control = np.array(team_ball_control)
 
-    # Draw output video
-    ## Draw object Tracks
-    output_video_frames = tracker.draw_annotations(video_frames, tracks, team_ball_control)
+    # Draw output video (in-place on video_frames — single copy in memory)
+    tracker.draw_annotations(video_frames, tracks, team_ball_control)
+    camera_movement_estimator.draw_camera_movement(video_frames, camera_movement_per_frame)
+    speed_and_distance_estimator.draw_speed_and_distance(video_frames, tracks)
 
-    ## Draw camera movement
-    output_video_frames = camera_movement_estimator.draw_camera_movement(output_video_frames, camera_movement_per_frame)
-    
-    ## Draw Speed and Distance
-    speed_and_distance_estimator.draw_speed_and_distance(output_video_frames,tracks)
+    save_video(video_frames, "output_videos/output_video.avi")
 
-    # Save video
-    save_video(output_video_frames, "output_videos/output_video.avi")
+    # ── Visualization ──────────────────────────────────────────────────────
+    generate_heatmap(
+        tracks,
+        team_assigner.team_colors,
+        output_path='output_videos/heatmap.png'
+    )
+
+    generate_passing_network(
+        tracks,
+        team_assigner.team_colors,
+        output_path='output_videos/passing_network.png'
+    )
 
 if __name__ == "__main__":
     main()
