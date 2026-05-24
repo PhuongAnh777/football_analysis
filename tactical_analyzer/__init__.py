@@ -1,25 +1,11 @@
-from .tactical_metrics import (
-    detect_formation,
-    compute_compact_score,
-    compute_pressing_intensity,
-    compute_team_speed,
-    analyze_all_frames,
-)
-from .formation_visualizer import plot_formation
-from .rule_engine import evaluate_tactics
-from .llm_reporter import generate_report
+from .analyzer import TacticalAnalyzer
+from .threshold_engine import ThresholdEngine
+from .report_builder import ReportBuilder
+from .narrator import TacticalNarrator
 
 __all__ = [
-    # metrics
-    "detect_formation",
-    "compute_compact_score",
-    "compute_pressing_intensity",
-    "compute_team_speed",
-    "analyze_all_frames",
-    # visualizer
-    "plot_formation",
-    # rule engine
-    "evaluate_tactics",
-    # llm reporter
-    "generate_report",
+    "TacticalAnalyzer",
+    "ThresholdEngine",
+    "ReportBuilder",
+    "TacticalNarrator",
 ]

@@ -1,0 +1,705 @@
+"""
+ThresholdEngine
+===============
+Converts a ``TacticalAnalyzer.analyze()`` report into normalised 0-100
+scores using **match-relative percentile thresholds** — no hard-coded
+absolute benchmarks (except pitch boundaries: x 0-68 m, y 0-23.32 m).
+
+All scores are clipped to [0, 100] and JSON-serialisable.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+from typing import Any
+
+_PITCH_WIDTH = 68.0
+_PITCH_DEPTH = 23.32
+_FLANK_LEFT  = 17.0
+_FLANK_RIGHT = 51.0
+
+# ── tiny utilities ──────────────────────────────────────────────────────────
+
+def _clip100(v: float) -> float:
+    return float(np.clip(v, 0.0, 100.0))
+
+
+def _lerp(lo: float, hi: float, t: float) -> float:
+    return lo + (hi - lo) * float(np.clip(t, 0.0, 1.0))
+
+
+def _pct_rank(value: float, distribution: np.ndarray) -> float:
+    if len(distribution) <= 1:
+        return 0.5
+    return float(np.mean(distribution <= value))
+
+
+def _safe_percentile(arr: np.ndarray, qs: list[float], fallback: float) -> list[float]:
+    if len(arr) < 2:
+        return [arr[0] if len(arr) == 1 else fallback] * len(qs)
+    return [float(np.percentile(arr, q)) for q in qs]
+
+
+class ThresholdEngine:
+    """Score a TacticalAnalyzer report with match-relative percentile thresholds.
+
+    Parameters
+    ----------
+    fps : int
+        Video frame rate (default 24).
+    R_pressing : float
+        Pressing radius in metres (default 8.0).
+    """
+
+    def __init__(self, fps: int = 24, R_pressing: float = 8.0) -> None:
+        self.fps        = fps
+        self.R_pressing = R_pressing
+
+    # ── public API ──────────────────────────────────────────────────────────
+
+    def compute(self, tactical_report: dict, tracks: dict) -> dict[str, Any]:
+        """Compute all scores from the tactical report.
+
+        Parameters
+        ----------
+        tactical_report : dict
+            Output of ``TacticalAnalyzer.analyze()``.
+        tracks : dict
+            Full pipeline tracks dict (for per-player scoring).
+
+        Returns
+        -------
+        JSON-serialisable scored_report dict.
+        """
+        thresholds   = self._build_thresholds(tactical_report)
+        team_scores  = self._score_teams(tactical_report, thresholds)
+        player_scores = self._score_players(tactical_report, tracks)
+        match_summary = self._build_match_summary(tactical_report, team_scores)
+        return {
+            "thresholds":    thresholds,
+            "team_scores":   team_scores,
+            "player_scores": player_scores,
+            "match_summary": match_summary,
+        }
+
+    # ── threshold builder ───────────────────────────────────────────────────
+
+    def _build_thresholds(self, rpt: dict) -> dict[str, Any]:
+        # compact
+        compact_vals = [
+            w["compact_score"]
+            for tk in ("team_1", "team_2")
+            for w in rpt.get("compact", {}).get(tk, [])
+        ]
+        p25, p50, p75 = _safe_percentile(
+            np.array(compact_vals, dtype=float), [25, 50, 75], fallback=10.0
+        )
+
+        # pressing
+        press_vals = [w["intensity"] for w in rpt.get("pressing", {}).get("windows", [])]
+        pr33, pr67 = _safe_percentile(
+            np.array(press_vals, dtype=float), [33, 67], fallback=2.0
+        )
+
+        # formation adherence
+        adh_vals = [
+            rpt.get("formation", {}).get(tk, {}).get("adherence_score", 0.0)
+            for tk in ("team_1", "team_2")
+        ]
+        ad40, ad70 = _safe_percentile(
+            np.array(adh_vals, dtype=float), [40, 70], fallback=0.5
+        )
+
+        # def_line
+        dl_vals = [
+            w["def_line_height_m"]
+            for tk in ("team_1", "team_2")
+            for w in rpt.get("def_line", {}).get(tk, {}).get("windows", [])
+        ]
+        dl33, dl67 = _safe_percentile(
+            np.array(dl_vals, dtype=float), [33, 67], fallback=_PITCH_DEPTH / 2
+        )
+
+        # team_width
+        ww_vals = [
+            w["width_m"]
+            for tk in ("team_1", "team_2")
+            for w in rpt.get("team_width", {}).get(tk, {}).get("windows", [])
+        ]
+        ww33, ww67 = _safe_percentile(
+            np.array(ww_vals, dtype=float), [33, 67], fallback=_PITCH_WIDTH / 2
+        )
+
+        # high_intensity_runs
+        hr_vals = [
+            float(rpt.get("high_intensity_runs", {}).get(tk, {}).get("total_runs", 0))
+            for tk in ("team_1", "team_2")
+        ]
+        hr33, hr67 = _safe_percentile(
+            np.array(hr_vals, dtype=float), [33, 67], fallback=5.0
+        )
+
+        # ball_recoveries
+        rec_vals = [
+            float(rpt.get("ball_recoveries", {}).get(tk, {}).get("total_recoveries", 0))
+            for tk in ("team_1", "team_2")
+        ]
+        rec33, rec67 = _safe_percentile(
+            np.array(rec_vals, dtype=float), [33, 67], fallback=5.0
+        )
+
+        # turnovers
+        to_vals = [
+            float(rpt.get("turnovers", {}).get(tk, {}).get("total_turnovers_in_final_third", 0))
+            for tk in ("team_1", "team_2")
+        ]
+        to33, to67 = _safe_percentile(
+            np.array(to_vals, dtype=float), [33, 67], fallback=2.0
+        )
+
+        return {
+            "compact":    {"p25": round(p25,   4), "p50": round(p50,   4), "p75": round(p75,   4)},
+            "pressing":   {"p33": round(pr33,  4), "p67": round(pr67,  4)},
+            "adherence":  {"p40": round(ad40,  4), "p70": round(ad70,  4)},
+            "def_line":   {"p33": round(dl33,  4), "p67": round(dl67,  4)},
+            "width":      {"p33": round(ww33,  4), "p67": round(ww67,  4)},
+            "high_runs":  {"p33": round(hr33,  4), "p67": round(hr67,  4)},
+            "recoveries": {"p33": round(rec33, 4), "p67": round(rec67, 4)},
+            "turnovers":  {"p33": round(to33,  4), "p67": round(to67,  4)},
+        }
+
+    # ── per-value scoring helpers ────────────────────────────────────────────
+
+    @staticmethod
+    def _score_compact_val(val: float, p25: float, p50: float, p75: float) -> float:
+        """compact_score (metres, lower = better) → 0-100."""
+        if p25 <= 0 or p50 <= p25 or p75 <= p50:
+            return 50.0
+        if val <= p25:
+            return _clip100(_lerp(85.0, 100.0, 1.0 - val / p25))
+        if val <= p50:
+            return _clip100(_lerp(65.0, 84.0,  1.0 - (val - p25) / (p50 - p25)))
+        if val <= p75:
+            return _clip100(_lerp(45.0, 64.0,  1.0 - (val - p50) / (p75 - p50)))
+        excess = (val - p75) / max(p75, 1e-6)
+        return _clip100(_lerp(0.0, 44.0, 1.0 - excess))
+
+    @staticmethod
+    def _score_pressing_val(val: float, p33: float, p67: float, max_val: float) -> float:
+        """pressing intensity (higher = better) → 0-100."""
+        if p33 <= 0 or p67 <= p33:
+            return 50.0
+        if val >= p67:
+            return _clip100(_lerp(75.0, 100.0, (val - p67) / max(max_val - p67, 1e-6)))
+        if val >= p33:
+            return _clip100(_lerp(40.0, 74.0,  (val - p33) / (p67 - p33)))
+        return _clip100(_lerp(0.0, 39.0, val / p33))
+
+    @staticmethod
+    def _score_adherence_val(val: float, p40: float, p70: float) -> float:
+        """formation_adherence (0-1, higher = better) → 0-100."""
+        if p40 <= 0 or p70 <= p40:
+            return 50.0
+        if val >= p70:
+            return _clip100(_lerp(75.0, 100.0, (val - p70) / max(1.0 - p70, 1e-6)))
+        if val >= p40:
+            return _clip100(_lerp(45.0, 74.0,  (val - p40) / (p70 - p40)))
+        return _clip100(_lerp(0.0, 44.0, val / p40))
+
+    @staticmethod
+    def _score_def_line_val(val: float, p33: float, p67: float) -> float:
+        """def_line_height (metres) → 0-100, style-neutral."""
+        if p33 <= 0 or p67 <= p33:
+            return 50.0
+        if val >= p67:
+            return _clip100(70.0 + ((val - p67) / max(_PITCH_DEPTH - p67, 1e-6)) * 30.0)
+        if val >= p33:
+            return _clip100(_lerp(50.0, 69.0, (val - p33) / (p67 - p33)))
+        return _clip100(30.0 + (val / max(p33, 1e-6)) * 19.0)
+
+    @staticmethod
+    def _score_width_val(val: float, p33: float, p67: float) -> float:
+        """team_width (metres) → 0-100, style-neutral."""
+        if p33 <= 0 or p67 <= p33:
+            return 50.0
+        if val >= p67:
+            return _clip100(70.0 + ((val - p67) / max(_PITCH_WIDTH - p67, 1e-6)) * 30.0)
+        if val >= p33:
+            return _clip100(_lerp(50.0, 69.0, (val - p33) / (p67 - p33)))
+        return _clip100(30.0 + (val / max(p33, 1e-6)) * 19.0)
+
+    @staticmethod
+    def _score_higher_better(val: float, p33: float, p67: float, max_val: float) -> float:
+        """Generic higher-is-better 3-band scorer (runs, recoveries)."""
+        if p33 <= 0 or p67 <= p33:
+            return 50.0
+        if val >= p67:
+            return _clip100(_lerp(75.0, 100.0, (val - p67) / max(max_val - p67, 1e-6)))
+        if val >= p33:
+            return _clip100(_lerp(45.0, 74.0,  (val - p33) / (p67 - p33)))
+        return _clip100(_lerp(0.0, 44.0, val / p33))
+
+    @staticmethod
+    def _score_turnovers_val(
+        val: float, p33: float, p67: float, dangerous_rate: float
+    ) -> float:
+        """turnovers_in_final_third (lower = better) → 0-100.
+
+        Penalty: dangerous_rate > 40% → −10 points.
+        """
+        if p33 <= 0 or p67 <= p33:
+            base = 50.0
+        elif val <= p33:
+            base = _clip100(_lerp(75.0, 100.0, 1.0 - val / max(p33, 1e-6)))
+        elif val <= p67:
+            base = _clip100(_lerp(45.0, 74.0,  1.0 - (val - p33) / (p67 - p33)))
+        else:
+            excess = (val - p67) / max(p67, 1e-6)
+            base = _clip100(_lerp(0.0, 44.0, 1.0 - excess))
+        return _clip100(base - (10.0 if dangerous_rate > 40.0 else 0.0))
+
+    # ── team scoring ─────────────────────────────────────────────────────────
+
+    def _score_teams(self, rpt: dict, thresholds: dict) -> dict[str, Any]:
+        p = thresholds
+
+        all_press_windows = rpt.get("pressing", {}).get("windows", [])
+        max_press         = max((w["intensity"] for w in all_press_windows), default=1.0)
+
+        speeds    = {
+            tk: rpt.get("possession", {}).get("avg_speed", {}).get(tk, {}).get("overall", 0.0)
+            for tk in ("team_1", "team_2")
+        }
+        max_speed = max(speeds.values()) or 1.0
+
+        result: dict[str, Any] = {}
+
+        for team_idx, tk in enumerate(("team_1", "team_2"), start=1):
+
+            # ── 1. Possession ──────────────────────────────────────────────
+            poss_pct        = float(rpt.get("possession", {}).get("possession", {}).get(tk, 50.0))
+            possession_score = _clip100(poss_pct)
+
+            # ── 2. Compact ─────────────────────────────────────────────────
+            c_windows = rpt.get("compact", {}).get(tk, [])
+            if c_windows:
+                compact_score = float(np.mean([
+                    self._score_compact_val(
+                        w["compact_score"],
+                        p["compact"]["p25"], p["compact"]["p50"], p["compact"]["p75"],
+                    )
+                    for w in c_windows
+                ]))
+            else:
+                compact_score = 50.0
+
+            # ── 3. Pressing ─────────────────────────────────────────────────
+            press_windows_team = [
+                w for w in all_press_windows if w.get("pressing_team") == team_idx
+            ]
+            if press_windows_team:
+                pressing_score = float(np.mean([
+                    self._score_pressing_val(
+                        w["intensity"],
+                        p["pressing"]["p33"], p["pressing"]["p67"], max_press,
+                    )
+                    for w in press_windows_team
+                ]))
+            else:
+                pressing_score = 50.0
+
+            # ── 4. Formation adherence ──────────────────────────────────────
+            adh_val        = rpt.get("formation", {}).get(tk, {}).get("adherence_score", 0.0)
+            adherence_score = self._score_adherence_val(
+                adh_val, p["adherence"]["p40"], p["adherence"]["p70"]
+            )
+
+            # ── 5. Speed ────────────────────────────────────────────────────
+            speed_score = _clip100(60.0 + (speeds[tk] / max_speed) * 40.0)
+
+            # ── 6. Stability ────────────────────────────────────────────────
+            if c_windows:
+                broken_rate     = sum(1 for w in c_windows if w.get("formation_broken")) / len(c_windows)
+                stability_score = _clip100((1.0 - broken_rate) * 100.0)
+            else:
+                stability_score = 50.0
+
+            # ── 7. Def-line ─────────────────────────────────────────────────
+            dl_windows = rpt.get("def_line", {}).get(tk, {}).get("windows", [])
+            if dl_windows:
+                def_line_score = float(np.mean([
+                    self._score_def_line_val(
+                        w["def_line_height_m"],
+                        p["def_line"]["p33"], p["def_line"]["p67"],
+                    )
+                    for w in dl_windows
+                ]))
+            else:
+                def_line_score = 50.0
+
+            # ── 8. Team width ───────────────────────────────────────────────
+            w_windows = rpt.get("team_width", {}).get(tk, {}).get("windows", [])
+            if w_windows:
+                width_base = float(np.mean([
+                    self._score_width_val(
+                        w["width_m"],
+                        p["width"]["p33"], p["width"]["p67"],
+                    )
+                    for w in w_windows
+                ]))
+            else:
+                width_base = 50.0
+            tw_data     = rpt.get("team_width", {}).get(tk, {})
+            wball       = float(tw_data.get("width_with_ball",    0.0))
+            wnoball     = float(tw_data.get("width_without_ball", 0.0))
+            width_score = _clip100(width_base + (5.0 if wball - wnoball > 5.0 else 0.0))
+
+            # ── 9. High-intensity runs ──────────────────────────────────────
+            hr_data  = rpt.get("high_intensity_runs", {}).get(tk, {})
+            hr_total = float(hr_data.get("total_runs", 0))
+            max_hr   = max(
+                float(rpt.get("high_intensity_runs", {}).get(t, {}).get("total_runs", 0))
+                for t in ("team_1", "team_2")
+            ) or 1.0
+            hr_base  = self._score_higher_better(
+                hr_total, p["high_runs"]["p33"], p["high_runs"]["p67"], max_hr
+            )
+            rpr     = hr_data.get("runs_per_role", {})
+            hr_score = _clip100(hr_base + (5.0 if float(rpr.get("FWD", 0)) > float(rpr.get("DEF", 0)) else 0.0))
+
+            # ── 10. Ball recoveries ─────────────────────────────────────────
+            rec_data  = rpt.get("ball_recoveries", {}).get(tk, {})
+            rec_total = float(rec_data.get("total_recoveries", 0))
+            max_rec   = max(
+                float(rpt.get("ball_recoveries", {}).get(t, {}).get("total_recoveries", 0))
+                for t in ("team_1", "team_2")
+            ) or 1.0
+            rec_base  = self._score_higher_better(
+                rec_total, p["recoveries"]["p33"], p["recoveries"]["p67"], max_rec
+            )
+            rec_zones = rec_data.get("recoveries_by_zone", {})
+            opp_rec   = float(rec_zones.get("opp_half", 0)) + float(rec_zones.get("final_third", 0))
+            rec_score = _clip100(
+                rec_base + (5.0 if rec_total > 0 and opp_rec / rec_total > 0.4 else 0.0)
+            )
+
+            # ── 11. Turnovers in final third ────────────────────────────────
+            to_data        = rpt.get("turnovers", {}).get(tk, {})
+            to_total       = float(to_data.get("total_turnovers_in_final_third", 0))
+            to_danger_rate = float(to_data.get("dangerous_rate_pct", 0.0))
+            turnovers_score = self._score_turnovers_val(
+                to_total, p["turnovers"]["p33"], p["turnovers"]["p67"], to_danger_rate
+            )
+
+            # ── 12. Passing score ───────────────────────────────────────────
+            passing_data = (rpt.get("passing") or {}).get(tk)
+            if passing_data and isinstance(passing_data, dict):
+                total_passes = float(passing_data.get("total_passes", 0))
+                max_passes   = max(
+                    float((rpt.get("passing") or {}).get(t, {}).get("total_passes", 0) or 0)
+                    for t in ("team_1", "team_2")
+                ) or 1.0
+                vol_score  = self._score_higher_better(
+                    total_passes, p["recoveries"]["p33"], p["recoveries"]["p67"], max_passes
+                )
+                prog_pct   = float(passing_data.get("progressive_pass_pct", 0.0))
+                prog_score = _clip100(60.0 + prog_pct / 100.0 * 40.0)
+                density    = float(passing_data.get("network_density", 0.0))
+                net_score  = _clip100(65.0 + density * 35.0)
+                passing_score: float | None = _clip100(
+                    vol_score * 0.30 + prog_score * 0.40 + net_score * 0.30
+                )
+            else:
+                passing_score = None
+
+            # ── Overall weighted mean ───────────────────────────────────────
+            if passing_score is not None:
+                overall_score = _clip100(
+                    possession_score * 0.12 + compact_score    * 0.12
+                    + pressing_score * 0.12 + adherence_score  * 0.10
+                    + speed_score    * 0.08 + stability_score  * 0.08
+                    + def_line_score * 0.08 + width_score      * 0.08
+                    + hr_score       * 0.08 + rec_score        * 0.06
+                    + turnovers_score * 0.04 + passing_score   * 0.04
+                )
+            else:
+                w = 1.0 / 0.96
+                overall_score = _clip100(
+                    (possession_score * 0.12 + compact_score    * 0.12
+                     + pressing_score * 0.12 + adherence_score  * 0.10
+                     + speed_score    * 0.08 + stability_score  * 0.08
+                     + def_line_score * 0.08 + width_score      * 0.08
+                     + hr_score       * 0.08 + rec_score        * 0.06
+                     + turnovers_score * 0.04) * w
+                )
+
+            result[tk] = {
+                "possession_score":  round(possession_score,  2),
+                "compact_score":     round(compact_score,     2),
+                "pressing_score":    round(pressing_score,    2),
+                "adherence_score":   round(adherence_score,   2),
+                "speed_score":       round(speed_score,       2),
+                "stability_score":   round(stability_score,   2),
+                "def_line_score":    round(def_line_score,    2),
+                "width_score":       round(width_score,       2),
+                "high_runs_score":   round(hr_score,          2),
+                "recoveries_score":  round(rec_score,         2),
+                "turnovers_score":   round(turnovers_score,   2),
+                "passing_score":     round(passing_score, 2) if passing_score is not None else None,
+                "overall_score":     round(overall_score,     2),
+            }
+
+        return result
+
+    # ── player scoring ────────────────────────────────────────────────────────
+
+    def _score_players(self, rpt: dict, tracks: dict) -> dict[str, Any]:
+        """Compute 8 player-level scores.
+
+        Players are extracted directly from ``tracks["players"]``.
+        """
+        frames       = tracks.get("players", [])
+        total_frames = len(frames)
+        if total_frames == 0:
+            return {}
+
+        R = self.R_pressing
+
+        # Formation line lookup
+        player_line: dict[int, str] = {}
+        _label_map = {"DEF": "DEF", "MID": "MID", "FWD": "FWD",
+                      "DM": "MID", "AM": "MID", "SS": "MID"}
+        for tk in ("team_1", "team_2"):
+            lines = rpt.get("formation", {}).get(tk, {}).get("lines", {})
+            for raw_label, ids in lines.items():
+                mapped = _label_map.get(raw_label, "MID")
+                for pid in ids:
+                    player_line[int(pid)] = mapped
+
+        # DEF player sets per team
+        def_ids_by_team: dict[int, set[int]] = {1: set(), 2: set()}
+        for pid, line in player_line.items():
+            if line != "DEF":
+                continue
+            for fi in range(min(total_frames, 50)):
+                if pid in frames[fi]:
+                    t = frames[fi][pid].get("team")
+                    if t in (1, 2):
+                        def_ids_by_team[t].add(pid)
+                    break
+
+        # Team def-line mean y per frame
+        team_def_y: dict[int, list[float]] = {1: [float("nan")] * total_frames,
+                                               2: [float("nan")] * total_frames}
+        for fi, frame in enumerate(frames):
+            for t in (1, 2):
+                def_ys = [
+                    float(frame[tid]["position_transformed"][1])
+                    for tid in def_ids_by_team[t]
+                    if tid in frame and frame[tid].get("position_transformed") is not None
+                ]
+                if def_ys:
+                    team_def_y[t][fi] = float(np.mean(def_ys))
+
+        # Per-team speed distributions
+        spd_lists: dict[int, list[float]] = {1: [], 2: []}
+        for fi, frame in enumerate(frames):
+            for tid, info in frame.items():
+                t   = info.get("team")
+                spd = info.get("speed")
+                if t in (1, 2) and spd is not None:
+                    spd_lists[t].append(float(spd))
+        spd_arrs: dict[int, np.ndarray] = {
+            t: np.array(v, dtype=float) if v else np.array([0.0])
+            for t, v in spd_lists.items()
+        }
+
+        # All pressing contribs (for cross-player ranking)
+        all_press_contribs: list[float] = []
+        player_data: dict[int, dict] = {}
+
+        for fi, frame in enumerate(frames):
+            # Find ball carrier per team for pressing calc
+            carrier_pos: dict[int, Any] = {}
+            for info in frame.values():
+                t = info.get("team")
+                if t in (1, 2) and info.get("has_ball"):
+                    carrier_pos[t] = info.get("position_transformed")
+
+            for tid, info in frame.items():
+                t = info.get("team")
+                if t not in (1, 2):
+                    continue
+                if tid not in player_data:
+                    player_data[tid] = {
+                        "team":              t,
+                        "by_frame":          {},
+                        "pressing_frames":   0,
+                        "opp_has_ball_frames": 0,
+                    }
+                pos = info.get("position_transformed")
+                spd = info.get("speed")
+                player_data[tid]["by_frame"][fi] = {"pos": pos, "spd": spd}
+
+                opp = 3 - t
+                if carrier_pos.get(opp) is not None:
+                    player_data[tid]["opp_has_ball_frames"] += 1
+                    if pos is not None:
+                        dx   = float(pos[0]) - float(carrier_pos[opp][0])
+                        dy   = float(pos[1]) - float(carrier_pos[opp][1])
+                        dist = (dx * dx + dy * dy) ** 0.5
+                        if dist <= R:
+                            player_data[tid]["pressing_frames"] += 1
+
+        for d in player_data.values():
+            contrib = d["pressing_frames"] / max(d["opp_has_ball_frames"], 1)
+            all_press_contribs.append(contrib)
+        all_press_arr = np.array(all_press_contribs, dtype=float)
+
+        result: dict[str, dict] = {"1": {}, "2": {}}
+
+        for tid, data in player_data.items():
+            team_id  = data["team"]
+            by_frame = data["by_frame"]
+            active_positions = [v["pos"] for v in by_frame.values() if v["pos"] is not None]
+            active_count     = len(active_positions)
+
+            # P4 activity
+            activity_score = _clip100((active_count / max(total_frames, 1)) * 100.0)
+
+            # P1 speed
+            spds    = [v["spd"] for v in by_frame.values() if v["spd"] is not None]
+            avg_spd = float(np.mean(spds)) if spds else 0.0
+            speed_score = _clip100(_pct_rank(avg_spd, spd_arrs[team_id]) * 100.0)
+
+            # P2 pressing contribution
+            contrib     = data["pressing_frames"] / max(data["opp_has_ball_frames"], 1)
+            press_score = _clip100(_pct_rank(contrib, all_press_arr) * 100.0)
+
+            # P3 positional discipline (team adherence_score proxy)
+            tk_key          = f"team_{team_id}"
+            team_adh        = rpt.get("formation", {}).get(tk_key, {}).get("adherence_score", 0.5)
+            discipline_score = _clip100(float(team_adh) * 100.0)
+
+            # P5 defensive positioning
+            line = player_line.get(tid, "MID")
+            if line == "DEF":
+                def_y_ref  = team_def_y[team_id]
+                deviations = [
+                    v["pos"][1] - def_y_ref[fi]
+                    for fi, v in by_frame.items()
+                    if v["pos"] is not None
+                    and fi < len(def_y_ref)
+                    and not np.isnan(def_y_ref[fi])
+                ]
+                if deviations:
+                    consistency   = 1.0 - float(np.std(deviations)) / 10.0
+                    def_pos_score = _clip100(consistency * 100.0)
+                else:
+                    def_pos_score = 50.0
+            else:
+                def_pos_score = 50.0
+
+            # P6 width contribution
+            if line in ("MID", "FWD") and active_count > 0:
+                flank_count       = sum(
+                    1 for x, y in active_positions
+                    if x <= _FLANK_LEFT or x >= _FLANK_RIGHT
+                )
+                width_contrib_score = _clip100((flank_count / active_count) * 100.0)
+            else:
+                width_contrib_score = 50.0
+
+            # P7 high-run score
+            t_run_events = rpt.get("high_intensity_runs", {}).get(
+                f"team_{team_id}", {}
+            ).get("run_events", [])
+            player_runs = sum(1 for r in t_run_events if r.get("track_id") == tid)
+            max_runs    = max(
+                (sum(1 for r in t_run_events if r.get("track_id") == t)
+                 for t in {r["track_id"] for r in t_run_events}),
+                default=1,
+            ) or 1
+            high_run_score = _clip100((player_runs / max_runs) * 100.0)
+
+            # P8 passing involvement
+            passing_inv_score = 50.0   # neutral default (no raw event list available here)
+
+            # Overall weighted mean
+            overall_score = _clip100(
+                speed_score           * 0.15
+                + press_score         * 0.15
+                + discipline_score    * 0.15
+                + activity_score      * 0.10
+                + def_pos_score       * 0.10
+                + width_contrib_score * 0.10
+                + high_run_score      * 0.15
+                + passing_inv_score   * 0.10
+            )
+
+            result[str(team_id)][str(tid)] = {
+                "speed_score":               round(speed_score,          2),
+                "pressing_score":            round(press_score,          2),
+                "discipline_score":          round(discipline_score,     2),
+                "activity_score":            round(activity_score,       2),
+                "def_positioning_score":     round(def_pos_score,        2),
+                "width_contrib_score":       round(width_contrib_score,  2),
+                "high_run_score":            round(high_run_score,       2),
+                "passing_involvement_score": round(passing_inv_score,    2),
+                "overall_score":             round(overall_score,        2),
+            }
+
+        return result
+
+    # ── match summary ─────────────────────────────────────────────────────────
+
+    def _build_match_summary(self, rpt: dict, team_scores: dict) -> dict[str, Any]:
+        poss      = rpt.get("possession", {}).get("possession", {})
+        t1_pct    = float(poss.get("team_1", 50.0))
+        t2_pct    = float(poss.get("team_2", 50.0))
+        t1_overall = team_scores.get("team_1", {}).get("overall_score", 50.0)
+        t2_overall = team_scores.get("team_2", {}).get("overall_score", 50.0)
+
+        if abs(t1_overall - t2_overall) < 5.0:
+            dominant_team: int | None = None
+        else:
+            dominant_team = 1 if t1_overall > t2_overall else 2
+
+        possession_balance = (
+            "balanced" if abs(t1_pct - t2_pct) < 10.0
+            else ("dominant" if max(t1_pct, t2_pct) > 60.0 else "balanced")
+        )
+
+        press_windows = rpt.get("pressing", {}).get("windows", [])
+        if press_windows:
+            high_ratio      = sum(1 for w in press_windows if w.get("high_press")) / len(press_windows)
+            avg_press_level = "high" if high_ratio >= 0.5 else ("medium" if high_ratio >= 0.2 else "low")
+        else:
+            avg_press_level = "low"
+
+        # press_recovery_team
+        def _opp_half_rec(tk: str) -> int:
+            z = rpt.get("ball_recoveries", {}).get(tk, {}).get("recoveries_by_zone", {})
+            return int(z.get("opp_half", 0)) + int(z.get("final_third", 0))
+
+        opr1, opr2 = _opp_half_rec("team_1"), _opp_half_rec("team_2")
+        press_recovery_team: int | None = None if opr1 == opr2 else (1 if opr1 > opr2 else 2)
+
+        # risky_team
+        to1 = int(rpt.get("turnovers", {}).get("team_1", {}).get("total_turnovers_in_final_third", 0))
+        to2 = int(rpt.get("turnovers", {}).get("team_2", {}).get("total_turnovers_in_final_third", 0))
+        risky_team: int | None = None if to1 == to2 else (1 if to1 > to2 else 2)
+
+        return {
+            "dominant_team":        dominant_team,
+            "possession_balance":   possession_balance,
+            "avg_press_level":      avg_press_level,
+            "formation_team_1":     rpt.get("formation",  {}).get("team_1", {}).get("detected_formation", "unknown"),
+            "formation_team_2":     rpt.get("formation",  {}).get("team_2", {}).get("detected_formation", "unknown"),
+            "def_style_team_1":     rpt.get("def_line",   {}).get("team_1", {}).get("dominant_block",     "mid_block"),
+            "def_style_team_2":     rpt.get("def_line",   {}).get("team_2", {}).get("dominant_block",     "mid_block"),
+            "width_style_team_1":   rpt.get("team_width", {}).get("team_1", {}).get("dominant_style",     "medium"),
+            "width_style_team_2":   rpt.get("team_width", {}).get("team_2", {}).get("dominant_style",     "medium"),
+            "press_recovery_team":  press_recovery_team,
+            "risky_team":           risky_team,
+        }

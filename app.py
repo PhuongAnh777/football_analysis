@@ -86,109 +86,109 @@ _TEAM_COLORS  = {1: "#4C9BE8", 2: "#E85A4C"}
 _TEAM_LABELS  = {1: "Team A",  2: "Team B"}
 _TEAM_CSS     = {1: "team-a",  2: "team-b"}
 
-# ── try to import real backend; fall back to lightweight stubs ─────────────────
-try:
-    from tactical_analyzer.rule_engine  import evaluate_tactics  as _eval_tactics
-    from tactical_analyzer.llm_reporter import generate_report   as _gen_report
-    _BACKEND_AVAILABLE = True
-except ImportError:
-    _BACKEND_AVAILABLE = False
+# ── Backend imports ───────────────────────────────────────────────────────────
+from api.pipeline_runner import execute_pipeline
+from api.result_adapter import normalize_evaluation
+from tactical_analyzer import TacticalNarrator
 
-    def _eval_tactics(analysis_result, possession_pct, total_distance):  # type: ignore[misc]
-        """Minimal stub so UI works without the full package installed."""
-        result = {}
-        for team_id, samples in analysis_result.items():
-            compacts  = [s["compact"]   for s in samples if s.get("compact")   is not None]
-            pressings = [s["pressing"]  for s in samples if s.get("pressing")  is not None]
-            speeds    = [s["avg_speed"] for s in samples if s.get("avg_speed") is not None]
+def _eval_tactics(analysis_result, possession_pct, total_distance):
+    """Derive tactical labels from pipeline time-series samples."""
+    result = {}
+    for team_id, samples in analysis_result.items():
+        compacts  = [s["compact"]   for s in samples if s.get("compact")   is not None]
+        pressings = [s["pressing"]  for s in samples if s.get("pressing")  is not None]
+        speeds    = [s["avg_speed"] for s in samples if s.get("avg_speed") is not None]
 
-            avg_c = float(np.mean(compacts))  if compacts  else None
-            avg_p = float(np.mean(pressings)) if pressings else None
+        avg_c = float(np.mean(compacts))  if compacts  else None
+        avg_p = float(np.mean(pressings)) if pressings else None
 
-            result[team_id] = {
-                "formation":         Counter(s["formation"] for s in samples
-                                             if s["formation"] != "unknown").most_common(1)[0][0]
-                                     if any(s["formation"] != "unknown" for s in samples) else "unknown",
-                "compactness_label": ("very_compact" if avg_c and avg_c < 15
-                                      else "compact" if avg_c and avg_c < 22
-                                      else "stretched" if avg_c and avg_c < 30
-                                      else "disorganized") if avg_c else "unknown",
-                "pressing_label":    ("high_press" if avg_p and avg_p > 0.6
-                                      else "mid_block" if avg_p and avg_p > 0.3
-                                      else "low_block") if avg_p else "unknown",
-                "speed_trend":       "consistent_intensity",
-                "possession_label":  ("dominant_possession"
-                                      if (possession_pct.get(team_id) or 0) > 60
-                                      else "balanced"
-                                      if (possession_pct.get(team_id) or 0) > 40
-                                      else "under_pressure"),
-                "flags":             [],
-            }
-        result["match_events"] = []
-        return result
-
-    def _gen_report(evaluation, llm_provider=None):  # type: ignore[misc]
-        return "⚠️ LLM reporting requires the `tactical_analyzer` package to be installed."
+        result[team_id] = {
+            "formation":         Counter(s["formation"] for s in samples
+                                         if s["formation"] != "unknown").most_common(1)[0][0]
+                                 if any(s["formation"] != "unknown" for s in samples) else "unknown",
+            "compactness_label": ("very_compact" if avg_c and avg_c < 15
+                                  else "compact" if avg_c and avg_c < 22
+                                  else "stretched" if avg_c and avg_c < 30
+                                  else "disorganized") if avg_c else "unknown",
+            "pressing_label":    ("high_press" if avg_p and avg_p > 0.6
+                                  else "mid_block" if avg_p and avg_p > 0.3
+                                  else "low_block") if avg_p else "unknown",
+            "speed_trend":       "consistent_intensity",
+            "possession_label":  ("dominant_possession"
+                                  if (possession_pct.get(team_id) or 0) > 60
+                                  else "balanced"
+                                  if (possession_pct.get(team_id) or 0) > 40
+                                  else "under_pressure"),
+            "flags":             [],
+        }
+    result["match_events"] = []
+    return result
 
 
-# ── mock pipeline (swap this body for the real call when ready) ───────────────
+def _format_report_markdown(evaluation: dict) -> str:
+    lines: list[str] = []
+    overview = evaluation.get("tong_quan_tran_dau") or evaluation.get("overview") or {}
+    if overview.get("nhan_xet_chung"):
+        lines.append("## Tổng quan\n")
+        lines.append(overview["nhan_xet_chung"] + "\n")
+
+    for key, label in [("doi_1", "Đội 1"), ("doi_2", "Đội 2")]:
+        team = evaluation.get(key) or evaluation.get("danh_gia_doi", {}).get(key, {})
+        if not team:
+            continue
+        lines.append(f"## {label}\n")
+        lines.append(
+            f"**Điểm:** {team.get('diem_so_tong', team.get('diem_tong', '—'))} "
+            f"({team.get('xep_loai', '—')})\n"
+        )
+        if team.get("chien_thuat"):
+            lines.append(team["chien_thuat"] + "\n")
+        for s in team.get("diem_manh", []):
+            lines.append(f"- ✅ {s}")
+        for w in team.get("diem_yeu", []):
+            lines.append(f"- ⚠️ {w}")
+        lines.append("")
+
+    if evaluation.get("ket_luan"):
+        lines.append("## Kết luận\n")
+        lines.append(evaluation["ket_luan"])
+    return "\n".join(lines) if lines else "Không có dữ liệu báo cáo."
+
+
+def _gen_report(evaluation, llm_provider=None, match_report=None):
+    if llm_provider == "openai":
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        if not api_key:
+            raise EnvironmentError("OPENAI_API_KEY chưa được cấu hình.")
+        if not match_report:
+            raise ValueError("match_report không có — chạy pipeline trước.")
+        narrator = TacticalNarrator(api_key=api_key)
+        llm_out = narrator.analyze(match_report)
+        evaluation = normalize_evaluation(llm_out, match_report)
+        return _format_report_markdown(evaluation)
+
+    if llm_provider == "ollama":
+        if not match_report:
+            raise ValueError("match_report không có — chạy pipeline trước.")
+        narrator = TacticalNarrator(
+            api_key="ollama",
+            model=os.getenv("LLM_MODEL", "llama3"),
+            base_url=os.getenv("LLM_BASE_URL", "http://localhost:11434/v1"),
+        )
+        llm_out = narrator.analyze(match_report)
+        evaluation = normalize_evaluation(llm_out, match_report)
+        return _format_report_markdown(evaluation)
+
+    return _format_report_markdown(evaluation or {})
+
 
 def run_pipeline(video_path: str) -> dict:
-    """
-    Stub pipeline — returns synthetic but realistic data for UI development.
-
-    To connect the real backend replace the body of this function with:
-
-        from main import main as _real_main   # or your pipeline entry-point
-        return _real_main(video_path)
-    """
-    rng = np.random.default_rng(seed=42)
-    n   = 30
-    frames = [i * 30 for i in range(n)]
-
-    def _noisy(base: float, amp: float) -> list[float]:
-        return (base + rng.uniform(-amp, amp, n)).clip(0).tolist()
-
-    # Team 1: attacking side — high press early, compact shape
-    pressing_1 = [max(0.0, 0.68 - i * 0.008 + rng.uniform(-0.04, 0.04)) for i in range(n)]
-    team1 = [
-        {
-            "frame":     frames[i],
-            "formation": "4-3-3",
-            "compact":   round(float(_noisy(16.8, 2.0)[i]), 2),
-            "pressing":  round(float(pressing_1[i]), 3),
-            "avg_speed": round(float(_noisy(16.2, 1.8)[i]), 2),
-        }
-        for i in range(n)
-    ]
-
-    # Team 2: defensive side — low block, stretched, fatigue in second half
-    speed_base_2 = [17.5 - i * 0.28 for i in range(n)]   # linear fatigue
-    team2 = [
-        {
-            "frame":     frames[i],
-            "formation": "4-4-2" if i < 15 else "4-5-1",  # tactical shift at half
-            "compact":   round(float(_noisy(23.5, 3.2)[i]), 2),
-            "pressing":  round(max(0.0, float(_noisy(0.21, 0.06)[i])), 3),
-            "avg_speed": round(max(0.0, float(speed_base_2[i] + rng.uniform(-1.2, 1.2))), 2),
-        }
-        for i in range(n)
-    ]
-
-    # Try to surface any already-generated output images from output_videos/
-    base = Path(__file__).parent / "output_videos"
-    heatmap_path  = str(base / "heatmap.png")         if (base / "heatmap.png").exists()          else None
-    network_path  = str(base / "passing_network.png") if (base / "passing_network.png").exists()  else None
-    out_video     = str(base / "output_video.avi")    if (base / "output_video.avi").exists()      else None
-
-    return {
-        "analysis_result":      {1: team1, 2: team2},
-        "possession_pct":       {1: 58.3,   2: 41.7},
-        "total_distance":       {1: 112_400.0, 2: 98_700.0},
-        "output_video_path":    out_video,
-        "heatmap_path":         heatmap_path,
-        "passing_network_path": network_path,
-    }
+    """Run the full CV + tactical pipeline on *video_path*."""
+    outputs = execute_pipeline(video_path, read_from_stub=False)
+    payload = outputs["streamlit"]
+    payload["match_report"] = outputs["match_report"]
+    payload["evaluation"] = outputs["adapted"]["evaluation"]
+    return payload
 
 
 # ── chart helpers ─────────────────────────────────────────────────────────────
@@ -620,6 +620,7 @@ with tab_report:
                     st.session_state.report = _gen_report(
                         evaluation,
                         llm_provider=selected_provider,
+                        match_report=result.get("match_report") if result else None,
                     )
                 except ConnectionError as ce:
                     st.error(f"🔌 Connection error: {ce}")

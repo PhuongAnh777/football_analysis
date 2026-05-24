@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ─── */
+:root {
+  --color-background:    #0A0E1A;
+  --color-surface:       #111827;
+  --color-surface-2:     #1F2937;
+  --color-border:        #374151;
+  --color-border-hover:  #4B5563;
+  --color-team-1:        #3B82F6;
+  --color-team-2:        #EF4444;
+  --color-accent:        #10B981;
+  --color-text-primary:  #F9FAFB;
+  --color-text-secondary:#9CA3AF;
+  --color-grade-a:       #10B981;
+  --color-grade-b:       #3B82F6;
+  --color-grade-c:       #F59E0B;
+  --color-grade-d:       #F97316;
+  --color-grade-f:       #EF4444;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-surface); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-hover); }
+
+/* ─── Card ─── */
+.card {
+  @apply bg-surface rounded-xl border border-border p-6;
+  @apply transition-all duration-200;
+}
+.card:hover { border-color: var(--color-border-hover); }
+
+/* ─── Glow ─── */
+.glow-team1 { box-shadow: 0 0 20px rgba(59,130,246,0.15); }
+.glow-team2 { box-shadow: 0 0 20px rgba(239,68,68,0.15); }
+.glow-accent { box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+
+/* ─── Upload zone ─── */
+.upload-zone {
+  border: 2px dashed var(--color-border);
+  transition: all 0.3s ease;
+}
+.upload-zone:hover, .upload-zone.active {
+  border-color: var(--color-team-1);
+  background-color: rgba(59,130,246,0.05);
+}
+.upload-zone.reject {
+  border-color: var(--color-team-2);
+  background-color: rgba(239,68,68,0.05);
+}
+
+/* ─── Football spinner ─── */
+.football-spinner { animation: spinBounce 1.5s ease-in-out infinite; }
+@keyframes spinBounce {
+  0%   { transform: rotate(0deg) scale(1); }
+  25%  { transform: rotate(90deg) scale(1.1); }
+  50%  { transform: rotate(180deg) scale(1); }
+  75%  { transform: rotate(270deg) scale(0.9); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* ─── Metric bar ─── */
+.metric-bar-track { height: 6px; background: var(--color-border); border-radius: 3px; overflow: hidden; }
+.metric-bar-fill  { height: 100%; border-radius: 3px; transition: width 1s ease-out; }
+
+/* ─── Nav ─── */
+.nav-item {
+  @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-150;
+  color: var(--color-text-secondary);
+}
+.nav-item:hover { background-color: var(--color-surface-2); color: var(--color-text-primary); }
+.nav-item.active { background-color: rgba(59,130,246,0.15); color: var(--color-team-1); font-weight: 600; }
+
+/* ─── Data table ─── */
+.data-table th {
+  @apply text-left text-xs font-semibold uppercase tracking-wider;
+  color: var(--color-text-secondary);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer; user-select: none;
+}
+.data-table th:hover { color: var(--color-text-primary); }
+.data-table td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(55,65,81,0.5); font-variant-numeric: tabular-nums; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tbody tr { transition: background-color 0.15s; }
+.data-table tbody tr:hover { background-color: rgba(31,41,55,0.6); }
+
+/* ─── Toast ─── */
+.toast {
+  @apply fixed bottom-6 right-6 z-50 px-5 py-4 rounded-xl border shadow-2xl;
+  @apply flex items-center gap-3 text-sm font-medium;
+  animation: slideInRight 0.3s ease-out;
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+/* ─── Print ─── */
+@media print {
+  body { background: white !important; color: black !important; }
+  .no-print { display: none !important; }
+  .card { border: 1px solid #ddd !important; break-inside: avoid; }
+}
