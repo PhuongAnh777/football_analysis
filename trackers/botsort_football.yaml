@@ -1,0 +1,40 @@
+# BoT-SORT tuned for football broadcast footage
+# - sparseOptFlow compensates camera pans / zooms natively
+# - High track_buffer survives full camera cuts (~7 s @ 24 fps)
+# - Lower thresholds to reduce missed detections that cause ID switches
+
+tracker_type: botsort
+
+# Detections above this go directly into the high-confidence matching stage.
+# Lowered from 0.35 → 0.25 so more detections survive to be matched,
+# reducing the chance a partially-occluded player spawns a fresh ID.
+track_high_thresh: 0.25
+
+# Second-stage low-confidence recovery gate (unchanged: already permissive).
+track_low_thresh: 0.05
+
+# Minimum score to initialise a brand-new track.  Kept slightly above
+# track_high_thresh to avoid ghost tracks on noise detections.
+new_track_thresh: 0.30
+
+# Frames to keep a lost track alive before discarding it.
+# 180 frames ≈ 7.5 s @ 24 fps — enough to survive a camera cut + replay.
+track_buffer: 180
+
+# IoU / cost gate for the Hungarian assignment.  0.85 (was 0.70) means we
+# tolerate a worse IoU match before giving up and spawning a new ID.
+# This directly reduces ID switches for fast-moving players.
+match_thresh: 0.85
+
+# Fuse detection score into the assignment cost (recommended for football).
+fuse_score: true
+
+# Global Motion Compensation — cancels camera movement before IoU matching.
+# sparseOptFlow is fast and reliable for broadcast camera motion.
+gmc_method: sparseOptFlow
+
+# ReID thresholds (used only when with_reid: true).
+proximity_thresh: 0.50
+appearance_thresh: 0.75
+with_reid: false
+model: auto

@@ -1,23 +1,46 @@
 from ultralytics import YOLO
-import supervision as sv
 import pickle
 import os
 import numpy as np
 import cv2
-import sys
-sys.path.append('../')
+import time
 from utils import get_center_of_bbox, get_bbox_width, get_foot_position, blend_filled_rectangle
+from .reid_extractor import DeepAppearanceExtractor
 import pandas as pd
+
+# Path to the football-tuned BoT-SORT config bundled alongside this file
+_BOTSORT_CFG = os.path.join(os.path.dirname(__file__), "botsort_football.yaml")
 
 class Tracker:
     def __init__(self, model_path):
         self.model = YOLO(model_path)
-        # Larger lost_track_buffer keeps track IDs alive longer during
-        # camera pans / cuts, reducing unnecessary ID fragmentation.
-        self.tracker = sv.ByteTrack(
-            lost_track_buffer=120,   # ~5 s at 24 fps
-            frame_rate=24,
-        )
+        self.reid  = DeepAppearanceExtractor(device="auto")
+
+    # ── appearance ReID helpers ───────────────────────────────────────────────
+
+    def add_appearance_to_tracks(self, tracks, frames):
+        """
+        Attach a 576-dim deep appearance feature to every player track entry.
+
+        Uses MobileNetV3-Small (via ``self.reid``) instead of a colour
+        histogram.  Crops in each frame are batched together for efficiency.
+
+        The descriptor is stored as ``tracks["players"][frame_num][tid]["appearance"]``.
+        """
+        for frame_num, player_dict in enumerate(tracks["players"]):
+            if not player_dict:
+                continue
+            frame  = frames[frame_num]
+            tids   = list(player_dict.keys())
+            bboxes = [player_dict[t]["bbox"] for t in tids]
+
+            feats = self.reid.extract_frame(frame, bboxes)
+
+            for tid, feat in zip(tids, feats):
+                if feat is not None:
+                    player_dict[tid]["appearance"] = feat
+
+    # ── position helpers ──────────────────────────────────────────────────────
 
     def add_position_to_tracks(self, tracks):
         for object, object_tracks in tracks.items():
@@ -42,67 +65,77 @@ class Tracker:
 
         return ball_positions
 
-    def detect_frames(self, frames):
-        batch_size = 20
-        detections = []
-        for i in range(0, len(frames), batch_size):
-            detections_batch = self.model.predict(frames[i:i+batch_size], conf=0.1)
-            detections += detections_batch
-        return detections
-
-    def get_object_tracks(self, frames, read_from_stub = False, stub_path = None):
+    def get_object_tracks(self, frames, read_from_stub=False, stub_path=None):
         if read_from_stub and stub_path is not None and os.path.exists(stub_path):
             with open(stub_path, 'rb') as f:
-                tracks = pickle.load(f)
-            return tracks
-        
-        detections = self.detect_frames(frames)
+                return pickle.load(f)
 
-        tracks = {
-            "players": [],
-            "referees": [],
-            "ball": [],
-        }
+        # Reset any leftover tracker state from a previous call
+        self.model.predictor = None
 
-        for frame_num, dection in enumerate(detections):
-            cls_names = dection.names
-            cls_names_inv = {v: k for k, v in cls_names.items()}
+        tracks = {"players": [], "referees": [], "ball": []}
 
-            # Convert to supervision Detection format
-            detection_supervision = sv.Detections.from_ultralytics(dection)
+        total = len(frames)
+        print(f"[BoT-SORT] Tracking {total} frames...", flush=True)
+        t0 = time.time()
 
-            # Convert GoalKepper to player object
-            for object_ind , class_id in enumerate(detection_supervision.class_id):
-                if cls_names[class_id] == "goalkeeper":
-                    detection_supervision.class_id[object_ind] = cls_names_inv["player"]
+        for frame_num, frame in enumerate(frames):
+            # BoT-SORT: detect + track in one call.
+            # persist=True keeps tracker state alive across frames.
+            result = self.model.track(
+                source=frame,
+                tracker=_BOTSORT_CFG,
+                persist=True,
+                conf=0.25,
+                imgsz=640,
+                verbose=False,
+            )[0]
 
-            # Track Objects
-            detection_with_tracks = self.tracker.update_with_detections(detection_supervision)
+            cls_names = result.names
 
             tracks["players"].append({})
             tracks["referees"].append({})
             tracks["ball"].append({})
 
-            for frame_detection in detection_with_tracks:
-                bbox = frame_detection[0].tolist()
-                cls_id = frame_detection[3]
-                track_id = frame_detection[4]
+            if result.boxes is None or len(result.boxes) == 0:
+                continue
 
-                if cls_id == cls_names_inv['player']:
-                    tracks["players"][frame_num][track_id] = {"bbox":bbox}
-                if cls_id == cls_names_inv['referee']:
-                    tracks["referees"][frame_num][track_id] = {"bbox":bbox}
+            for box in result.boxes:
+                bbox     = box.xyxy[0].tolist()
+                cls_id   = int(box.cls[0])
+                cls_name = cls_names.get(cls_id, "")
 
-            for frame_detection in detection_supervision:
-                bbox = frame_detection[0].tolist()
-                cls_id = frame_detection[3]
+                # Ball has no persistent track ID; always store as ID=1
+                if cls_name == "ball":
+                    tracks["ball"][frame_num][1] = {"bbox": bbox}
+                    continue
 
-                if cls_id == cls_names_inv['ball']:
-                    tracks["ball"][frame_num][1] = {"bbox":bbox}
+                if box.id is None:
+                    continue
+                track_id = int(box.id[0])
+
+                # Goalkeeper counts as a field player
+                if cls_name in ("player", "goalkeeper"):
+                    tracks["players"][frame_num][track_id] = {"bbox": bbox}
+                elif cls_name == "referee":
+                    tracks["referees"][frame_num][track_id] = {"bbox": bbox}
+
+            # Progress every 100 frames
+            if (frame_num + 1) % 100 == 0 or frame_num == total - 1:
+                elapsed = time.time() - t0
+                fps_so_far = (frame_num + 1) / elapsed if elapsed > 0 else 0
+                eta = (total - frame_num - 1) / fps_so_far if fps_so_far > 0 else 0
+                print(
+                    f"[BoT-SORT] {frame_num+1}/{total} frames"
+                    f"  |  {fps_so_far:.1f} fps"
+                    f"  |  ETA {eta/60:.1f} min",
+                    flush=True,
+                )
 
         if stub_path is not None:
+            os.makedirs(os.path.dirname(os.path.abspath(stub_path)), exist_ok=True)
             with open(stub_path, 'wb') as f:
-                pickle.dump(tracks,f)
+                pickle.dump(tracks, f)
 
         return tracks
 
@@ -174,7 +207,6 @@ class Tracker:
 
         team_ball_control_till_frame = team_ball_control[:frame_num+1]
 
-        # Get the number of times each team has controlled the ball
         team_1_num_frames = team_ball_control_till_frame[team_ball_control_till_frame==1].shape[0]
         team_2_num_frames = team_ball_control_till_frame[team_ball_control_till_frame==2].shape[0]
         total = team_1_num_frames + team_2_num_frames
@@ -195,7 +227,6 @@ class Tracker:
             referee_dict = tracks["referees"][frame_num]
             ball_dict = tracks["ball"][frame_num]
 
-            # Draw players
             for track_id, player in player_dict.items():
                 color = player.get("team_color", (0,0,255))
                 self.draw_ellipse(frame, player["bbox"], color, track_id)
@@ -203,11 +234,9 @@ class Tracker:
                 if player.get("has_ball", False):
                     self.draw_traingle(frame, player["bbox"], (0,0,255))
 
-            # Draw referee
             for track_id, referee in referee_dict.items():
                 self.draw_ellipse(frame, referee["bbox"], (0,0,255))
 
-            # Draw ball
             for track_id, ball in ball_dict.items():
                 self.draw_traingle(frame, ball["bbox"], (0,255,0))
 
