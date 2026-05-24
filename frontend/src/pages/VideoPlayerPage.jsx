@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAnalysis } from '../context/AnalysisContext'
+import { getVideoUrl } from '../api/client'
 import Card from '../components/UI/Card'
 import Badge from '../components/UI/Badge'
 
@@ -127,7 +128,7 @@ export default function VideoPlayerPage() {
         <div className="xl:col-span-2 space-y-4">
           <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}
             onMouseMove={handleMouseMove}>
-            <video ref={videoRef} src={`/api/video/${jobId}`} className="w-full h-full object-contain"
+            <video ref={videoRef} src={getVideoUrl(jobId)} className="w-full h-full object-contain"
               onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
               onLoadedMetadata={e => setDuration(e.target.duration)}
               onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />

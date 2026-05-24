@@ -1,10 +1,14 @@
 import axios from 'axios'
 
-const API_BASE = '/api'
+/** Remote Colab backend: set VITE_API_BASE=https://xxxx.ngrok-free.app/api in .env.local */
+export const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 30000,
+  headers: {
+    'ngrok-skip-browser-warning': 'true',
+  },
 })
 
 api.interceptors.response.use(
@@ -19,11 +23,16 @@ api.interceptors.response.use(
   },
 )
 
+export function getVideoUrl(jobId) {
+  return `${API_BASE}/video/${jobId}`
+}
+
 export async function uploadVideo(file, onProgress) {
   const form = new FormData()
   form.append('video', file)
   const { data } = await api.post('/analyze', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 600_000,
     onUploadProgress(e) {
       if (e.total) onProgress?.(Math.round((e.loaded * 100) / e.total))
     },

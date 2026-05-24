@@ -44,7 +44,16 @@ _INPUT_VIDEO_PATH = os.path.join(_PROJECT_ROOT, "input_videos", "input_video.mp4
 _MAX_UPLOAD_BYTES  = 500 * 1024 * 1024   # 500 MB
 _PIPELINE_TIMEOUT  = 30 * 60             # 30 minutes
 _CLEANUP_INTERVAL  = 30 * 60             # 30 minutes
-_ALLOWED_ORIGINS   = ["http://localhost:3000"]
+
+
+def _parse_cors_origins() -> list[str]:
+    """Comma-separated origins, e.g. CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000"""
+    raw = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    return origins or ["http://localhost:3000"]
+
+
+_ALLOWED_ORIGINS = _parse_cors_origins()
 
 # Single-thread executor so the CPU-heavy pipeline doesn't block the event loop
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="pipeline")
@@ -104,6 +113,11 @@ def _require_job(job_id: str):
 def _model_loaded() -> bool:
     """Check whether the YOLO model file exists on disk."""
     return os.path.exists(os.path.join(_PROJECT_ROOT, "models", "best.pt"))
+
+
+def _track_stub_loaded() -> bool:
+    stub = os.getenv("TRACK_STUB_PATH", os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl"))
+    return os.path.exists(stub)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -296,7 +310,7 @@ async def video(job_id: str, request: Request):
 @app.get("/api/health")
 async def health():
     """Return a simple liveness / readiness response."""
-    return {"status": "ok", "model_loaded": _model_loaded()}
+    return {"status": "ok", "model_loaded": _model_loaded(), "track_stub_loaded": _track_stub_loaded()}
 
 
 # ── Dev entry-point ───────────────────────────────────────────────────────────

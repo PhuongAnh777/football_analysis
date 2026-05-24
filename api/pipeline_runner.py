@@ -24,6 +24,7 @@ if _PROJECT_ROOT not in sys.path:
 
 from utils import read_video, save_video
 from utils.pipeline_helpers import assign_ball_to_tracks, extract_passing_events
+from utils.stub_io import load_track_stub
 from trackers import Tracker, merge_player_tracks
 from team_assigner import TeamAssigner
 from camera_movement_estimator import CameraMovementEstimator
@@ -43,6 +44,7 @@ from api.result_adapter import adapt_api_result, build_streamlit_analysis_result
 _TOTAL_STEPS = 8
 _OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output_videos")
 _MODELS_DIR = os.path.join(_PROJECT_ROOT, "models")
+_DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
 
 _PIPELINE_STEPS = [
     (1, "reading",  "Đang đọc video..."),
@@ -124,10 +126,20 @@ def _convert_to_mp4(avi_path: str) -> str:
         return avi_path
 
 
+def _should_use_track_stub(track_stub_path: str | None) -> str | None:
+    """Return stub path when Colab stub exists and tracking is not forced."""
+    force = os.getenv("FORCE_TRACKING", "").lower() in ("1", "true", "yes")
+    if force:
+        return None
+    path = track_stub_path or os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
+    return path if path and os.path.exists(path) else None
+
+
 def execute_pipeline(
     video_path: str,
     *,
     read_from_stub: bool = False,
+    track_stub_path: str | None = None,
     on_step: Optional[Callable[[int, str, str], None]] = None,
 ) -> dict:
     """Run the full CV + tactical pipeline and return raw + adapted outputs."""
@@ -144,12 +156,25 @@ def execute_pipeline(
 
     _notify(2, "tracking", _PIPELINE_STEPS[1][2])
     tracker = Tracker(os.path.join(_MODELS_DIR, "best.pt"))
-    tracks = tracker.get_object_tracks(
-        video_frames,
-        read_from_stub=read_from_stub,
-    )
-    tracker.add_appearance_to_tracks(tracks, video_frames)
-    tracker.add_position_to_tracks(tracks)
+
+    colab_stub = _should_use_track_stub(track_stub_path)
+    if colab_stub:
+        print(f"[pipeline] Loading Colab tracking stub: {colab_stub}", flush=True)
+        tracks, stub_fps, enriched = load_track_stub(colab_stub)
+        if stub_fps is not None:
+            fps = stub_fps
+            fps_int = max(1, round(fps))
+        if not enriched:
+            tracker.add_appearance_to_tracks(tracks, video_frames)
+            tracker.add_position_to_tracks(tracks)
+    else:
+        tracks = tracker.get_object_tracks(
+            video_frames,
+            read_from_stub=read_from_stub,
+            stub_path=_DEFAULT_TRACK_STUB if read_from_stub else None,
+        )
+        tracker.add_appearance_to_tracks(tracks, video_frames)
+        tracker.add_position_to_tracks(tracks)
 
     _notify(3, "camera", _PIPELINE_STEPS[2][2])
     cam_estimator = CameraMovementEstimator(video_frames[0])
