@@ -268,12 +268,14 @@ def _force_cap(
     Phase 2: aggressively merge excess groups until at most `cap` remain.
 
     After the threshold-gated greedy phase, if more groups exist than the
-    player cap, this function repeatedly merges the smallest group (fewest
-    total frames) into the nearest non-temporally-conflicting group.
-    No distance threshold is applied — the best available partner is always
-    chosen.  If the smallest group conflicts with every other group (i.e. it
-    represents a genuinely concurrent player or a substitution on the bench),
-    the loop stops; the remaining excess will be handled by the hard-prune step.
+    player cap, this function scans ALL pairs of groups per iteration and
+    merges the globally best (lowest score) non-conflicting pair.  It only
+    stops when a full scan produces no valid merge, at which point the
+    remaining excess is left for the hard-prune step.
+
+    Scanning all pairs (not just the smallest group) avoids the early-exit
+    trap where the smallest group happens to conflict with everything yet
+    other pairs could still be merged.
     """
     def _group_frames(group):
         return sum(segs[tid]['frame_count'] for tid in group)
@@ -283,27 +285,30 @@ def _force_cap(
         if len(groups) <= cap:
             break
 
-        groups_by_frames = sorted(groups, key=_group_frames)
-        excess = groups_by_frames[0]
-
+        # Scan every pair; find the best non-conflicting merge available.
+        groups_list = sorted(groups, key=_group_frames)  # smallest first
         best_score = float('inf')
-        best_partner_tid = None
+        best_a_tid = None
+        best_b_tid = None
 
-        for candidate in groups_by_frames[1:]:
-            if _temporal_conflict(segs, excess, candidate):
-                continue
-            score = _pair_score(segs, excess, candidate, appearance_weight)
-            if score < best_score:
-                best_score = score
-                best_partner_tid = candidate[0]
+        for i in range(len(groups_list) - 1):
+            for j in range(i + 1, len(groups_list)):
+                ga = groups_list[i]
+                gb = groups_list[j]
+                if _temporal_conflict(segs, ga, gb):
+                    continue
+                score = _pair_score(segs, ga, gb, appearance_weight)
+                if score < best_score:
+                    best_score = score
+                    best_a_tid = ga[0]
+                    best_b_tid = gb[0]
 
-        if best_partner_tid is None:
-            # This group temporally overlaps with every other group.
-            # It is a genuinely concurrent identity (e.g. a substituting player).
-            # The hard-prune step will decide whether to keep it.
+        if best_a_tid is None:
+            # Every remaining pair conflicts temporally — all groups are
+            # genuinely concurrent.  Hard-prune will keep the top-N.
             break
 
-        uf.union(excess[0], best_partner_tid)
+        uf.union(best_a_tid, best_b_tid)
 
 
 def _link_segments(segs: dict, team_tids: list,
@@ -481,14 +486,20 @@ def merge_player_tracks(
         print(f"[TrackMerger] Team {team_id}: {n_orig} segments → "
               f"{n_final} identities (dropped {dropped} excess segments)")
 
-    # Rewrite frame dicts: apply remap and remove pruned IDs
+    # Rewrite frame dicts: ONLY keep tracks that received a new remapped ID.
+    # Any track_id absent from team_remaps is either:
+    #   • a very short ghost segment (< min_frames, never entered valid)
+    #   • an excess segment pruned by the hard-prune step (in global_drop)
+    #   • a track with no valid team assignment
+    # All of these are discarded so that only ≤ max_players_per_team IDs
+    # per team survive in the output tracks.
     for frame_num, frame_players in enumerate(tracks['players']):
         new_frame: dict = {}
         for old_tid, info in frame_players.items():
-            if old_tid in global_drop:
-                continue  # remove ghost / excess track
-            new_tid = team_remaps.get(old_tid, old_tid)
-            new_frame[new_tid] = info
+            new_tid = team_remaps.get(old_tid)
+            if new_tid is not None:
+                new_frame[new_tid] = info
+            # else: ghost / excess / unassigned → silently dropped
         tracks['players'][frame_num] = new_frame
 
     total_before = len(valid)
