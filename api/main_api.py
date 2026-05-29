@@ -64,12 +64,35 @@ from utils.stub_io import remove_track_stub, video_fingerprint
 _OUTPUT_VIDEOS_ROOT = os.path.join(_PROJECT_ROOT, "output_videos")
 
 _DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
-_INPUT_VIDEOS_DIR = os.path.join(_PROJECT_ROOT, "input_videos")
+_INPUT_VIDEO_PATH = os.path.join(_PROJECT_ROOT, "input_videos", "input_video.mp4")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 _MAX_UPLOAD_BYTES  = 500 * 1024 * 1024   # 500 MB
 _PIPELINE_TIMEOUT  = 30 * 60             # 30 minutes
 _CLEANUP_INTERVAL  = 30 * 60             # 30 minutes
+
+
+_JOB_INPUT_MP4 = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$",
+    re.IGNORECASE,
+)
+
+
+def _cleanup_per_job_input_copies() -> int:
+    """Xóa input_videos/{job_id}.mp4 do bản code cũ tạo (không đụng file test khác)."""
+    input_dir = os.path.dirname(_INPUT_VIDEO_PATH)
+    if not os.path.isdir(input_dir):
+        return 0
+    removed = 0
+    for name in os.listdir(input_dir):
+        if not _JOB_INPUT_MP4.match(name):
+            continue
+        try:
+            os.remove(os.path.join(input_dir, name))
+            removed += 1
+        except OSError:
+            pass
+    return removed
 
 
 def _parse_cors_origins() -> list[str]:
@@ -276,22 +299,24 @@ async def analyze(video: UploadFile = File(...)):
         )
 
     job_id = create_job()
-    input_path = os.path.join(_INPUT_VIDEOS_DIR, f"{job_id}.mp4")
+    n_removed = _cleanup_per_job_input_copies()
+    if n_removed:
+        print(f"[analyze] Đã xóa {n_removed} file input video cũ (theo job_id).", flush=True)
 
-    os.makedirs(_INPUT_VIDEOS_DIR, exist_ok=True)
-    async with aiofiles.open(input_path, "wb") as fh:
+    os.makedirs(os.path.dirname(_INPUT_VIDEO_PATH), exist_ok=True)
+    async with aiofiles.open(_INPUT_VIDEO_PATH, "wb") as fh:
         await fh.write(contents)
 
-    input_md5 = video_fingerprint(input_path)
+    input_md5 = video_fingerprint(_INPUT_VIDEO_PATH)
     job = jobs[job_id]
-    job.input_path = input_path
+    job.input_path = _INPUT_VIDEO_PATH
     job.input_md5 = input_md5
     job.input_size_bytes = len(contents)
     job.input_filename = video.filename or os.path.basename(input_path)
 
     print(
         f"[analyze] job={job_id} file={job.input_filename!r} "
-        f"({len(contents):,} bytes, md5={input_md5}) → {input_path}",
+        f"({len(contents):,} bytes, md5={input_md5}) → {_INPUT_VIDEO_PATH}",
         flush=True,
     )
 
@@ -299,7 +324,7 @@ async def analyze(video: UploadFile = File(...)):
     loop.run_in_executor(
         _executor,
         _run_job_with_optional_colab,
-        input_path,
+        _INPUT_VIDEO_PATH,
         job_id,
     )
 

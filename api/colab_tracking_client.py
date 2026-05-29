@@ -25,6 +25,17 @@ def _normalize_base(url: str) -> str:
     return url.rstrip("/")
 
 
+def _response_detail(resp: requests.Response) -> str:
+    try:
+        data = resp.json()
+        if isinstance(data, dict):
+            detail = data.get("detail", data)
+            return str(detail)[:4000]
+    except Exception:
+        pass
+    return (resp.text or "")[:4000]
+
+
 def fetch_colab_tracking_stub(
     video_path: str,
     colab_base_url: str,
@@ -54,12 +65,22 @@ def fetch_colab_tracking_stub(
         raise RuntimeError(
             f"URL không phải Colab tracking server: {health_data!r}"
         )
-    if not health_data.get("gpu_available"):
+
+    gpu_flag = health_data.get("gpu_available")
+    if gpu_flag is False:
         raise RuntimeError(
-            "Colab chưa bật GPU. Mở colab_tracking.ipynb → Runtime → T4 GPU → chạy lại cell server."
+            "Colab báo GPU không khả dụng. Runtime → Change runtime type → T4 GPU "
+            "→ chạy lại cell server (và git pull code mới)."
         )
+    if gpu_flag is None:
+        print(
+            "[colab] Cảnh báo: Colab server chưa có trường gpu_available — "
+            "chạy `git pull` trên Colab rồi restart cell server. Tiếp tục thử tracking...",
+            flush=True,
+        )
+
     print(
-        f"[colab] health OK gpu={health_data.get('gpu_name')} "
+        f"[colab] health OK gpu={health_data.get('gpu_name', 'n/a')} "
         f"local_video md5={local_md5} size={local_size:,}",
         flush=True,
     )
@@ -73,7 +94,10 @@ def fetch_colab_tracking_stub(
             headers=_headers(),
             timeout=600,
         )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise RuntimeError(
+            f"Colab /api/track lỗi {resp.status_code}: {_response_detail(resp)}"
+        )
     payload = resp.json()
     job_id = payload["job_id"]
     if payload.get("video_md5") and payload["video_md5"] != local_md5:

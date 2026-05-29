@@ -11,6 +11,7 @@ Run on Colab:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 import sys
 import traceback as tb
@@ -166,58 +167,80 @@ async def health():
 @app.post("/api/track", status_code=202)
 async def track(video: UploadFile = File(...)):
     """Nhận video từ local backend → chạy tracking GPU → lưu stub riêng theo job."""
-    if video.content_type and video.content_type not in (
-        "video/mp4",
-        "video/avi",
-        "video/x-msvideo",
-        "application/octet-stream",
-    ):
-        raise HTTPException(
-            status_code=415,
-            detail="Unsupported media type. Upload MP4 or AVI.",
+    try:
+        if not os.path.exists(_MODEL_PATH):
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"Thiếu model: {_MODEL_PATH}. "
+                    "Trên Colab: copy best.pt từ Drive vào models/best.pt."
+                ),
+            )
+
+        if video.content_type and video.content_type not in (
+            "video/mp4",
+            "video/avi",
+            "video/x-msvideo",
+            "application/octet-stream",
+        ):
+            raise HTTPException(
+                status_code=415,
+                detail="Unsupported media type. Upload MP4 or AVI.",
+            )
+
+        contents = await video.read()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Empty upload body.")
+
+        if len(contents) > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large (max {_MAX_UPLOAD_BYTES // (1024**2)} MB).",
+            )
+
+        import uuid
+
+        job_id = str(uuid.uuid4())
+        video_path = _job_video_path(job_id)
+        stub_path = _job_stub_path(job_id)
+        video_md5 = hashlib.md5(contents).hexdigest()
+
+        os.makedirs(_INPUT_DIR, exist_ok=True)
+        async with aiofiles.open(video_path, "wb") as fh:
+            await fh.write(contents)
+
+        print(
+            f"[colab-track] POST job={job_id} received {len(contents):,} bytes md5={video_md5}",
+            flush=True,
         )
 
-    contents = await video.read()
-    if len(contents) > _MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File too large (max {_MAX_UPLOAD_BYTES // (1024**2)} MB).",
+        _jobs[job_id] = TrackJob(
+            job_id=job_id,
+            current_step="Đã nhận video, chờ GPU...",
+            video_path=video_path,
+            video_bytes=len(contents),
+            video_md5=video_md5,
         )
 
-    import uuid
-    from utils.stub_io import video_fingerprint
+        loop = asyncio.get_event_loop()
+        loop.run_in_executor(
+            _executor, _run_tracking_job, job_id, video_path, stub_path
+        )
 
-    job_id = str(uuid.uuid4())
-    video_path = _job_video_path(job_id)
-    stub_path = _job_stub_path(job_id)
-
-    os.makedirs(_INPUT_DIR, exist_ok=True)
-    async with aiofiles.open(video_path, "wb") as fh:
-        await fh.write(contents)
-
-    video_md5 = video_fingerprint(video_path)
-    print(
-        f"[colab-track] POST job={job_id} received {len(contents):,} bytes md5={video_md5}",
-        flush=True,
-    )
-
-    _jobs[job_id] = TrackJob(
-        job_id=job_id,
-        current_step="Đã nhận video, chờ GPU...",
-        video_path=video_path,
-        video_bytes=len(contents),
-        video_md5=video_md5,
-    )
-
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(_executor, _run_tracking_job, job_id, video_path, stub_path)
-
-    return {
-        "job_id": job_id,
-        "status": "processing",
-        "video_bytes": len(contents),
-        "video_md5": video_md5,
-    }
+        return {
+            "job_id": job_id,
+            "status": "processing",
+            "video_bytes": len(contents),
+            "video_md5": video_md5,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[colab-track] POST error: {exc}\n{tb.format_exc()}", flush=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"{type(exc).__name__}: {exc}",
+        ) from exc
 
 
 @app.get("/api/track/status/{job_id}")
