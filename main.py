@@ -70,7 +70,7 @@ class _NumpyEncoder(json.JSONEncoder):
 
 def main():
 
-    video_frames, fps = read_video("input_videos/input_video.mp4")
+    video_frames, fps = read_video("input_videos/input_video_45s.mp4")
 
     fps_int = max(1, round(fps))
 

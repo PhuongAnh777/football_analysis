@@ -325,7 +325,13 @@ def execute_pipeline(
     }
 
 
-def run_pipeline(video_path: str, job_id: str, jobs_store: dict) -> None:
+def run_pipeline(
+    video_path: str,
+    job_id: str,
+    jobs_store: dict,
+    *,
+    track_stub_path: str | None = None,
+) -> None:
     """Execute pipeline for a background API job."""
 
     def _step(step_n: int, step_key: str, label: str) -> None:
@@ -334,10 +340,15 @@ def run_pipeline(video_path: str, job_id: str, jobs_store: dict) -> None:
         job.current_step = label
         job.step_key = step_key
 
+    stub_path = track_stub_path or os.getenv(
+        "TRACK_STUB_PATH", _DEFAULT_TRACK_STUB
+    )
+
     try:
         outputs = execute_pipeline(
             video_path,
             read_from_stub=False,
+            track_stub_path=stub_path,
             on_step=_step,
         )
         job: JobState = jobs_store[job_id]

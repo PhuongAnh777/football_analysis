@@ -24,3 +24,6 @@ frontend/.env.local
 # IDE
 .idea/
 .vscode/
+
+
+.tmp.driveupload/

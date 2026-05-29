@@ -39,6 +39,8 @@ if _PROJECT_ROOT not in sys.path:
 from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
 from api.pipeline_runner import run_pipeline
 
+_DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
+
 # ── Config ────────────────────────────────────────────────────────────────────
 _INPUT_VIDEO_PATH = os.path.join(_PROJECT_ROOT, "input_videos", "input_video.mp4")
 _MAX_UPLOAD_BYTES  = 500 * 1024 * 1024   # 500 MB
@@ -116,8 +118,48 @@ def _model_loaded() -> bool:
 
 
 def _track_stub_loaded() -> bool:
-    stub = os.getenv("TRACK_STUB_PATH", os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl"))
+    stub = os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
     return os.path.exists(stub)
+
+
+def _colab_tracking_url() -> str | None:
+    url = os.getenv("COLAB_TRACKING_URL", "").strip()
+    return url or None
+
+
+def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
+    """Colab GPU tracking (optional) → local pipeline."""
+    colab_url = _colab_tracking_url()
+    stub_path = os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
+
+    if colab_url:
+        from api.colab_tracking_client import fetch_colab_tracking_stub
+
+        job = jobs[job_id]
+
+        def _on_colab_progress(msg: str) -> None:
+            job.current_step = msg
+            job.step_key = "tracking_remote"
+            job.progress = 0.05
+
+        try:
+            fetch_colab_tracking_stub(
+                video_path,
+                colab_url,
+                stub_path,
+                on_progress=_on_colab_progress,
+            )
+        except Exception as exc:
+            import traceback as _tb
+
+            job = jobs[job_id]
+            job.status = "error"
+            job.step_key = "error"
+            job.current_step = "Lỗi tracking Colab"
+            job.error = f"{type(exc).__name__}: {exc}\n{_tb.format_exc()}"
+            return
+
+    run_pipeline(video_path, job_id, jobs, track_stub_path=stub_path)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -153,10 +195,9 @@ async def analyze(video: UploadFile = File(...)):
     loop = asyncio.get_event_loop()
     loop.run_in_executor(
         _executor,
-        run_pipeline,
+        _run_job_with_optional_colab,
         _INPUT_VIDEO_PATH,
         job_id,
-        jobs,
     )
 
     return {"job_id": job_id, "status": "processing"}
@@ -310,7 +351,12 @@ async def video(job_id: str, request: Request):
 @app.get("/api/health")
 async def health():
     """Return a simple liveness / readiness response."""
-    return {"status": "ok", "model_loaded": _model_loaded(), "track_stub_loaded": _track_stub_loaded()}
+    return {
+        "status": "ok",
+        "model_loaded": _model_loaded(),
+        "track_stub_loaded": _track_stub_loaded(),
+        "colab_tracking_url": _colab_tracking_url(),
+    }
 
 
 # ── Dev entry-point ───────────────────────────────────────────────────────────
