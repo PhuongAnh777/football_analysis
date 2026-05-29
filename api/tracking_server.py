@@ -92,6 +92,44 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(HTTPException)
+async def _http_exception_handler(request, exc: HTTPException):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request, exc: Exception):
+    print(f"[colab-track] Unhandled: {exc}\n{tb.format_exc()}", flush=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {exc}"},
+    )
+
+
+async def _save_upload_to_disk(
+    upload: UploadFile, dest_path: str, *, max_bytes: int
+) -> tuple[int, str]:
+    """Ghi upload theo chunk + tính MD5 (tránh đọc cả file 50MB+ vào RAM)."""
+    hasher = hashlib.md5()
+    total = 0
+    async with aiofiles.open(dest_path, "wb") as out:
+        while True:
+            chunk = await upload.read(1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File too large (max {max_bytes // (1024**2)} MB).",
+                )
+            hasher.update(chunk)
+            await out.write(chunk)
+    if total == 0:
+        raise HTTPException(status_code=400, detail="Empty upload body.")
+    return total, hasher.hexdigest()
+
+
 def _require_job(job_id: str) -> TrackJob:
     job = _jobs.get(job_id)
     if job is None:
@@ -188,29 +226,19 @@ async def track(video: UploadFile = File(...)):
                 detail="Unsupported media type. Upload MP4 or AVI.",
             )
 
-        contents = await video.read()
-        if not contents:
-            raise HTTPException(status_code=400, detail="Empty upload body.")
-
-        if len(contents) > _MAX_UPLOAD_BYTES:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File too large (max {_MAX_UPLOAD_BYTES // (1024**2)} MB).",
-            )
-
         import uuid
 
         job_id = str(uuid.uuid4())
         video_path = _job_video_path(job_id)
         stub_path = _job_stub_path(job_id)
-        video_md5 = hashlib.md5(contents).hexdigest()
 
         os.makedirs(_INPUT_DIR, exist_ok=True)
-        async with aiofiles.open(video_path, "wb") as fh:
-            await fh.write(contents)
+        video_bytes, video_md5 = await _save_upload_to_disk(
+            video, video_path, max_bytes=_MAX_UPLOAD_BYTES
+        )
 
         print(
-            f"[colab-track] POST job={job_id} received {len(contents):,} bytes md5={video_md5}",
+            f"[colab-track] POST job={job_id} received {video_bytes:,} bytes md5={video_md5}",
             flush=True,
         )
 
@@ -218,7 +246,7 @@ async def track(video: UploadFile = File(...)):
             job_id=job_id,
             current_step="Đã nhận video, chờ GPU...",
             video_path=video_path,
-            video_bytes=len(contents),
+            video_bytes=video_bytes,
             video_md5=video_md5,
         )
 
@@ -230,7 +258,7 @@ async def track(video: UploadFile = File(...)):
         return {
             "job_id": job_id,
             "status": "processing",
-            "video_bytes": len(contents),
+            "video_bytes": video_bytes,
             "video_md5": video_md5,
         }
     except HTTPException:

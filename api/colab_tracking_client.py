@@ -36,6 +36,17 @@ def _response_detail(resp: requests.Response) -> str:
     return (resp.text or "")[:4000]
 
 
+def _raise_colab_http_error(resp: requests.Response, label: str) -> None:
+    detail = _response_detail(resp).strip()
+    if not detail or detail == "Internal Server Error":
+        detail = (
+            "Colab/ngrok không trả lỗi chi tiết. Trên Colab: (1) git pull origin Collab "
+            "(2) chạy lại cell server (3) kiểm tra models/best.pt (4) xem log đỏ trong cell "
+            "(5) thử video ngắn hơn ~20MB nếu file ~50MB."
+        )
+    raise RuntimeError(f"Colab {label} lỗi {resp.status_code}: {detail}")
+
+
 def fetch_colab_tracking_stub(
     video_path: str,
     colab_base_url: str,
@@ -85,6 +96,13 @@ def fetch_colab_tracking_stub(
         flush=True,
     )
 
+    if local_size > 40 * 1024 * 1024:
+        print(
+            "[colab] Cảnh báo: video > 40MB — upload qua ngrok có thể lỗi. "
+            "Nên dùng clip ngắn hơn hoặc git pull Colab mới nhất.",
+            flush=True,
+        )
+
     _notify("Đang gửi video lên Colab GPU...")
     print(f"[colab] POST {base}/api/track ← {video_path}", flush=True)
     with open(video_path, "rb") as fh:
@@ -95,10 +113,11 @@ def fetch_colab_tracking_stub(
             timeout=600,
         )
     if not resp.ok:
-        raise RuntimeError(
-            f"Colab /api/track lỗi {resp.status_code}: {_response_detail(resp)}"
-        )
-    payload = resp.json()
+        _raise_colab_http_error(resp, "/api/track")
+    try:
+        payload = resp.json()
+    except ValueError:
+        _raise_colab_http_error(resp, "/api/track (phản hồi không phải JSON)")
     job_id = payload["job_id"]
     if payload.get("video_md5") and payload["video_md5"] != local_md5:
         raise RuntimeError(
