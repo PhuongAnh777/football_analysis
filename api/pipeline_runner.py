@@ -24,7 +24,7 @@ if _PROJECT_ROOT not in sys.path:
 
 from utils import read_video, save_video
 from utils.pipeline_helpers import assign_ball_to_tracks, extract_passing_events
-from utils.stub_io import load_track_stub
+from utils.stub_io import load_track_stub, stub_matches_video
 from trackers import Tracker, merge_player_tracks
 from team_assigner import TeamAssigner
 from camera_movement_estimator import CameraMovementEstimator
@@ -126,13 +126,28 @@ def _convert_to_mp4(avi_path: str) -> str:
         return avi_path
 
 
-def _should_use_track_stub(track_stub_path: str | None) -> str | None:
-    """Return stub path when Colab stub exists and tracking is not forced."""
+def _resolve_track_stub(
+    video_path: str,
+    track_stub_path: str | None,
+    *,
+    use_track_stub: bool,
+) -> str | None:
+    """Chỉ dùng stub khi job vừa tạo stub cho đúng video (không tái dùng file cũ)."""
+    if not use_track_stub:
+        return None
     force = os.getenv("FORCE_TRACKING", "").lower() in ("1", "true", "yes")
     if force:
         return None
     path = track_stub_path or os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
-    return path if path and os.path.exists(path) else None
+    if not path or not os.path.exists(path):
+        return None
+    if not stub_matches_video(path, video_path):
+        print(
+            f"[pipeline] Bỏ qua stub không khớp video: {path}",
+            flush=True,
+        )
+        return None
+    return path
 
 
 def execute_pipeline(
@@ -140,6 +155,7 @@ def execute_pipeline(
     *,
     read_from_stub: bool = False,
     track_stub_path: str | None = None,
+    use_track_stub: bool = False,
     on_step: Optional[Callable[[int, str, str], None]] = None,
 ) -> dict:
     """Run the full CV + tactical pipeline and return raw + adapted outputs."""
@@ -157,7 +173,9 @@ def execute_pipeline(
     _notify(2, "tracking", _PIPELINE_STEPS[1][2])
     tracker = Tracker(os.path.join(_MODELS_DIR, "best.pt"))
 
-    colab_stub = _should_use_track_stub(track_stub_path)
+    colab_stub = _resolve_track_stub(
+        video_path, track_stub_path, use_track_stub=use_track_stub
+    )
     if colab_stub:
         print(f"[pipeline] Loading Colab tracking stub: {colab_stub}", flush=True)
         tracks, stub_fps, enriched = load_track_stub(colab_stub)
@@ -331,6 +349,7 @@ def run_pipeline(
     jobs_store: dict,
     *,
     track_stub_path: str | None = None,
+    use_track_stub: bool = False,
 ) -> None:
     """Execute pipeline for a background API job."""
 
@@ -349,6 +368,7 @@ def run_pipeline(
             video_path,
             read_from_stub=False,
             track_stub_path=stub_path,
+            use_track_stub=use_track_stub,
             on_step=_step,
         )
         job: JobState = jobs_store[job_id]

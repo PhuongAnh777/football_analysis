@@ -47,7 +47,7 @@ def run_tracking(
     tracker.add_appearance_to_tracks(tracks, video_frames)
     tracker.add_position_to_tracks(tracks)
 
-    save_track_stub(stub_path, tracks, fps, enriched=True)
+    save_track_stub(stub_path, tracks, fps, enriched=True, source_video=video_path)
     print(f"[tracking] Saved enriched stub → {stub_path}")
 
     del video_frames, tracks, tracker

@@ -36,8 +36,29 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
+
+def _load_dotenv() -> None:
+    """Load repo-root `.env` into os.environ (does not override existing vars)."""
+    env_path = os.path.join(_PROJECT_ROOT, ".env")
+    if not os.path.isfile(env_path):
+        return
+    with open(env_path, encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_dotenv()
+
 from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
 from api.pipeline_runner import run_pipeline
+from utils.stub_io import remove_track_stub
 
 _DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
 
@@ -131,6 +152,10 @@ def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
     """Colab GPU tracking (optional) → local pipeline."""
     colab_url = _colab_tracking_url()
     stub_path = os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
+    use_stub = False
+
+    # Video mới → không dùng stub cũ của lần chạy trước
+    remove_track_stub(stub_path)
 
     if colab_url:
         from api.colab_tracking_client import fetch_colab_tracking_stub
@@ -149,6 +174,7 @@ def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
                 stub_path,
                 on_progress=_on_colab_progress,
             )
+            use_stub = True
         except Exception as exc:
             import traceback as _tb
 
@@ -159,7 +185,13 @@ def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
             job.error = f"{type(exc).__name__}: {exc}\n{_tb.format_exc()}"
             return
 
-    run_pipeline(video_path, job_id, jobs, track_stub_path=stub_path)
+    run_pipeline(
+        video_path,
+        job_id,
+        jobs,
+        track_stub_path=stub_path,
+        use_track_stub=use_stub,
+    )
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
