@@ -16,7 +16,7 @@ const initialState = {
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'SET_JOB':        return { ...state, jobId: action.jobId, status: 'processing', error: null }
+    case 'SET_JOB':        return { ...state, jobId: action.jobId, status: 'processing', error: null, results: null }
     case 'SET_UPLOADING':  return { ...state, status: 'uploading', uploadProgress: action.progress }
     case 'SET_PROCESSING': return { ...state, status: 'processing',
       processingProgress: action.progress ?? state.processingProgress,

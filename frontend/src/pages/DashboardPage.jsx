@@ -79,10 +79,12 @@ export default function DashboardPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (results || !jobId) return
+    if (!jobId) return
     setLoading(true)
+    setError(null)
+    setResults(null)
     getResults(jobId).then(setResults).catch(e => setError(e.message)).finally(() => setLoading(false))
-  }, [jobId, results, setResults])
+  }, [jobId, setResults])
 
   const evaluation = extractEvaluation(results)
   const team1 = extractTeamData(results, 0)

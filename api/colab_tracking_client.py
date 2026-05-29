@@ -10,8 +10,11 @@ from typing import Callable, Optional
 
 import requests
 
+from utils.stub_io import stub_matches_video, video_fingerprint
+
 _DEFAULT_POLL_SEC = 3.0
 _DEFAULT_TIMEOUT_SEC = 60 * 60  # 1 hour
+_MIN_TRACKING_SEC = 15.0  # video dài — tracking GPU không thể xong trong vài giây
 
 
 def _headers() -> dict[str, str]:
@@ -37,10 +40,29 @@ def fetch_colab_tracking_stub(
     """
     base = _normalize_base(colab_base_url)
     os.makedirs(os.path.dirname(os.path.abspath(dest_stub_path)), exist_ok=True)
+    local_md5 = video_fingerprint(video_path)
+    local_size = os.path.getsize(video_path)
 
     def _notify(msg: str) -> None:
         if on_progress:
             on_progress(msg)
+
+    health = requests.get(f"{base}/api/health", headers=_headers(), timeout=30)
+    health.raise_for_status()
+    health_data = health.json()
+    if health_data.get("service") != "colab-tracking":
+        raise RuntimeError(
+            f"URL không phải Colab tracking server: {health_data!r}"
+        )
+    if not health_data.get("gpu_available"):
+        raise RuntimeError(
+            "Colab chưa bật GPU. Mở colab_tracking.ipynb → Runtime → T4 GPU → chạy lại cell server."
+        )
+    print(
+        f"[colab] health OK gpu={health_data.get('gpu_name')} "
+        f"local_video md5={local_md5} size={local_size:,}",
+        flush=True,
+    )
 
     _notify("Đang gửi video lên Colab GPU...")
     print(f"[colab] POST {base}/api/track ← {video_path}", flush=True)
@@ -54,6 +76,12 @@ def fetch_colab_tracking_stub(
     resp.raise_for_status()
     payload = resp.json()
     job_id = payload["job_id"]
+    if payload.get("video_md5") and payload["video_md5"] != local_md5:
+        raise RuntimeError(
+            "Colab nhận video khác file local — upload lại."
+        )
+    print(f"[colab] remote job_id={job_id}", flush=True)
+    t0 = time.monotonic()
 
     deadline = time.monotonic() + timeout_sec
     while time.monotonic() < deadline:
@@ -69,6 +97,19 @@ def fetch_colab_tracking_stub(
             raise RuntimeError(data.get("error") or "Colab tracking failed.")
 
         if data.get("status") == "done":
+            elapsed = time.monotonic() - t0
+            if local_size > 5_000_000 and elapsed < _MIN_TRACKING_SEC:
+                raise RuntimeError(
+                    f"Colab báo xong sau {elapsed:.0f}s — có thể chưa chạy GPU thật "
+                    f"(cần > {_MIN_TRACKING_SEC:.0f}s). Xem log cell Colab."
+                )
+            if data.get("video_md5") and data["video_md5"] != local_md5:
+                raise RuntimeError("Colab tracking xong nhưng MD5 video không khớp.")
+            print(
+                f"[colab] tracking done in {elapsed:.0f}s "
+                f"remote_md5={data.get('video_md5')}",
+                flush=True,
+            )
             break
 
         step = data.get("current_step") or "Đang tracking trên Colab..."
@@ -107,5 +148,14 @@ def fetch_colab_tracking_stub(
         )
 
     os.replace(tmp_path, dest_stub_path)
-    _notify("Đã nhận stub từ Colab.")
+
+    if not stub_matches_video(dest_stub_path, video_path):
+        os.remove(dest_stub_path)
+        raise RuntimeError(
+            "Stub từ Colab không khớp video vừa upload — Colab có thể dùng file cũ. "
+            "Trên Colab: git pull → chạy lại cell server."
+        )
+
+    _notify("Đã nhận stub từ Colab (GPU).")
+    print(f"[colab] stub OK md5_video={local_md5}", flush=True)
     return dest_stub_path

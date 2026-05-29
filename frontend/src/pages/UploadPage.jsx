@@ -85,6 +85,9 @@ export default function UploadPage() {
       })
       if (data.status === 'done' || data.status === 'completed') {
         const results = await getResults(jobId)
+        if (results.input_md5) {
+          console.info('[analyze] input', results.input_filename, results.input_md5)
+        }
         setDone(results)
         navigate('/dashboard')
       } else if (data.status === 'error' || data.status === 'failed') {
@@ -184,6 +187,7 @@ export default function UploadPage() {
             : <div className="space-y-1">
                 <p className="text-text-primary font-semibold text-lg">Kéo thả video vào đây hoặc click để chọn file</p>
                 <p className="text-text-secondary text-sm">Hỗ trợ: <span className="text-text-primary font-medium">MP4, AVI</span> | Tối đa <span className="text-text-primary font-medium">500MB</span></p>
+                <p className="text-amber-400/90 text-xs">Chọn đúng file mới — kiểm tra dung lượng trước khi phân tích (vd. 100.mp4 ≈ 20MB, không phải ~50MB).</p>
               </div>}
           </div>
         </div>
