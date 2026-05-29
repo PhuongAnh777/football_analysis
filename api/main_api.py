@@ -57,8 +57,11 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
-from api.pipeline_runner import _job_stub_path, run_pipeline
+from api.job_persistence import load_job_meta, load_job_result
+from api.pipeline_runner import _convert_to_mp4, _job_output_dir, _job_stub_path, run_pipeline
 from utils.stub_io import remove_track_stub, video_fingerprint
+
+_OUTPUT_VIDEOS_ROOT = os.path.join(_PROJECT_ROOT, "output_videos")
 
 _DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
 _INPUT_VIDEOS_DIR = os.path.join(_PROJECT_ROOT, "input_videos")
@@ -133,6 +136,17 @@ def _require_job(job_id: str):
     return job
 
 
+def _get_job_or_disk(job_id: str):
+    """Job trong RAM, hoặc metadata đã lưu disk sau khi server reload."""
+    job = get_job(job_id)
+    if job is not None:
+        return job, False
+    meta = load_job_meta(job_id, _OUTPUT_VIDEOS_ROOT)
+    if meta is None:
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
+    return meta, True
+
+
 def _model_loaded() -> bool:
     """Check whether the YOLO model file exists on disk."""
     return os.path.exists(os.path.join(_PROJECT_ROOT, "models", "best.pt"))
@@ -141,6 +155,41 @@ def _model_loaded() -> bool:
 def _track_stub_loaded() -> bool:
     stub = os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
     return os.path.exists(stub)
+
+
+def _resolve_job_video_path(job_id: str, stored_path: str | None) -> str | None:
+    """Ưu tiên MP4 trong thư mục job (trình duyệt không phát AVI XVID ổn định)."""
+    job_dir = os.path.abspath(_job_output_dir(job_id))
+    if not os.path.isdir(job_dir):
+        return None
+
+    def _in_job_dir(path: str) -> bool:
+        abs_path = os.path.abspath(path)
+        prefix = os.path.normcase(job_dir + os.sep)
+        return os.path.normcase(abs_path).startswith(prefix)
+
+    for name in ("output_video.mp4", "output_video.avi"):
+        path = os.path.join(job_dir, name)
+        if os.path.isfile(path):
+            return path
+
+    if stored_path and os.path.isfile(stored_path) and _in_job_dir(stored_path):
+        return os.path.abspath(stored_path)
+    return None
+
+
+def _ensure_browser_video(path: str) -> str:
+    """Chuyển AVI → MP4 nếu cần (Chrome/Edge hầu như không play XVID trong <video>)."""
+    if path.lower().endswith(".mp4") and os.path.isfile(path):
+        return path
+    if path.lower().endswith(".avi"):
+        mp4_path = path[:-4] + ".mp4"
+        if os.path.isfile(mp4_path):
+            return mp4_path
+        converted = _convert_to_mp4(path)
+        if converted.lower().endswith(".mp4") and os.path.isfile(converted):
+            return converted
+    return path
 
 
 def _colab_tracking_url() -> str | None:
@@ -233,9 +282,16 @@ async def analyze(video: UploadFile = File(...)):
     async with aiofiles.open(input_path, "wb") as fh:
         await fh.write(contents)
 
+    input_md5 = video_fingerprint(input_path)
+    job = jobs[job_id]
+    job.input_path = input_path
+    job.input_md5 = input_md5
+    job.input_size_bytes = len(contents)
+    job.input_filename = video.filename or os.path.basename(input_path)
+
     print(
-        f"[analyze] job={job_id} saved {input_path} "
-        f"({len(contents):,} bytes, md5={video_fingerprint(input_path)})",
+        f"[analyze] job={job_id} file={job.input_filename!r} "
+        f"({len(contents):,} bytes, md5={input_md5}) → {input_path}",
         flush=True,
     )
 
@@ -263,6 +319,9 @@ async def status(job_id: str):
         "current_step": job.current_step,
         "step_key":     job.step_key,
         "error":        job.error,
+        "input_filename": job.input_filename,
+        "input_md5":    job.input_md5,
+        "input_size_bytes": job.input_size_bytes,
     }
 
 
@@ -274,7 +333,29 @@ async def results(job_id: str):
 
     The ``charts`` field contains base64-encoded PNG strings.
     """
-    job = _require_job(job_id)
+    job_or_meta, from_disk = _get_job_or_disk(job_id)
+
+    if from_disk:
+        if job_or_meta.get("status") != "done":
+            raise HTTPException(status_code=404, detail=f"Job '{job_id}' not ready.")
+        result = load_job_result(job_id, _OUTPUT_VIDEOS_ROOT) or {}
+        return {
+            "job_id": job_id,
+            "input_filename": job_or_meta.get("input_filename", ""),
+            "input_md5": job_or_meta.get("input_md5"),
+            "input_size_bytes": job_or_meta.get("input_size_bytes", 0),
+            "evaluation": result.get("evaluation", {}),
+            "match_report": result.get("match_report", {}),
+            "charts": result.get("charts", {}),
+            "teams": result.get("teams", []),
+            "players": result.get("players", []),
+            "timeline": result.get("timeline", []),
+            "notable_players": result.get("notable_players", {}),
+            "fps": result.get("fps", 24),
+            "video_url": f"/api/video/{job_id}",
+        }
+
+    job = job_or_meta
 
     if job.status == "processing":
         return JSONResponse(
@@ -296,6 +377,9 @@ async def results(job_id: str):
     result = job.result or {}
     return {
         "job_id":           job.job_id,
+        "input_filename":   job.input_filename,
+        "input_md5":        job.input_md5,
+        "input_size_bytes": job.input_size_bytes,
         "evaluation":       result.get("evaluation", {}),
         "match_report":     result.get("match_report", {}),
         "charts":           result.get("charts", {}),
@@ -317,19 +401,25 @@ async def video(job_id: str, request: Request):
     The server attempts to serve an MP4 file (converted via ffmpeg when
     available); if only the AVI exists it falls back to ``video/x-msvideo``.
     """
-    job = _require_job(job_id)
+    job_or_meta, from_disk = _get_job_or_disk(job_id)
 
-    if job.status != "done":
+    status = job_or_meta.get("status") if from_disk else job_or_meta.status
+    if status != "done":
         raise HTTPException(
             status_code=425,
             detail="Video is not ready yet. Check /api/status/{job_id}.",
         )
 
-    video_path = job.video_path
-    if not video_path or not os.path.exists(video_path):
-        raise HTTPException(status_code=404, detail="Video file not found on server.")
+    stored = job_or_meta.get("video_path") if from_disk else job_or_meta.video_path
+    video_path = _resolve_job_video_path(job_id, stored)
+    if not video_path:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Video not found for job '{job_id}'. Run analysis again.",
+        )
 
-    media_type   = "video/mp4" if video_path.endswith(".mp4") else "video/x-msvideo"
+    video_path = _ensure_browser_video(video_path)
+    media_type = "video/mp4" if video_path.lower().endswith(".mp4") else "video/x-msvideo"
     file_size    = os.path.getsize(video_path)
     range_header = request.headers.get("range")
 

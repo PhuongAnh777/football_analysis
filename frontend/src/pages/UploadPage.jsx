@@ -110,6 +110,7 @@ export default function UploadPage() {
   async function handleAnalyze() {
     if (!file) return
     try {
+      reset()
       setUploading(0)
       const { job_id } = await uploadVideo(file, pct => setUploading(pct))
       setJob(job_id)

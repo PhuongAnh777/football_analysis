@@ -298,10 +298,10 @@ def execute_pipeline(
         if os.path.exists(stale_path):
             os.remove(stale_path)
 
-    avi_path = os.path.join(out_dir, "output_video.avi")
-    save_video(video_frames, avi_path, fps=fps)
-
-    video_output_path = _convert_to_mp4(avi_path)
+    mp4_path = os.path.join(out_dir, "output_video.mp4")
+    video_output_path = save_video(video_frames, mp4_path, fps=fps)
+    if not video_output_path.lower().endswith(".mp4"):
+        video_output_path = _convert_to_mp4(video_output_path)
     print(f"[pipeline] Output video: {video_output_path}", flush=True)
 
     generate_heatmap(
@@ -411,6 +411,22 @@ def run_pipeline(
         job.progress = 1.0
         job.current_step = "Hoàn thành"
         job.step_key = "done"
+
+        from api.job_persistence import save_job_meta, save_job_result
+
+        save_job_meta(
+            output_dir,
+            {
+                "job_id": job_id,
+                "status": "done",
+                "video_path": job.video_path,
+                "input_path": job.input_path,
+                "input_md5": job.input_md5,
+                "input_filename": job.input_filename,
+                "input_size_bytes": job.input_size_bytes,
+            },
+        )
+        save_job_result(output_dir, job.result)
 
     except Exception as exc:
         error_detail = f"{type(exc).__name__}: {exc}\n{tb.format_exc()}"

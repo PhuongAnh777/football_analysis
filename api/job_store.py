@@ -24,6 +24,10 @@ class JobState:
     error: Optional[str] = None
     result: Optional[dict] = None       # populated when status == "done"
     video_path: Optional[str] = None    # path to output video file
+    input_path: Optional[str] = None
+    input_md5: Optional[str] = None
+    input_size_bytes: int = 0
+    input_filename: str = ""
     created_at: datetime = field(default_factory=datetime.utcnow)
 
 

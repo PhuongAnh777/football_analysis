@@ -1,3 +1,5 @@
+import os
+
 import cv2
 
 
@@ -36,8 +38,25 @@ def read_video(video_path):
     return frames, float(fps)
 
 def save_video(output_video_frames, output_video_path, fps=24.0):
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(output_video_path, fourcc, float(fps), (output_video_frames[0].shape[1], output_video_frames[0].shape[0]))
-    for frame in output_video_frames:
-        out.write(frame)
-    out.release()
+    """Ghi video; ưu tiên MP4 (mp4v) để phát được trên trình duyệt."""
+    if not output_video_frames:
+        raise ValueError("No frames to save")
+
+    path = output_video_path
+    if path.lower().endswith(".avi"):
+        path = path[:-4] + ".mp4"
+
+    h, w = output_video_frames[0].shape[:2]
+    for fourcc_name in ("mp4v", "avc1", "XVID"):
+        fourcc = cv2.VideoWriter_fourcc(*fourcc_name)
+        out = cv2.VideoWriter(path, fourcc, float(fps), (w, h))
+        if not out.isOpened():
+            continue
+        for frame in output_video_frames:
+            out.write(frame)
+        out.release()
+        if os.path.isfile(path) and os.path.getsize(path) > 1000:
+            print(f"[save_video] Wrote {path} (fourcc={fourcc_name})", flush=True)
+            return path
+
+    raise RuntimeError(f"Could not write video: {path}")
