@@ -43,6 +43,7 @@ def fetch_colab_tracking_stub(
             on_progress(msg)
 
     _notify("Đang gửi video lên Colab GPU...")
+    print(f"[colab] POST {base}/api/track ← {video_path}", flush=True)
     with open(video_path, "rb") as fh:
         resp = requests.post(
             f"{base}/api/track",

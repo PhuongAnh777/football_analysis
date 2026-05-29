@@ -24,7 +24,7 @@ api.interceptors.response.use(
 )
 
 export function getVideoUrl(jobId) {
-  return `${API_BASE}/video/${jobId}`
+  return `${API_BASE}/video/${jobId}?v=${encodeURIComponent(jobId)}`
 }
 
 export async function uploadVideo(file, onProgress) {

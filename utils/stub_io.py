@@ -60,6 +60,13 @@ def remove_track_stub(path: str) -> None:
         os.remove(path)
 
 
+def track_frame_count(tracks: dict) -> int:
+    players = tracks.get("players")
+    if isinstance(players, list):
+        return len(players)
+    return 0
+
+
 def load_track_stub(path: str) -> tuple[dict, float | None, bool]:
     """Return ``(tracks, fps, enriched)``. Supports legacy raw-tracks pickles."""
     with open(path, "rb") as fh:

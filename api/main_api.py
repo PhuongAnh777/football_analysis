@@ -50,20 +50,20 @@ def _load_dotenv() -> None:
             key, _, value = line.partition("=")
             key = key.strip()
             value = value.strip().strip('"').strip("'")
-            if key and key not in os.environ:
+            if key:
                 os.environ[key] = value
 
 
 _load_dotenv()
 
 from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
-from api.pipeline_runner import run_pipeline
-from utils.stub_io import remove_track_stub
+from api.pipeline_runner import _job_stub_path, run_pipeline
+from utils.stub_io import remove_track_stub, video_fingerprint
 
 _DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
+_INPUT_VIDEOS_DIR = os.path.join(_PROJECT_ROOT, "input_videos")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-_INPUT_VIDEO_PATH = os.path.join(_PROJECT_ROOT, "input_videos", "input_video.mp4")
 _MAX_UPLOAD_BYTES  = 500 * 1024 * 1024   # 500 MB
 _PIPELINE_TIMEOUT  = 30 * 60             # 30 minutes
 _CLEANUP_INTERVAL  = 30 * 60             # 30 minutes
@@ -144,6 +144,7 @@ def _track_stub_loaded() -> bool:
 
 
 def _colab_tracking_url() -> str | None:
+    _load_dotenv()  # đọc lại .env (uvicorn --reload không theo dõi file .env)
     url = os.getenv("COLAB_TRACKING_URL", "").strip()
     return url or None
 
@@ -151,13 +152,14 @@ def _colab_tracking_url() -> str | None:
 def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
     """Colab GPU tracking (optional) → local pipeline."""
     colab_url = _colab_tracking_url()
-    stub_path = os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
+    stub_path = _job_stub_path(job_id)
     use_stub = False
 
-    # Video mới → không dùng stub cũ của lần chạy trước
     remove_track_stub(stub_path)
+    remove_track_stub(os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB))
 
     if colab_url:
+        print(f"[analyze] Colab GPU tracking → {colab_url}", flush=True)
         from api.colab_tracking_client import fetch_colab_tracking_stub
 
         job = jobs[job_id]
@@ -184,6 +186,12 @@ def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
             job.current_step = "Lỗi tracking Colab"
             job.error = f"{type(exc).__name__}: {exc}\n{_tb.format_exc()}"
             return
+    else:
+        print(
+            "[analyze] COLAB_TRACKING_URL trống — tracking chạy trên máy local (GPU Colab không dùng). "
+            "Điền .env rồi upload lại.",
+            flush=True,
+        )
 
     run_pipeline(
         video_path,
@@ -218,17 +226,24 @@ async def analyze(video: UploadFile = File(...)):
             detail=f"File too large. Maximum allowed size is {_MAX_UPLOAD_BYTES // (1024**2)} MB.",
         )
 
-    os.makedirs(os.path.dirname(_INPUT_VIDEO_PATH), exist_ok=True)
-    async with aiofiles.open(_INPUT_VIDEO_PATH, "wb") as fh:
+    job_id = create_job()
+    input_path = os.path.join(_INPUT_VIDEOS_DIR, f"{job_id}.mp4")
+
+    os.makedirs(_INPUT_VIDEOS_DIR, exist_ok=True)
+    async with aiofiles.open(input_path, "wb") as fh:
         await fh.write(contents)
 
-    job_id = create_job()
+    print(
+        f"[analyze] job={job_id} saved {input_path} "
+        f"({len(contents):,} bytes, md5={video_fingerprint(input_path)})",
+        flush=True,
+    )
 
     loop = asyncio.get_event_loop()
     loop.run_in_executor(
         _executor,
         _run_job_with_optional_colab,
-        _INPUT_VIDEO_PATH,
+        input_path,
         job_id,
     )
 
@@ -373,7 +388,7 @@ async def video(job_id: str, request: Request):
         headers    = {
             "Accept-Ranges":  "bytes",
             "Content-Length": str(file_size),
-            "Cache-Control":  "no-cache",
+            "Cache-Control":  "no-store, no-cache, must-revalidate",
         },
     )
 

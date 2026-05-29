@@ -24,7 +24,12 @@ if _PROJECT_ROOT not in sys.path:
 
 from utils import read_video, save_video
 from utils.pipeline_helpers import assign_ball_to_tracks, extract_passing_events
-from utils.stub_io import load_track_stub, stub_matches_video
+from utils.stub_io import (
+    load_track_stub,
+    stub_matches_video,
+    track_frame_count,
+    video_fingerprint,
+)
 from trackers import Tracker, merge_player_tracks
 from team_assigner import TeamAssigner
 from camera_movement_estimator import CameraMovementEstimator
@@ -156,6 +161,7 @@ def execute_pipeline(
     read_from_stub: bool = False,
     track_stub_path: str | None = None,
     use_track_stub: bool = False,
+    output_dir: str | None = None,
     on_step: Optional[Callable[[int, str, str], None]] = None,
 ) -> dict:
     """Run the full CV + tactical pipeline and return raw + adapted outputs."""
@@ -164,7 +170,14 @@ def execute_pipeline(
         if on_step:
             on_step(step_n, step_key, label)
 
-    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    out_dir = output_dir or _OUTPUT_DIR
+    os.makedirs(out_dir, exist_ok=True)
+
+    video_md5 = video_fingerprint(video_path)
+    print(
+        f"[pipeline] Input: {video_path} ({os.path.getsize(video_path):,} bytes, md5={video_md5})",
+        flush=True,
+    )
 
     _notify(1, "reading", _PIPELINE_STEPS[0][2])
     video_frames, fps = read_video(video_path)
@@ -179,6 +192,12 @@ def execute_pipeline(
     if colab_stub:
         print(f"[pipeline] Loading Colab tracking stub: {colab_stub}", flush=True)
         tracks, stub_fps, enriched = load_track_stub(colab_stub)
+        stub_frames = track_frame_count(tracks)
+        if stub_frames != len(video_frames):
+            raise ValueError(
+                f"Stub có {stub_frames} frame nhưng video mới có {len(video_frames)} frame — "
+                "tracking Colab không khớp video (upload lại hoặc chạy tracking lại)."
+            )
         if stub_fps is not None:
             fps = stub_fps
             fps_int = max(1, round(fps))
@@ -242,8 +261,8 @@ def execute_pipeline(
     engine = ThresholdEngine(fps=fps_int, R_pressing=8.0)
     scored_report = engine.compute(tactical_report, tracks)
 
-    _dump_json(tactical_report, os.path.join(_OUTPUT_DIR, "tactical_report.json"))
-    _dump_json(scored_report, os.path.join(_OUTPUT_DIR, "scored_report.json"))
+    _dump_json(tactical_report, os.path.join(out_dir, "tactical_report.json"))
+    _dump_json(scored_report, os.path.join(out_dir, "scored_report.json"))
 
     _notify(7, "report", _PIPELINE_STEPS[6][2])
     builder = ReportBuilder(window_frames=int(30 * fps_int))
@@ -252,7 +271,7 @@ def execute_pipeline(
         tactical_report=tactical_report,
         total_frames=len(tracks["players"]),
     )
-    _dump_json(match_report, os.path.join(_OUTPUT_DIR, "match_report.json"))
+    _dump_json(match_report, os.path.join(out_dir, "match_report.json"))
 
     llm_eval: dict = {}
     llm_api_key = os.getenv("OPENAI_API_KEY", "")
@@ -264,7 +283,7 @@ def execute_pipeline(
                 base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
             )
             llm_eval = narrator.analyze(match_report)
-            _dump_json(llm_eval, os.path.join(_OUTPUT_DIR, "llm_analysis.json"))
+            _dump_json(llm_eval, os.path.join(out_dir, "llm_analysis.json"))
         except Exception as exc:
             llm_eval = {"warning": f"LLM analysis failed: {exc}"}
 
@@ -274,30 +293,36 @@ def execute_pipeline(
     cam_estimator.draw_camera_movement(video_frames, camera_movement_per_frame)
     speed_estimator.draw_speed_and_distance(video_frames, tracks)
 
-    avi_path = os.path.join(_OUTPUT_DIR, "output_video.avi")
+    for stale in ("output_video.avi", "output_video.mp4"):
+        stale_path = os.path.join(out_dir, stale)
+        if os.path.exists(stale_path):
+            os.remove(stale_path)
+
+    avi_path = os.path.join(out_dir, "output_video.avi")
     save_video(video_frames, avi_path, fps=fps)
 
     video_output_path = _convert_to_mp4(avi_path)
+    print(f"[pipeline] Output video: {video_output_path}", flush=True)
 
     generate_heatmap(
         tracks,
         team_assigner.team_colors,
-        output_path=os.path.join(_OUTPUT_DIR, "heatmap.png"),
+        output_path=os.path.join(out_dir, "heatmap.png"),
     )
     generate_passing_network(
         tracks,
         team_assigner.team_colors,
-        output_path=os.path.join(_OUTPUT_DIR, "passing_network.png"),
+        output_path=os.path.join(out_dir, "passing_network.png"),
     )
 
     tracks_t1 = _filter_tracks_by_team(tracks, 1)
     tracks_t2 = _filter_tracks_by_team(tracks, 2)
 
     chart_paths = {
-        "heatmap_team1": os.path.join(_OUTPUT_DIR, "heatmap_team1.png"),
-        "heatmap_team2": os.path.join(_OUTPUT_DIR, "heatmap_team2.png"),
-        "passing_network_team1": os.path.join(_OUTPUT_DIR, "passing_network_team1.png"),
-        "passing_network_team2": os.path.join(_OUTPUT_DIR, "passing_network_team2.png"),
+        "heatmap_team1": os.path.join(out_dir, "heatmap_team1.png"),
+        "heatmap_team2": os.path.join(out_dir, "heatmap_team2.png"),
+        "passing_network_team1": os.path.join(out_dir, "passing_network_team1.png"),
+        "passing_network_team2": os.path.join(out_dir, "passing_network_team2.png"),
     }
     generate_heatmap(tracks_t1, team_assigner.team_colors, output_path=chart_paths["heatmap_team1"])
     generate_heatmap(tracks_t2, team_assigner.team_colors, output_path=chart_paths["heatmap_team2"])
@@ -337,10 +362,18 @@ def execute_pipeline(
                 2: float(dist.get("team_2", 0)),
             },
             "output_video_path": video_output_path,
-            "heatmap_path": os.path.join(_OUTPUT_DIR, "heatmap.png"),
-            "passing_network_path": os.path.join(_OUTPUT_DIR, "passing_network.png"),
+            "heatmap_path": os.path.join(out_dir, "heatmap.png"),
+            "passing_network_path": os.path.join(out_dir, "passing_network.png"),
         },
     }
+
+
+def _job_output_dir(job_id: str) -> str:
+    return os.path.join(_OUTPUT_DIR, job_id)
+
+
+def _job_stub_path(job_id: str) -> str:
+    return os.path.join(_PROJECT_ROOT, "stubs", f"{job_id}_track_stubs.pkl")
 
 
 def run_pipeline(
@@ -359,9 +392,8 @@ def run_pipeline(
         job.current_step = label
         job.step_key = step_key
 
-    stub_path = track_stub_path or os.getenv(
-        "TRACK_STUB_PATH", _DEFAULT_TRACK_STUB
-    )
+    stub_path = track_stub_path or _job_stub_path(job_id)
+    output_dir = _job_output_dir(job_id)
 
     try:
         outputs = execute_pipeline(
@@ -369,6 +401,7 @@ def run_pipeline(
             read_from_stub=False,
             track_stub_path=stub_path,
             use_track_stub=use_track_stub,
+            output_dir=output_dir,
             on_step=_step,
         )
         job: JobState = jobs_store[job_id]
