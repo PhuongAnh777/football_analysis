@@ -33,6 +33,110 @@ import numpy as np
 _PITCH_WIDTH = 68.0
 _PITCH_DEPTH = 23.32
 
+# ---------------------------------------------------------------------------
+# Formation catalogue  (always 10 outfield players, GK excluded separately)
+# ---------------------------------------------------------------------------
+# Each entry is a tuple of line counts summing to 10.
+#   3-line  → DEF / MID / FWD          e.g. (4, 3, 3)  → "4-3-3"
+#   4-line  → DEF / DM  / AM  / FWD    e.g. (4, 2, 3, 1) → "4-2-3-1"
+_FORMATION_CATALOGUE: list[tuple[int, ...]] = [
+    # ── 3-line ───────────────────────────────────────────────────────────
+    (3, 4, 3),
+    (3, 5, 2),
+    (3, 6, 1),
+    (4, 2, 4),
+    (4, 3, 3),
+    (4, 4, 2),
+    (4, 5, 1),
+    (5, 2, 3),
+    (5, 3, 2),
+    (5, 4, 1),
+    # ── 4-line (midfield split into two bands) ────────────────────────────
+    (3, 4, 2, 1),   # 3-4-2-1
+    (3, 4, 1, 2),   # 3-4-1-2
+    (3, 5, 1, 1),   # 3-5-1-1
+    (4, 1, 4, 1),   # 4-1-4-1
+    (4, 2, 2, 2),   # 4-2-2-2 (box midfield)
+    (4, 2, 3, 1),   # 4-2-3-1
+    (4, 3, 2, 1),   # 4-3-2-1 (Christmas tree)
+    (4, 4, 1, 1),   # 4-4-1-1
+    (5, 3, 1, 1),   # 5-3-1-1
+]
+
+_OUTFIELD_COUNT = 10
+
+# Line labels keyed by number of bands in the template.
+_LINE_LABELS: dict[int, list[str]] = {
+    3: ["DEF", "MID", "FWD"],
+    4: ["DEF", "DM",  "AM",  "FWD"],
+}
+
+
+def _formation_string(template: tuple[int, ...]) -> str:
+    return "-".join(str(n) for n in template)
+
+
+def _assign_lines(
+    sorted_p: list[tuple[int, float]],
+    template: tuple[int, ...],
+) -> dict[str, list[int]]:
+    """Map sorted player ids onto named lines from *template*."""
+    labels = _LINE_LABELS[len(template)]
+    lines: dict[str, list[int]] = {lbl: [] for lbl in labels}
+    idx = 0
+    for lbl, count in zip(labels, template):
+        lines[lbl] = [int(sorted_p[i][0]) for i in range(idx, idx + count)]
+        idx += count
+    return lines
+
+
+def _match_formation(
+    ys_sorted: list[float],
+) -> tuple[tuple[int, ...], float]:
+    """Pick the best 10-man formation by gap-based template matching.
+
+    Players must already be sorted by ascending median-y (most defensive
+    first).  For each catalogue entry we score the sum of y-gaps at every
+    line-break position; the highest-scoring template wins.
+
+    Returns
+    -------
+    (template, confidence)
+        *template* is e.g. ``(4, 2, 3, 1)``; *confidence* is the fraction
+        of total y-spread explained by the break gaps (0-1).
+    """
+    n = len(ys_sorted)
+    if n != _OUTFIELD_COUNT:
+        return ((4, 4, 2), 0.0)
+
+    gaps = [ys_sorted[i + 1] - ys_sorted[i] for i in range(n - 1)]
+    total_spread = max(ys_sorted[-1] - ys_sorted[0], 1e-6)
+
+    best: tuple[int, ...] = _FORMATION_CATALOGUE[0]
+    best_score = -1.0
+
+    for template in _FORMATION_CATALOGUE:
+        if sum(template) != _OUTFIELD_COUNT:
+            continue
+
+        # Cumulative split indices → gap positions between lines.
+        break_indices: list[int] = []
+        cum = 0
+        for count in template[:-1]:
+            cum += count
+            break_indices.append(cum - 1)
+
+        if any(b < 0 or b >= len(gaps) for b in break_indices):
+            continue
+
+        score = sum(gaps[b] for b in break_indices)
+        if score > best_score:
+            best_score = score
+            best = template
+
+    confidence = float(np.clip(best_score / total_spread, 0.0, 1.0))
+    return best, confidence
+
 
 class TacticalAnalyzer:
     """Compute tactical metrics from pipeline tracks.
@@ -294,40 +398,81 @@ class TacticalAnalyzer:
                 }
                 continue
 
-            median_ys = {tid: float(np.median(d["ys"])) for tid, d in team_players.items()}
+            # ── Step 1: build a stable player pool (GK + 10 outfield) ────
+            # Ghost/duplicate tracks appear in fewer frames; real players
+            # appear consistently throughout the video.
+            stable = sorted(
+                team_players.items(), key=lambda kv: len(kv[1]["ys"]), reverse=True
+            )
+            pool = dict(stable[:15])   # buffer for ghost tracks / mis-assignments
+
+            median_ys = {tid: float(np.median(d["ys"])) for tid, d in pool.items()}
             sorted_p  = sorted(median_ys.items(), key=lambda x: x[1])
-            n_p       = len(sorted_p)
 
-            # Line counts: prefer 4-X-Y patterns
-            if n_p >= 10:
-                def_n = 4
-                fwd_n = 3 if n_p >= 11 else 2
-            elif n_p >= 7:
-                def_n = 3
-                fwd_n = 2
-            else:
-                def_n = max(1, n_p // 3)
-                fwd_n = max(1, n_p // 4)
-            mid_n = max(1, n_p - def_n - fwd_n)
+            # ── Step 2: remove goalkeeper ─────────────────────────────────
+            # The GK sits at one y-extreme and moves the least (lowest std).
+            gk_tid: int | None = None
+            if len(sorted_p) >= 2:
+                cand_lo, cand_hi = sorted_p[0], sorted_p[-1]
+                std_lo = float(np.std(pool[cand_lo[0]]["ys"]))
+                std_hi = float(np.std(pool[cand_hi[0]]["ys"]))
+                gk_tid = cand_lo[0] if std_lo <= std_hi else cand_hi[0]
+                sorted_p = [p for p in sorted_p if p[0] != gk_tid]
 
-            lines = {
-                "DEF": [int(sorted_p[i][0]) for i in range(def_n)],
-                "MID": [int(sorted_p[i][0]) for i in range(def_n, def_n + mid_n)],
-                "FWD": [int(sorted_p[i][0]) for i in range(def_n + mid_n, n_p)],
-            }
-            formation = f"{def_n}-{mid_n}-{fwd_n}"
+            # ── Step 3: pick exactly 10 outfield players ──────────────────
+            if len(sorted_p) > _OUTFIELD_COUNT:
+                # Keep the 10 most stable tracks, then re-sort by depth (y).
+                sorted_p = sorted(
+                    sorted_p,
+                    key=lambda p: len(pool[p[0]]["ys"]),
+                    reverse=True,
+                )[:_OUTFIELD_COUNT]
+                sorted_p = sorted(sorted_p, key=lambda x: x[1])
+            elif len(sorted_p) < _OUTFIELD_COUNT:
+                # Top up from the stable list (excluding GK) if possible.
+                used  = {p[0] for p in sorted_p} | ({gk_tid} if gk_tid else set())
+                extra = [
+                    (tid, float(np.median(d["ys"])))
+                    for tid, d in stable
+                    if tid not in used
+                ]
+                sorted_p = sorted(sorted_p + extra, key=lambda x: x[1])
+                if len(sorted_p) > _OUTFIELD_COUNT:
+                    sorted_p = sorted(
+                        sorted_p,
+                        key=lambda p: len(team_players[p[0]]["ys"]),
+                        reverse=True,
+                    )[:_OUTFIELD_COUNT]
+                    sorted_p = sorted(sorted_p, key=lambda x: x[1])
 
-            # adherence_score: 1 - normalised mean std of y deviations (10 m → 0)
+            if len(sorted_p) != _OUTFIELD_COUNT:
+                result[f"team_{team_idx}"] = {
+                    "detected_formation": "unknown",
+                    "confidence":         0.0,
+                    "adherence_score":    0.5,
+                    "lines": {"DEF": [], "MID": [], "FWD": []},
+                }
+                continue
+
+            # ── Step 4: template matching via gap scoring ─────────────────
+            ys_sorted = [p[1] for p in sorted_p]
+            template, match_conf = _match_formation(ys_sorted)
+            lines     = _assign_lines(sorted_p, template)
+            formation = _formation_string(template)
+
+            # ── Step 5: positional-discipline score ───────────────────────
+            # How tightly players stay near their median y (lower std = better).
+            outfield_ids = {p[0] for p in sorted_p}
             stds = [
-                float(np.std(team_players[tid]["ys"]))
-                for tid in team_players
+                float(np.std(pool[tid]["ys"]))
+                for tid in outfield_ids if tid in pool
             ]
-            mean_std       = float(np.mean(stds)) if stds else 5.0
+            mean_std        = float(np.mean(stds)) if stds else 5.0
             adherence_score = float(np.clip(1.0 - mean_std / 10.0, 0.0, 1.0))
 
             result[f"team_{team_idx}"] = {
                 "detected_formation": formation,
-                "confidence":         round(adherence_score, 4),
+                "confidence":         round(match_conf, 4),
                 "adherence_score":    round(adherence_score, 4),
                 "lines":              lines,
             }

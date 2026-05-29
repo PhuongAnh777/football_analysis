@@ -10,6 +10,7 @@ aiofiles>=23.0.0
 
 # Computer vision pipeline
 opencv-python>=4.8.0
+imageio-ffmpeg>=0.4.9
 ultralytics>=8.0.0
 torch>=2.0.0
 torchvision>=0.15.0

@@ -11,7 +11,6 @@ from __future__ import annotations
 import base64
 import json
 import os
-import subprocess
 import sys
 import traceback as tb
 from typing import Callable, Optional
@@ -23,6 +22,7 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from utils import read_video, save_video
+from utils.video_utils import ensure_browser_playable, transcode_to_browser_mp4
 from utils.pipeline_helpers import assign_ball_to_tracks, extract_passing_events
 from utils.stub_io import (
     load_track_stub,
@@ -110,25 +110,8 @@ def _dump_json(obj, path: str) -> None:
 
 def _convert_to_mp4(avi_path: str) -> str:
     mp4_path = avi_path.replace(".avi", ".mp4")
-    try:
-        subprocess.run(
-            [
-                "ffmpeg", "-y",
-                "-i", avi_path,
-                "-c:v", "libx264",
-                "-preset", "fast",
-                "-crf", "23",
-                "-movflags", "+faststart",
-                "-an",
-                mp4_path,
-            ],
-            check=True,
-            capture_output=True,
-            timeout=600,
-        )
-        return mp4_path
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-        return avi_path
+    converted = transcode_to_browser_mp4(avi_path, mp4_path)
+    return converted or avi_path
 
 
 def _resolve_track_stub(
@@ -243,6 +226,18 @@ def execute_pipeline(
             tracks["players"][frame_num][player_id]["team_color"] = (
                 team_assigner.team_colors[team]
             )
+
+    # Lock any player_ids that appeared fewer than _N_VOTE_SAMPLES frames,
+    # then rewrite their team values using the finalised majority vote.
+    team_assigner.finalize_pending()
+    for frame_num, player_track in enumerate(tracks["players"]):
+        for player_id, track in player_track.items():
+            locked = team_assigner.player_team_dict.get(player_id)
+            if locked is not None and track.get("team") != locked:
+                tracks["players"][frame_num][player_id]["team"] = locked
+                tracks["players"][frame_num][player_id]["team_color"] = (
+                    team_assigner.team_colors[locked]
+                )
 
     tracks = merge_player_tracks(tracks)
     team_ball_control = assign_ball_to_tracks(tracks)

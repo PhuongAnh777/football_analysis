@@ -60,6 +60,7 @@ from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
 from api.job_persistence import load_job_meta, load_job_result
 from api.pipeline_runner import _convert_to_mp4, _job_output_dir, _job_stub_path, run_pipeline
 from utils.stub_io import remove_track_stub, video_fingerprint
+from utils.video_utils import ensure_browser_playable
 
 _OUTPUT_VIDEOS_ROOT = os.path.join(_PROJECT_ROOT, "output_videos")
 
@@ -191,7 +192,7 @@ def _resolve_job_video_path(job_id: str, stored_path: str | None) -> str | None:
         prefix = os.path.normcase(job_dir + os.sep)
         return os.path.normcase(abs_path).startswith(prefix)
 
-    for name in ("output_video.mp4", "output_video.avi"):
+    for name in ("output_video_h264.mp4", "output_video.mp4", "output_video.avi"):
         path = os.path.join(job_dir, name)
         if os.path.isfile(path):
             return path
@@ -202,17 +203,8 @@ def _resolve_job_video_path(job_id: str, stored_path: str | None) -> str | None:
 
 
 def _ensure_browser_video(path: str) -> str:
-    """Chuyển AVI → MP4 nếu cần (Chrome/Edge hầu như không play XVID trong <video>)."""
-    if path.lower().endswith(".mp4") and os.path.isfile(path):
-        return path
-    if path.lower().endswith(".avi"):
-        mp4_path = path[:-4] + ".mp4"
-        if os.path.isfile(mp4_path):
-            return mp4_path
-        converted = _convert_to_mp4(path)
-        if converted.lower().endswith(".mp4") and os.path.isfile(converted):
-            return converted
-    return path
+    """Ensure MP4 is H.264 so Chrome/Edge can play it in <video>."""
+    return ensure_browser_playable(path)
 
 
 def _colab_tracking_url() -> str | None:

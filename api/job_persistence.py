@@ -32,7 +32,7 @@ def load_job_meta(job_id: str, output_root: str) -> dict[str, Any] | None:
             return json.load(fh)
 
     # Job cũ (trước khi có persistence): suy ra từ file output còn trên disk
-    for name in ("output_video.mp4", "output_video.avi"):
+    for name in ("output_video_h264.mp4", "output_video.mp4", "output_video.avi"):
         video = os.path.join(job_dir, name)
         if os.path.isfile(video):
             return {

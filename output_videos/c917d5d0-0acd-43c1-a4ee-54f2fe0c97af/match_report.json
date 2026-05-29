@@ -1,0 +1,3952 @@
+{
+  "meta": {
+    "formation_team_1": "4-16-3",
+    "formation_team_2": "4-10-3",
+    "possession_team_1": 67.58,
+    "possession_team_2": 32.42,
+    "dominant_team": 1,
+    "def_style_team_1": "mid_block",
+    "def_style_team_2": "high_block",
+    "width_style_team_1": "narrow",
+    "width_style_team_2": "narrow",
+    "total_frames": 2719
+  },
+  "team_report": {
+    "team_1": {
+      "scores": {
+        "overall": 75.72,
+        "possession": 67.58,
+        "compact": 58.61,
+        "pressing": 65.02,
+        "adherence": 77.08,
+        "speed": 100.0,
+        "stability": 100.0,
+        "def_line": 50.0,
+        "width": 60.01,
+        "high_runs": 100.0,
+        "recoveries": 100.0,
+        "turnovers": 77.48,
+        "passing": 79.28
+      },
+      "grades": {
+        "overall": "B",
+        "possession": "B",
+        "compact": "C",
+        "pressing": "B",
+        "adherence": "B",
+        "speed": "A",
+        "stability": "A",
+        "def_line": "C",
+        "width": "C",
+        "high_runs": "A",
+        "recoveries": "A",
+        "turnovers": "B",
+        "passing": "B"
+      },
+      "flags": {
+        "high_press_half": 2,
+        "formation_collapsed": false,
+        "speed_dominant": true,
+        "possession_dominant": true,
+        "deep_defending": false,
+        "high_pressing_block": false,
+        "wide_play_style": false,
+        "width_expands_with_ball": false,
+        "press_recovery": true,
+        "risky_buildup": false,
+        "progressive_team": false,
+        "high_runner_team": true
+      },
+      "tactical_profile": "Balanced mid-block style, aggressive recovery",
+      "top_players": [
+        7,
+        5,
+        4
+      ],
+      "weak_players": [
+        1767,
+        1782,
+        2207
+      ]
+    },
+    "team_2": {
+      "scores": {
+        "overall": 54.07,
+        "possession": 32.42,
+        "compact": 71.21,
+        "pressing": 40.07,
+        "adherence": 28.38,
+        "speed": 98.72,
+        "stability": 100.0,
+        "def_line": 50.0,
+        "width": 56.69,
+        "high_runs": 29.59,
+        "recoveries": 44.49,
+        "turnovers": 40.04,
+        "passing": 72.9
+      },
+      "grades": {
+        "overall": "C",
+        "possession": "F",
+        "compact": "B",
+        "pressing": "D",
+        "adherence": "F",
+        "speed": "A",
+        "stability": "A",
+        "def_line": "C",
+        "width": "C",
+        "high_runs": "F",
+        "recoveries": "D",
+        "turnovers": "D",
+        "passing": "B"
+      },
+      "flags": {
+        "high_press_half": 1,
+        "formation_collapsed": false,
+        "speed_dominant": false,
+        "possession_dominant": false,
+        "deep_defending": false,
+        "high_pressing_block": true,
+        "wide_play_style": false,
+        "width_expands_with_ball": false,
+        "press_recovery": true,
+        "risky_buildup": false,
+        "progressive_team": false,
+        "high_runner_team": false
+      },
+      "tactical_profile": "High-press, narrow compact style, aggressive recovery",
+      "top_players": [
+        111,
+        105,
+        101
+      ],
+      "weak_players": [
+        2426,
+        2434,
+        2474
+      ]
+    }
+  },
+  "player_report": {
+    "1": {
+      "1": {
+        "overall_score": 61.98,
+        "grade": "C",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ pressing",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "2": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "3": {
+        "overall_score": 61.54,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "4": {
+        "overall_score": 62.68,
+        "grade": "C",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing",
+          "Kỷ luật hàng thủ",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "5": {
+        "overall_score": 65.15,
+        "grade": "B",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "6": {
+        "overall_score": 51.6,
+        "grade": "C",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing",
+          "Kỷ luật hàng thủ"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "7": {
+        "overall_score": 67.91,
+        "grade": "B",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "8": {
+        "overall_score": 49.94,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "9": {
+        "overall_score": 58.31,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "10": {
+        "overall_score": 48.94,
+        "grade": "D",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "30": {
+        "overall_score": 48.14,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "11": {
+        "overall_score": 44.73,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "12": {
+        "overall_score": 50.95,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "40": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "13": {
+        "overall_score": 43.7,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "14": {
+        "overall_score": 51.9,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "15": {
+        "overall_score": 52.44,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "53": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "170": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "206": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "219": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "230": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "235": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "17": {
+        "overall_score": 58.33,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "16": {
+        "overall_score": 62.28,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "291": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "304": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "334": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "373": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "18": {
+        "overall_score": 45.35,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "406": {
+        "overall_score": 40.19,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "408": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "444": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "449": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "460": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "475": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "19": {
+        "overall_score": 52.51,
+        "grade": "C",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "484": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "20": {
+        "overall_score": 44.02,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "571": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "584": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "607": {
+        "overall_score": 28.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "635": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "658": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "669": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "680": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "702": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "759": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "869": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "958": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1031": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "21": {
+        "overall_score": 49.42,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1105": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1417": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1444": {
+        "overall_score": 28.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "22": {
+        "overall_score": 47.99,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1557": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "24": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1605": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "25": {
+        "overall_score": 50.25,
+        "grade": "C",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing",
+          "Kỷ luật hàng thủ"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1629": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1632": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1635": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1638": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1644": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1661": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1663": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1687": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1690": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1695": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1714": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "26": {
+        "overall_score": 49.77,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Kỷ luật hàng thủ",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "28": {
+        "overall_score": 47.7,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1726": {
+        "overall_score": 28.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1730": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1761": {
+        "overall_score": 28.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1767": {
+        "overall_score": 28.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1782": {
+        "overall_score": 28.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1785": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1795": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "29": {
+        "overall_score": 51.59,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1959": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1986": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1994": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "31": {
+        "overall_score": 52.91,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2040": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "32": {
+        "overall_score": 49.11,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "33": {
+        "overall_score": 53.1,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "34": {
+        "overall_score": 40.58,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2207": {
+        "overall_score": 28.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2224": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2227": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2233": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2237": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2293": {
+        "overall_score": 38.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2391": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "35": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2498": {
+        "overall_score": 33.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      }
+    },
+    "2": {
+      "101": {
+        "overall_score": 57.88,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "102": {
+        "overall_score": 48.19,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "103": {
+        "overall_score": 52.5,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "104": {
+        "overall_score": 51.21,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "105": {
+        "overall_score": 59.18,
+        "grade": "C",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing",
+          "Kỷ luật hàng thủ",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "106": {
+        "overall_score": 54.12,
+        "grade": "C",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "23": {
+        "overall_score": 51.13,
+        "grade": "C",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "27": {
+        "overall_score": 57.45,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "36": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "107": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "108": {
+        "overall_score": 32.77,
+        "grade": "F",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Kỷ luật hàng thủ",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "109": {
+        "overall_score": 48.3,
+        "grade": "D",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "110": {
+        "overall_score": 51.19,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "128": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "111": {
+        "overall_score": 62.22,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "165": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "166": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "169": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "179": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "181": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "197": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "209": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "218": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "242": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "277": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "332": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "342": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "355": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "361": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "370": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "112": {
+        "overall_score": 48.98,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "407": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "113": {
+        "overall_score": 53.14,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc"
+        ]
+      },
+      "454": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "481": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "491": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "493": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "499": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "506": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "510": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "527": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "529": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "363": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "114": {
+        "overall_score": 48.46,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "561": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "563": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "605": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "611": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "636": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "638": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "645": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "115": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "116": {
+        "overall_score": 44.29,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "672": {
+        "overall_score": 36.89,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "708": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "739": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "776": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "779": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "786": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "801": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "802": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "813": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "814": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "817": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "823": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "829": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "830": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "845": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "857": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "863": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "865": {
+        "overall_score": 37.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "866": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "868": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "876": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "879": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "891": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "922": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "929": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "930": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "946": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "977": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1006": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1042": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1051": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1056": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1054": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1062": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1059": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1074": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1086": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "971": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1111": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1121": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1137": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1144": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1166": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1183": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1196": {
+        "overall_score": 37.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1204": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1230": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "117": {
+        "overall_score": 51.15,
+        "grade": "C",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing",
+          "Kỷ luật hàng thủ"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1240": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1252": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1298": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "118": {
+        "overall_score": 48.37,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1334": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1342": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1357": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1364": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1365": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1372": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1376": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1415": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1420": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1427": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "119": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1450": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1455": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1459": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1464": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1467": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1468": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1474": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1486": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1494": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1500": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1631": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1634": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1682": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1697": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1702": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1737": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1745": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1751": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1765": {
+        "overall_score": 27.29,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1792": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1801": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1870": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1887": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1929": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1939": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1965": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "1916": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2008": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2010": {
+        "overall_score": 37.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2022": {
+        "overall_score": 37.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2044": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2061": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2077": {
+        "overall_score": 37.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2166": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2208": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2341": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2347": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2355": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2361": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2373": {
+        "overall_score": 35.39,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2375": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2406": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2426": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2434": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2467": {
+        "overall_score": 30.38,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "2474": {
+        "overall_score": 25.39,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Tốc độ di chuyển",
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      }
+    }
+  },
+  "match_narrative_data": {
+    "pressing_intensity_half1": 1.08,
+    "pressing_intensity_half2": 1.34,
+    "compact_trend_team_1": "improving",
+    "compact_trend_team_2": "improving",
+    "speed_team_1": 12.88,
+    "speed_team_2": 12.46,
+    "sprint_pct_team_1": 17.59,
+    "sprint_pct_team_2": 16.15,
+    "formation_team_1": "4-16-3",
+    "formation_team_2": "4-10-3",
+    "adherence_team_1": 0.34,
+    "adherence_team_2": 0.14,
+    "def_line_avg_team_1": 0.0,
+    "def_line_avg_team_2": 19.18,
+    "def_line_trend_team_1": "stable",
+    "def_line_trend_team_2": "stable",
+    "width_avg_team_1": 17.3,
+    "width_avg_team_2": 15.75,
+    "width_with_ball_team_1": 16.67,
+    "width_with_ball_team_2": 17.1,
+    "width_without_ball_team_1": 16.27,
+    "width_without_ball_team_2": 17.72,
+    "high_runs_team_1": 307,
+    "high_runs_team_2": 124,
+    "high_runs_fwd_team_1": 38,
+    "high_runs_fwd_team_2": 19,
+    "recoveries_team_1": 35,
+    "recoveries_team_2": 26,
+    "opp_half_recovery_pct_team_1": 74.29,
+    "opp_half_recovery_pct_team_2": 57.69,
+    "turnovers_final_third_team_1": 3,
+    "turnovers_final_third_team_2": 4,
+    "dangerous_rate_team_1": 15.0,
+    "dangerous_rate_team_2": 12.12,
+    "total_passes_team_1": 101,
+    "total_passes_team_2": 48,
+    "progressive_pct_team_1": 28.33,
+    "progressive_pct_team_2": 25.0
+  }
+}
