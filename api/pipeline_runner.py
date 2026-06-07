@@ -272,15 +272,26 @@ def execute_pipeline(
     llm_api_key = os.getenv("OPENAI_API_KEY", "")
     if llm_api_key:
         try:
+            print("[pipeline] Running TacticalNarrator (LLM)...", flush=True)
             narrator = TacticalNarrator(
                 api_key=llm_api_key,
                 model=os.getenv("LLM_MODEL", "gpt-4o"),
                 base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
+                max_tokens=int(os.getenv("LLM_MAX_TOKENS", "8192")),
+                timeout=int(os.getenv("LLM_TIMEOUT", "180")),
             )
             llm_eval = narrator.analyze(match_report)
             _dump_json(llm_eval, os.path.join(out_dir, "llm_analysis.json"))
+            print(f"[pipeline] LLM analysis saved → {os.path.join(out_dir, 'llm_analysis.json')}", flush=True)
         except Exception as exc:
             llm_eval = {"warning": f"LLM analysis failed: {exc}"}
+            print(f"[pipeline] LLM analysis failed: {exc}", flush=True)
+    else:
+        print(
+            "[pipeline] Skipping LLM (OPENAI_API_KEY not set) — "
+            "dashboard will use template fallback; no llm_analysis.json",
+            flush=True,
+        )
 
     _notify(8, "render", _PIPELINE_STEPS[7][2])
     team_ball_control_arr = np.array(team_ball_control)

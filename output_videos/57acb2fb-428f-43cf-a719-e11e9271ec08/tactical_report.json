@@ -1,0 +1,2553 @@
+{
+  "compact": {
+    "team_1": [
+      {
+        "window_start_frame": 0,
+        "compact_score": 10.7193,
+        "formation_broken": false
+      },
+      {
+        "window_start_frame": 900,
+        "compact_score": 14.6537,
+        "formation_broken": false
+      },
+      {
+        "window_start_frame": 1800,
+        "compact_score": 13.7102,
+        "formation_broken": false
+      },
+      {
+        "window_start_frame": 2700,
+        "compact_score": 9.6294,
+        "formation_broken": false
+      }
+    ],
+    "team_2": [
+      {
+        "window_start_frame": 0,
+        "compact_score": 12.1327,
+        "formation_broken": false
+      },
+      {
+        "window_start_frame": 900,
+        "compact_score": 13.4961,
+        "formation_broken": false
+      },
+      {
+        "window_start_frame": 1800,
+        "compact_score": 10.817,
+        "formation_broken": false
+      },
+      {
+        "window_start_frame": 2700,
+        "compact_score": 7.7555,
+        "formation_broken": false
+      }
+    ]
+  },
+  "pressing": {
+    "windows": [
+      {
+        "window_start_frame": 0,
+        "pressing_team": 2,
+        "intensity": 1.0,
+        "high_press": false
+      },
+      {
+        "window_start_frame": 900,
+        "pressing_team": 2,
+        "intensity": 0.2874,
+        "high_press": false
+      },
+      {
+        "window_start_frame": 1800,
+        "pressing_team": 1,
+        "intensity": 0.4192,
+        "high_press": false
+      },
+      {
+        "window_start_frame": 2700,
+        "pressing_team": 2,
+        "intensity": 1.4,
+        "high_press": false
+      }
+    ],
+    "half_summary": {
+      "half_1": {
+        "mean_intensity": 0.6437,
+        "peak_intensity": 1.0
+      },
+      "half_2": {
+        "mean_intensity": 0.9096,
+        "peak_intensity": 1.4
+      }
+    }
+  },
+  "formation": {
+    "team_1": {
+      "detected_formation": "3-4-1-2",
+      "confidence": 0.7049,
+      "adherence_score": 0.2046,
+      "lines": {
+        "DEF": [
+          9,
+          11,
+          10
+        ],
+        "DM": [
+          1,
+          3,
+          5,
+          4
+        ],
+        "AM": [
+          8
+        ],
+        "FWD": [
+          2,
+          6
+        ]
+      }
+    },
+    "team_2": {
+      "detected_formation": "3-4-2-1",
+      "confidence": 0.7105,
+      "adherence_score": 0.0244,
+      "lines": {
+        "DEF": [
+          111,
+          107,
+          109
+        ],
+        "DM": [
+          106,
+          102,
+          103,
+          110
+        ],
+        "AM": [
+          105,
+          104
+        ],
+        "FWD": [
+          108
+        ]
+      }
+    }
+  },
+  "possession": {
+    "possession": {
+      "team_1": 38.41,
+      "team_2": 61.59
+    },
+    "avg_speed": {
+      "team_1": {
+        "overall": 11.8729,
+        "per_window": [
+          11.7282,
+          12.1275,
+          11.4505,
+          20.2355
+        ]
+      },
+      "team_2": {
+        "overall": 13.3533,
+        "per_window": [
+          13.2042,
+          13.277,
+          13.6648,
+          11.6347
+        ]
+      }
+    },
+    "speed_zones": {
+      "team_1": {
+        "walking": 33.22,
+        "jogging": 34.91,
+        "running": 18.23,
+        "sprinting": 13.65
+      },
+      "team_2": {
+        "walking": 25.61,
+        "jogging": 34.39,
+        "running": 20.83,
+        "sprinting": 19.17
+      }
+    }
+  },
+  "def_line": {
+    "team_1": {
+      "windows": [],
+      "overall_avg_m": 0.0,
+      "half_1_avg_m": 0.0,
+      "half_2_avg_m": 0.0,
+      "trend": "stable",
+      "dominant_block": "mid_block"
+    },
+    "team_2": {
+      "windows": [
+        {
+          "window_start_frame": 0,
+          "def_line_height_m": 19.7785,
+          "block_type": "high_block"
+        }
+      ],
+      "overall_avg_m": 19.7785,
+      "half_1_avg_m": 19.7785,
+      "half_2_avg_m": 19.7785,
+      "trend": "stable",
+      "dominant_block": "high_block"
+    }
+  },
+  "team_width": {
+    "team_1": {
+      "windows": [
+        {
+          "window_start_frame": 0,
+          "width_m": 21.6172,
+          "style": "narrow"
+        },
+        {
+          "window_start_frame": 900,
+          "width_m": 16.6465,
+          "style": "narrow"
+        },
+        {
+          "window_start_frame": 1800,
+          "width_m": 16.4286,
+          "style": "narrow"
+        }
+      ],
+      "overall_avg_m": 18.2308,
+      "half_1_avg_m": 19.1319,
+      "half_2_avg_m": 16.4286,
+      "width_with_ball": 15.5504,
+      "width_without_ball": 16.9919,
+      "trend": "stable",
+      "dominant_style": "narrow"
+    },
+    "team_2": {
+      "windows": [
+        {
+          "window_start_frame": 0,
+          "width_m": 14.8105,
+          "style": "narrow"
+        },
+        {
+          "window_start_frame": 900,
+          "width_m": 14.9997,
+          "style": "narrow"
+        },
+        {
+          "window_start_frame": 1800,
+          "width_m": 15.9583,
+          "style": "narrow"
+        },
+        {
+          "window_start_frame": 2700,
+          "width_m": 13.2626,
+          "style": "narrow"
+        }
+      ],
+      "overall_avg_m": 14.7578,
+      "half_1_avg_m": 14.9051,
+      "half_2_avg_m": 14.6105,
+      "width_with_ball": 14.3759,
+      "width_without_ball": 15.4694,
+      "trend": "stable",
+      "dominant_style": "narrow"
+    }
+  },
+  "high_intensity_runs": {
+    "team_1": {
+      "total_runs": 70,
+      "runs_per_role": {
+        "DEF": 11,
+        "MID": 47,
+        "FWD": 12
+      },
+      "runs_half_1": 42,
+      "runs_half_2": 28,
+      "avg_peak_speed_kmh": 27.8108,
+      "top_runner_id": 3,
+      "run_events": [
+        {
+          "track_id": 1,
+          "role": "MID",
+          "start_frame": 80,
+          "end_frame": 85,
+          "peak_speed_kmh": 27.2468
+        },
+        {
+          "track_id": 1,
+          "role": "MID",
+          "start_frame": 1085,
+          "end_frame": 1088,
+          "peak_speed_kmh": 20.455
+        },
+        {
+          "track_id": 1,
+          "role": "MID",
+          "start_frame": 1148,
+          "end_frame": 1180,
+          "peak_speed_kmh": 39.8299
+        },
+        {
+          "track_id": 1,
+          "role": "MID",
+          "start_frame": 1185,
+          "end_frame": 1190,
+          "peak_speed_kmh": 25.2973
+        },
+        {
+          "track_id": 11,
+          "role": "DEF",
+          "start_frame": 1305,
+          "end_frame": 1330,
+          "peak_speed_kmh": 46.0242
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 75,
+          "end_frame": 95,
+          "peak_speed_kmh": 45.4098
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 100,
+          "end_frame": 105,
+          "peak_speed_kmh": 20.035
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 255,
+          "end_frame": 260,
+          "peak_speed_kmh": 23.2399
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 280,
+          "end_frame": 285,
+          "peak_speed_kmh": 25.3738
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 375,
+          "end_frame": 380,
+          "peak_speed_kmh": 20.1741
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 425,
+          "end_frame": 430,
+          "peak_speed_kmh": 27.019
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 440,
+          "end_frame": 450,
+          "peak_speed_kmh": 40.4512
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 1140,
+          "end_frame": 1152,
+          "peak_speed_kmh": 64.1207
+        },
+        {
+          "track_id": 7,
+          "role": "MID",
+          "start_frame": 1159,
+          "end_frame": 1175,
+          "peak_speed_kmh": 59.024
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 960,
+          "end_frame": 965,
+          "peak_speed_kmh": 24.378
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 1035,
+          "end_frame": 1040,
+          "peak_speed_kmh": 21.0522
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 1045,
+          "end_frame": 1048,
+          "peak_speed_kmh": 22.8188
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 1140,
+          "end_frame": 1150,
+          "peak_speed_kmh": 29.7529
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 2105,
+          "end_frame": 2110,
+          "peak_speed_kmh": 43.6182
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 2180,
+          "end_frame": 2185,
+          "peak_speed_kmh": 20.9175
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 2310,
+          "end_frame": 2315,
+          "peak_speed_kmh": 21.3173
+        },
+        {
+          "track_id": 4,
+          "role": "MID",
+          "start_frame": 2365,
+          "end_frame": 2368,
+          "peak_speed_kmh": 23.5914
+        },
+        {
+          "track_id": 10,
+          "role": "DEF",
+          "start_frame": 85,
+          "end_frame": 90,
+          "peak_speed_kmh": 24.2967
+        },
+        {
+          "track_id": 10,
+          "role": "DEF",
+          "start_frame": 455,
+          "end_frame": 460,
+          "peak_speed_kmh": 25.9447
+        },
+        {
+          "track_id": 10,
+          "role": "DEF",
+          "start_frame": 520,
+          "end_frame": 526,
+          "peak_speed_kmh": 24.4458
+        },
+        {
+          "track_id": 10,
+          "role": "DEF",
+          "start_frame": 527,
+          "end_frame": 530,
+          "peak_speed_kmh": 24.4458
+        },
+        {
+          "track_id": 10,
+          "role": "DEF",
+          "start_frame": 600,
+          "end_frame": 605,
+          "peak_speed_kmh": 23.8213
+        },
+        {
+          "track_id": 10,
+          "role": "DEF",
+          "start_frame": 2520,
+          "end_frame": 2535,
+          "peak_speed_kmh": 44.0964
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 275,
+          "end_frame": 280,
+          "peak_speed_kmh": 20.9872
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 1255,
+          "end_frame": 1265,
+          "peak_speed_kmh": 25.8391
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 1275,
+          "end_frame": 1280,
+          "peak_speed_kmh": 22.4393
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 1305,
+          "end_frame": 1335,
+          "peak_speed_kmh": 47.9595
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 1545,
+          "end_frame": 1550,
+          "peak_speed_kmh": 22.6812
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 1555,
+          "end_frame": 1560,
+          "peak_speed_kmh": 21.5127
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 2595,
+          "end_frame": 2600,
+          "peak_speed_kmh": 20.2716
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 2640,
+          "end_frame": 2660,
+          "peak_speed_kmh": 31.5597
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 2685,
+          "end_frame": 2688,
+          "peak_speed_kmh": 24.8579
+        },
+        {
+          "track_id": 3,
+          "role": "MID",
+          "start_frame": 2695,
+          "end_frame": 2700,
+          "peak_speed_kmh": 20.8363
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 990,
+          "end_frame": 995,
+          "peak_speed_kmh": 37.9849
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1165,
+          "end_frame": 1180,
+          "peak_speed_kmh": 35.4424
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1185,
+          "end_frame": 1190,
+          "peak_speed_kmh": 22.9656
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1220,
+          "end_frame": 1225,
+          "peak_speed_kmh": 25.7105
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1230,
+          "end_frame": 1240,
+          "peak_speed_kmh": 29.176
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1245,
+          "end_frame": 1250,
+          "peak_speed_kmh": 20.3885
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1308,
+          "end_frame": 1312,
+          "peak_speed_kmh": 30.0628
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1360,
+          "end_frame": 1365,
+          "peak_speed_kmh": 22.0843
+        },
+        {
+          "track_id": 8,
+          "role": "MID",
+          "start_frame": 1550,
+          "end_frame": 1555,
+          "peak_speed_kmh": 21.003
+        },
+        {
+          "track_id": 5,
+          "role": "MID",
+          "start_frame": 1343,
+          "end_frame": 1350,
+          "peak_speed_kmh": 29.65
+        },
+        {
+          "track_id": 5,
+          "role": "MID",
+          "start_frame": 2185,
+          "end_frame": 2190,
+          "peak_speed_kmh": 20.6981
+        },
+        {
+          "track_id": 5,
+          "role": "MID",
+          "start_frame": 2195,
+          "end_frame": 2200,
+          "peak_speed_kmh": 24.551
+        },
+        {
+          "track_id": 5,
+          "role": "MID",
+          "start_frame": 2205,
+          "end_frame": 2210,
+          "peak_speed_kmh": 24.1237
+        },
+        {
+          "track_id": 5,
+          "role": "MID",
+          "start_frame": 2310,
+          "end_frame": 2315,
+          "peak_speed_kmh": 20.1098
+        },
+        {
+          "track_id": 5,
+          "role": "MID",
+          "start_frame": 2640,
+          "end_frame": 2660,
+          "peak_speed_kmh": 24.37
+        },
+        {
+          "track_id": 5,
+          "role": "MID",
+          "start_frame": 2685,
+          "end_frame": 2688,
+          "peak_speed_kmh": 23.0428
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 570,
+          "end_frame": 575,
+          "peak_speed_kmh": 21.354
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 740,
+          "end_frame": 745,
+          "peak_speed_kmh": 21.5792
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 2105,
+          "end_frame": 2115,
+          "peak_speed_kmh": 32.9627
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 2170,
+          "end_frame": 2175,
+          "peak_speed_kmh": 20.4545
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 2190,
+          "end_frame": 2195,
+          "peak_speed_kmh": 20.3156
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 2495,
+          "end_frame": 2500,
+          "peak_speed_kmh": 35.0736
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 2505,
+          "end_frame": 2515,
+          "peak_speed_kmh": 28.6548
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 2530,
+          "end_frame": 2535,
+          "peak_speed_kmh": 20.6505
+        },
+        {
+          "track_id": 2,
+          "role": "FWD",
+          "start_frame": 2700,
+          "end_frame": 2718,
+          "peak_speed_kmh": 28.9955
+        },
+        {
+          "track_id": 6,
+          "role": "FWD",
+          "start_frame": 1240,
+          "end_frame": 1265,
+          "peak_speed_kmh": 40.6988
+        },
+        {
+          "track_id": 6,
+          "role": "FWD",
+          "start_frame": 1270,
+          "end_frame": 1280,
+          "peak_speed_kmh": 27.2368
+        },
+        {
+          "track_id": 6,
+          "role": "FWD",
+          "start_frame": 1285,
+          "end_frame": 1295,
+          "peak_speed_kmh": 24.1463
+        },
+        {
+          "track_id": 9,
+          "role": "DEF",
+          "start_frame": 1267,
+          "end_frame": 1270,
+          "peak_speed_kmh": 24.052
+        },
+        {
+          "track_id": 9,
+          "role": "DEF",
+          "start_frame": 1345,
+          "end_frame": 1350,
+          "peak_speed_kmh": 21.8036
+        },
+        {
+          "track_id": 9,
+          "role": "DEF",
+          "start_frame": 1635,
+          "end_frame": 1640,
+          "peak_speed_kmh": 27.0954
+        },
+        {
+          "track_id": 9,
+          "role": "DEF",
+          "start_frame": 2335,
+          "end_frame": 2339,
+          "peak_speed_kmh": 23.1753
+        }
+      ]
+    },
+    "team_2": {
+      "total_runs": 244,
+      "runs_per_role": {
+        "DEF": 62,
+        "MID": 162,
+        "FWD": 20
+      },
+      "runs_half_1": 143,
+      "runs_half_2": 101,
+      "avg_peak_speed_kmh": 28.1165,
+      "top_runner_id": 103,
+      "run_events": [
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 75,
+          "end_frame": 80,
+          "peak_speed_kmh": 21.4463
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 195,
+          "end_frame": 200,
+          "peak_speed_kmh": 22.0026
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 440,
+          "end_frame": 450,
+          "peak_speed_kmh": 30.5925
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 455,
+          "end_frame": 480,
+          "peak_speed_kmh": 38.7974
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 485,
+          "end_frame": 490,
+          "peak_speed_kmh": 23.2451
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 595,
+          "end_frame": 600,
+          "peak_speed_kmh": 31.6697
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 655,
+          "end_frame": 660,
+          "peak_speed_kmh": 21.9966
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 875,
+          "end_frame": 880,
+          "peak_speed_kmh": 21.5295
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 940,
+          "end_frame": 945,
+          "peak_speed_kmh": 22.0137
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1005,
+          "end_frame": 1010,
+          "peak_speed_kmh": 22.0124
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1015,
+          "end_frame": 1020,
+          "peak_speed_kmh": 23.1715
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1030,
+          "end_frame": 1035,
+          "peak_speed_kmh": 32.5492
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1130,
+          "end_frame": 1145,
+          "peak_speed_kmh": 27.824
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1790,
+          "end_frame": 1795,
+          "peak_speed_kmh": 25.5615
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1835,
+          "end_frame": 1840,
+          "peak_speed_kmh": 21.3718
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1855,
+          "end_frame": 1880,
+          "peak_speed_kmh": 30.0723
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1885,
+          "end_frame": 1890,
+          "peak_speed_kmh": 24.1623
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1900,
+          "end_frame": 1904,
+          "peak_speed_kmh": 46.3166
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1918,
+          "end_frame": 1925,
+          "peak_speed_kmh": 34.5179
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 1935,
+          "end_frame": 1940,
+          "peak_speed_kmh": 21.6242
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 2030,
+          "end_frame": 2035,
+          "peak_speed_kmh": 22.8017
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 2653,
+          "end_frame": 2660,
+          "peak_speed_kmh": 35.5906
+        },
+        {
+          "track_id": 105,
+          "role": "MID",
+          "start_frame": 2685,
+          "end_frame": 2700,
+          "peak_speed_kmh": 25.5739
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1045,
+          "end_frame": 1060,
+          "peak_speed_kmh": 21.9983
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1135,
+          "end_frame": 1150,
+          "peak_speed_kmh": 32.909
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1155,
+          "end_frame": 1180,
+          "peak_speed_kmh": 30.3346
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1220,
+          "end_frame": 1225,
+          "peak_speed_kmh": 30.653
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1230,
+          "end_frame": 1240,
+          "peak_speed_kmh": 30.7322
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1245,
+          "end_frame": 1270,
+          "peak_speed_kmh": 34.4628
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1295,
+          "end_frame": 1300,
+          "peak_speed_kmh": 25.8638
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 1305,
+          "end_frame": 1315,
+          "peak_speed_kmh": 27.3352
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2045,
+          "end_frame": 2050,
+          "peak_speed_kmh": 27.4938
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2105,
+          "end_frame": 2120,
+          "peak_speed_kmh": 30.0554
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2225,
+          "end_frame": 2230,
+          "peak_speed_kmh": 24.5675
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2235,
+          "end_frame": 2250,
+          "peak_speed_kmh": 33.6817
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2270,
+          "end_frame": 2275,
+          "peak_speed_kmh": 25.1144
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2325,
+          "end_frame": 2330,
+          "peak_speed_kmh": 24.1224
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2365,
+          "end_frame": 2370,
+          "peak_speed_kmh": 26.9449
+        },
+        {
+          "track_id": 110,
+          "role": "MID",
+          "start_frame": 2375,
+          "end_frame": 2380,
+          "peak_speed_kmh": 23.226
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 35,
+          "end_frame": 41,
+          "peak_speed_kmh": 29.6681
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 55,
+          "end_frame": 60,
+          "peak_speed_kmh": 29.6395
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 75,
+          "end_frame": 85,
+          "peak_speed_kmh": 24.8804
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 110,
+          "end_frame": 115,
+          "peak_speed_kmh": 29.3613
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 290,
+          "end_frame": 295,
+          "peak_speed_kmh": 21.6963
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 305,
+          "end_frame": 310,
+          "peak_speed_kmh": 23.5047
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 355,
+          "end_frame": 360,
+          "peak_speed_kmh": 22.6216
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 365,
+          "end_frame": 370,
+          "peak_speed_kmh": 20.2957
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 375,
+          "end_frame": 380,
+          "peak_speed_kmh": 22.9561
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 405,
+          "end_frame": 420,
+          "peak_speed_kmh": 26.1069
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 425,
+          "end_frame": 430,
+          "peak_speed_kmh": 25.3725
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 440,
+          "end_frame": 480,
+          "peak_speed_kmh": 40.4714
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 560,
+          "end_frame": 565,
+          "peak_speed_kmh": 23.6889
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 570,
+          "end_frame": 575,
+          "peak_speed_kmh": 20.0931
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 635,
+          "end_frame": 640,
+          "peak_speed_kmh": 21.803
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 655,
+          "end_frame": 660,
+          "peak_speed_kmh": 26.0405
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 730,
+          "end_frame": 750,
+          "peak_speed_kmh": 24.4071
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 755,
+          "end_frame": 760,
+          "peak_speed_kmh": 20.5159
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 1035,
+          "end_frame": 1080,
+          "peak_speed_kmh": 33.2264
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 1925,
+          "end_frame": 1935,
+          "peak_speed_kmh": 30.6813
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2035,
+          "end_frame": 2040,
+          "peak_speed_kmh": 23.7757
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2045,
+          "end_frame": 2050,
+          "peak_speed_kmh": 27.541
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2055,
+          "end_frame": 2060,
+          "peak_speed_kmh": 21.8316
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2070,
+          "end_frame": 2080,
+          "peak_speed_kmh": 30.6765
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2085,
+          "end_frame": 2090,
+          "peak_speed_kmh": 22.7084
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2100,
+          "end_frame": 2105,
+          "peak_speed_kmh": 24.1397
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2165,
+          "end_frame": 2170,
+          "peak_speed_kmh": 23.1055
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2175,
+          "end_frame": 2180,
+          "peak_speed_kmh": 28.3773
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2185,
+          "end_frame": 2195,
+          "peak_speed_kmh": 20.4533
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2200,
+          "end_frame": 2205,
+          "peak_speed_kmh": 22.7231
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2260,
+          "end_frame": 2270,
+          "peak_speed_kmh": 40.4209
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2310,
+          "end_frame": 2315,
+          "peak_speed_kmh": 20.5392
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2325,
+          "end_frame": 2330,
+          "peak_speed_kmh": 22.4292
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2335,
+          "end_frame": 2340,
+          "peak_speed_kmh": 23.5846
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2525,
+          "end_frame": 2535,
+          "peak_speed_kmh": 24.5709
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2595,
+          "end_frame": 2600,
+          "peak_speed_kmh": 23.5657
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2650,
+          "end_frame": 2660,
+          "peak_speed_kmh": 20.6994
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2670,
+          "end_frame": 2675,
+          "peak_speed_kmh": 20.7507
+        },
+        {
+          "track_id": 103,
+          "role": "MID",
+          "start_frame": 2685,
+          "end_frame": 2690,
+          "peak_speed_kmh": 22.6204
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 70,
+          "end_frame": 88,
+          "peak_speed_kmh": 41.868
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 90,
+          "end_frame": 95,
+          "peak_speed_kmh": 21.5208
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 100,
+          "end_frame": 105,
+          "peak_speed_kmh": 20.452
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 110,
+          "end_frame": 115,
+          "peak_speed_kmh": 33.9456
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 120,
+          "end_frame": 140,
+          "peak_speed_kmh": 27.9727
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 270,
+          "end_frame": 278,
+          "peak_speed_kmh": 24.5972
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 290,
+          "end_frame": 295,
+          "peak_speed_kmh": 29.9339
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 410,
+          "end_frame": 415,
+          "peak_speed_kmh": 21.9429
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 425,
+          "end_frame": 430,
+          "peak_speed_kmh": 24.2555
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 440,
+          "end_frame": 445,
+          "peak_speed_kmh": 37.7807
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 455,
+          "end_frame": 470,
+          "peak_speed_kmh": 33.0604
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 1655,
+          "end_frame": 1665,
+          "peak_speed_kmh": 29.8026
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 1690,
+          "end_frame": 1695,
+          "peak_speed_kmh": 23.8926
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 1750,
+          "end_frame": 1770,
+          "peak_speed_kmh": 28.8859
+        },
+        {
+          "track_id": 101,
+          "role": "MID",
+          "start_frame": 2498,
+          "end_frame": 2510,
+          "peak_speed_kmh": 36.9132
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 50,
+          "end_frame": 55,
+          "peak_speed_kmh": 20.4175
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 75,
+          "end_frame": 95,
+          "peak_speed_kmh": 44.0799
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 375,
+          "end_frame": 380,
+          "peak_speed_kmh": 22.1428
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 425,
+          "end_frame": 430,
+          "peak_speed_kmh": 26.8848
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 655,
+          "end_frame": 660,
+          "peak_speed_kmh": 23.5115
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 1170,
+          "end_frame": 1190,
+          "peak_speed_kmh": 37.0
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 1220,
+          "end_frame": 1225,
+          "peak_speed_kmh": 25.1296
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 1230,
+          "end_frame": 1240,
+          "peak_speed_kmh": 26.9832
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 1245,
+          "end_frame": 1250,
+          "peak_speed_kmh": 24.0761
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2045,
+          "end_frame": 2050,
+          "peak_speed_kmh": 27.9841
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2070,
+          "end_frame": 2075,
+          "peak_speed_kmh": 20.6224
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2090,
+          "end_frame": 2095,
+          "peak_speed_kmh": 20.8234
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2100,
+          "end_frame": 2110,
+          "peak_speed_kmh": 27.3653
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2170,
+          "end_frame": 2175,
+          "peak_speed_kmh": 20.6734
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2190,
+          "end_frame": 2195,
+          "peak_speed_kmh": 24.53
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2240,
+          "end_frame": 2245,
+          "peak_speed_kmh": 26.4645
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2255,
+          "end_frame": 2265,
+          "peak_speed_kmh": 55.386
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2275,
+          "end_frame": 2280,
+          "peak_speed_kmh": 20.7481
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2310,
+          "end_frame": 2315,
+          "peak_speed_kmh": 22.1109
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2325,
+          "end_frame": 2330,
+          "peak_speed_kmh": 22.5307
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2640,
+          "end_frame": 2660,
+          "peak_speed_kmh": 27.7685
+        },
+        {
+          "track_id": 106,
+          "role": "MID",
+          "start_frame": 2685,
+          "end_frame": 2690,
+          "peak_speed_kmh": 21.7227
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 50,
+          "end_frame": 60,
+          "peak_speed_kmh": 24.263
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 75,
+          "end_frame": 90,
+          "peak_speed_kmh": 37.6144
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 110,
+          "end_frame": 115,
+          "peak_speed_kmh": 31.4017
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 175,
+          "end_frame": 180,
+          "peak_speed_kmh": 23.239
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 290,
+          "end_frame": 295,
+          "peak_speed_kmh": 20.9972
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 385,
+          "end_frame": 390,
+          "peak_speed_kmh": 23.3757
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 425,
+          "end_frame": 430,
+          "peak_speed_kmh": 28.1117
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 440,
+          "end_frame": 445,
+          "peak_speed_kmh": 38.1379
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 455,
+          "end_frame": 460,
+          "peak_speed_kmh": 27.5004
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 465,
+          "end_frame": 475,
+          "peak_speed_kmh": 33.1773
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 535,
+          "end_frame": 540,
+          "peak_speed_kmh": 27.6974
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 545,
+          "end_frame": 555,
+          "peak_speed_kmh": 25.8363
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 560,
+          "end_frame": 565,
+          "peak_speed_kmh": 23.3427
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 570,
+          "end_frame": 575,
+          "peak_speed_kmh": 22.8079
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 600,
+          "end_frame": 605,
+          "peak_speed_kmh": 20.4609
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 635,
+          "end_frame": 640,
+          "peak_speed_kmh": 22.5734
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 710,
+          "end_frame": 715,
+          "peak_speed_kmh": 20.9709
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 725,
+          "end_frame": 754,
+          "peak_speed_kmh": 29.7987
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 755,
+          "end_frame": 760,
+          "peak_speed_kmh": 34.8373
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 775,
+          "end_frame": 780,
+          "peak_speed_kmh": 22.989
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1130,
+          "end_frame": 1165,
+          "peak_speed_kmh": 50.6228
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1265,
+          "end_frame": 1270,
+          "peak_speed_kmh": 20.7608
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1275,
+          "end_frame": 1285,
+          "peak_speed_kmh": 24.5222
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1305,
+          "end_frame": 1360,
+          "peak_speed_kmh": 44.9088
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1515,
+          "end_frame": 1520,
+          "peak_speed_kmh": 20.0456
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1580,
+          "end_frame": 1585,
+          "peak_speed_kmh": 23.1719
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1780,
+          "end_frame": 1785,
+          "peak_speed_kmh": 20.9204
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 1815,
+          "end_frame": 1820,
+          "peak_speed_kmh": 21.8511
+        },
+        {
+          "track_id": 102,
+          "role": "MID",
+          "start_frame": 2455,
+          "end_frame": 2460,
+          "peak_speed_kmh": 20.2527
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 75,
+          "end_frame": 95,
+          "peak_speed_kmh": 36.4653
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 195,
+          "end_frame": 200,
+          "peak_speed_kmh": 25.5085
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 425,
+          "end_frame": 430,
+          "peak_speed_kmh": 26.1671
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 440,
+          "end_frame": 450,
+          "peak_speed_kmh": 37.0167
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 575,
+          "end_frame": 580,
+          "peak_speed_kmh": 20.7003
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 600,
+          "end_frame": 605,
+          "peak_speed_kmh": 28.8422
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1275,
+          "end_frame": 1280,
+          "peak_speed_kmh": 34.5938
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1310,
+          "end_frame": 1350,
+          "peak_speed_kmh": 51.2085
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1565,
+          "end_frame": 1570,
+          "peak_speed_kmh": 20.0951
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1590,
+          "end_frame": 1595,
+          "peak_speed_kmh": 21.1587
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1635,
+          "end_frame": 1640,
+          "peak_speed_kmh": 29.2131
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1650,
+          "end_frame": 1665,
+          "peak_speed_kmh": 27.7057
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1675,
+          "end_frame": 1680,
+          "peak_speed_kmh": 24.2374
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 1685,
+          "end_frame": 1690,
+          "peak_speed_kmh": 22.5827
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2310,
+          "end_frame": 2330,
+          "peak_speed_kmh": 33.3931
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2335,
+          "end_frame": 2345,
+          "peak_speed_kmh": 37.6997
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2350,
+          "end_frame": 2355,
+          "peak_speed_kmh": 27.2267
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2365,
+          "end_frame": 2370,
+          "peak_speed_kmh": 40.4504
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2380,
+          "end_frame": 2385,
+          "peak_speed_kmh": 28.7425
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2530,
+          "end_frame": 2540,
+          "peak_speed_kmh": 43.2198
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2640,
+          "end_frame": 2660,
+          "peak_speed_kmh": 39.0926
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2685,
+          "end_frame": 2700,
+          "peak_speed_kmh": 27.8919
+        },
+        {
+          "track_id": 107,
+          "role": "DEF",
+          "start_frame": 2710,
+          "end_frame": 2715,
+          "peak_speed_kmh": 27.1384
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 15,
+          "end_frame": 20,
+          "peak_speed_kmh": 39.1259
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 435,
+          "end_frame": 445,
+          "peak_speed_kmh": 36.5952
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 455,
+          "end_frame": 460,
+          "peak_speed_kmh": 27.5599
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 470,
+          "end_frame": 480,
+          "peak_speed_kmh": 30.8143
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 485,
+          "end_frame": 505,
+          "peak_speed_kmh": 48.8491
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 525,
+          "end_frame": 530,
+          "peak_speed_kmh": 21.2118
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 535,
+          "end_frame": 555,
+          "peak_speed_kmh": 31.0178
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 560,
+          "end_frame": 565,
+          "peak_speed_kmh": 33.9424
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 570,
+          "end_frame": 575,
+          "peak_speed_kmh": 25.6056
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 635,
+          "end_frame": 640,
+          "peak_speed_kmh": 26.5363
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 645,
+          "end_frame": 650,
+          "peak_speed_kmh": 21.7029
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 725,
+          "end_frame": 740,
+          "peak_speed_kmh": 27.3984
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 745,
+          "end_frame": 750,
+          "peak_speed_kmh": 21.1256
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 765,
+          "end_frame": 770,
+          "peak_speed_kmh": 27.4384
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 775,
+          "end_frame": 780,
+          "peak_speed_kmh": 39.6932
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 785,
+          "end_frame": 790,
+          "peak_speed_kmh": 40.4958
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 795,
+          "end_frame": 800,
+          "peak_speed_kmh": 37.7395
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 810,
+          "end_frame": 825,
+          "peak_speed_kmh": 71.528
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 1025,
+          "end_frame": 1030,
+          "peak_speed_kmh": 22.7151
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 1035,
+          "end_frame": 1045,
+          "peak_speed_kmh": 36.1356
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 1130,
+          "end_frame": 1150,
+          "peak_speed_kmh": 49.0921
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 1860,
+          "end_frame": 1865,
+          "peak_speed_kmh": 29.0183
+        },
+        {
+          "track_id": 111,
+          "role": "DEF",
+          "start_frame": 1870,
+          "end_frame": 1885,
+          "peak_speed_kmh": 25.3118
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 85,
+          "end_frame": 95,
+          "peak_speed_kmh": 26.9396
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 110,
+          "end_frame": 115,
+          "peak_speed_kmh": 24.5544
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 185,
+          "end_frame": 190,
+          "peak_speed_kmh": 23.5684
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 525,
+          "end_frame": 530,
+          "peak_speed_kmh": 27.0349
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 635,
+          "end_frame": 640,
+          "peak_speed_kmh": 26.8191
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 710,
+          "end_frame": 715,
+          "peak_speed_kmh": 21.8342
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 725,
+          "end_frame": 750,
+          "peak_speed_kmh": 27.6168
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 1150,
+          "end_frame": 1205,
+          "peak_speed_kmh": 57.7772
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 1220,
+          "end_frame": 1225,
+          "peak_speed_kmh": 31.8046
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 1230,
+          "end_frame": 1235,
+          "peak_speed_kmh": 36.0241
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 1910,
+          "end_frame": 1915,
+          "peak_speed_kmh": 23.5908
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 1970,
+          "end_frame": 1975,
+          "peak_speed_kmh": 22.0337
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 1980,
+          "end_frame": 1985,
+          "peak_speed_kmh": 25.6707
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 2000,
+          "end_frame": 2005,
+          "peak_speed_kmh": 21.0984
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 2355,
+          "end_frame": 2365,
+          "peak_speed_kmh": 24.0197
+        },
+        {
+          "track_id": 109,
+          "role": "DEF",
+          "start_frame": 2495,
+          "end_frame": 2515,
+          "peak_speed_kmh": 37.3177
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 378,
+          "end_frame": 382,
+          "peak_speed_kmh": 31.2873
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 440,
+          "end_frame": 450,
+          "peak_speed_kmh": 32.1285
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 455,
+          "end_frame": 459,
+          "peak_speed_kmh": 22.3689
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 465,
+          "end_frame": 470,
+          "peak_speed_kmh": 26.4107
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 495,
+          "end_frame": 500,
+          "peak_speed_kmh": 24.5656
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 725,
+          "end_frame": 745,
+          "peak_speed_kmh": 24.2328
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 1290,
+          "end_frame": 1295,
+          "peak_speed_kmh": 25.625
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 1305,
+          "end_frame": 1310,
+          "peak_speed_kmh": 48.7005
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 1315,
+          "end_frame": 1345,
+          "peak_speed_kmh": 45.1293
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 1355,
+          "end_frame": 1360,
+          "peak_speed_kmh": 23.3289
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2045,
+          "end_frame": 2050,
+          "peak_speed_kmh": 25.1456
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2070,
+          "end_frame": 2075,
+          "peak_speed_kmh": 20.2936
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2105,
+          "end_frame": 2115,
+          "peak_speed_kmh": 45.0542
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2170,
+          "end_frame": 2175,
+          "peak_speed_kmh": 25.9438
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2220,
+          "end_frame": 2225,
+          "peak_speed_kmh": 22.0919
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2310,
+          "end_frame": 2315,
+          "peak_speed_kmh": 24.195
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2325,
+          "end_frame": 2330,
+          "peak_speed_kmh": 21.3277
+        },
+        {
+          "track_id": 104,
+          "role": "MID",
+          "start_frame": 2685,
+          "end_frame": 2690,
+          "peak_speed_kmh": 21.2064
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 550,
+          "end_frame": 565,
+          "peak_speed_kmh": 29.1075
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 570,
+          "end_frame": 575,
+          "peak_speed_kmh": 26.6078
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1140,
+          "end_frame": 1150,
+          "peak_speed_kmh": 25.2115
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1155,
+          "end_frame": 1160,
+          "peak_speed_kmh": 27.4567
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1165,
+          "end_frame": 1170,
+          "peak_speed_kmh": 20.4692
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1175,
+          "end_frame": 1180,
+          "peak_speed_kmh": 27.0681
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1220,
+          "end_frame": 1225,
+          "peak_speed_kmh": 26.1907
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1230,
+          "end_frame": 1240,
+          "peak_speed_kmh": 28.1486
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1265,
+          "end_frame": 1270,
+          "peak_speed_kmh": 34.9267
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 1275,
+          "end_frame": 1280,
+          "peak_speed_kmh": 32.5536
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2175,
+          "end_frame": 2180,
+          "peak_speed_kmh": 22.6099
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2185,
+          "end_frame": 2190,
+          "peak_speed_kmh": 20.6682
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2215,
+          "end_frame": 2225,
+          "peak_speed_kmh": 20.6283
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2240,
+          "end_frame": 2245,
+          "peak_speed_kmh": 20.1888
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2310,
+          "end_frame": 2320,
+          "peak_speed_kmh": 24.6326
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2525,
+          "end_frame": 2535,
+          "peak_speed_kmh": 22.3168
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2640,
+          "end_frame": 2660,
+          "peak_speed_kmh": 27.1263
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2670,
+          "end_frame": 2675,
+          "peak_speed_kmh": 40.5372
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2685,
+          "end_frame": 2700,
+          "peak_speed_kmh": 27.7547
+        },
+        {
+          "track_id": 108,
+          "role": "FWD",
+          "start_frame": 2705,
+          "end_frame": 2708,
+          "peak_speed_kmh": 39.0246
+        }
+      ]
+    }
+  },
+  "ball_recoveries": {
+    "team_1": {
+      "total_recoveries": 30,
+      "recoveries_by_zone": {
+        "own_half": 9,
+        "opp_half": 0,
+        "final_third": 21
+      },
+      "recoveries_half_1": 13,
+      "recoveries_half_2": 17,
+      "recovery_rate_per100frames": 1.1033
+    },
+    "team_2": {
+      "total_recoveries": 28,
+      "recoveries_by_zone": {
+        "own_half": 10,
+        "opp_half": 2,
+        "final_third": 16
+      },
+      "recoveries_half_1": 13,
+      "recoveries_half_2": 15,
+      "recovery_rate_per100frames": 1.0298
+    }
+  },
+  "turnovers": {
+    "team_1": {
+      "total_turnovers_in_final_third": 2,
+      "turnovers_half_1": 1,
+      "turnovers_half_2": 1,
+      "dangerous_rate_pct": 7.6923,
+      "attacking_direction": "y_increasing"
+    },
+    "team_2": {
+      "total_turnovers_in_final_third": 4,
+      "turnovers_half_1": 1,
+      "turnovers_half_2": 3,
+      "dangerous_rate_pct": 16.0,
+      "attacking_direction": "y_increasing"
+    }
+  },
+  "passing": {
+    "team_1": {
+      "total_passes": 30,
+      "passes_half_1": 10,
+      "passes_half_2": 20,
+      "progressive_passes": 3,
+      "progressive_pass_pct": 50.0,
+      "pass_success_rate_pct": 100.0,
+      "network_density": 0.2182,
+      "top_passer_id": 2,
+      "top_receiver_id": 2
+    },
+    "team_2": {
+      "total_passes": 46,
+      "passes_half_1": 20,
+      "passes_half_2": 26,
+      "progressive_passes": 4,
+      "progressive_pass_pct": 18.1818,
+      "pass_success_rate_pct": 100.0,
+      "network_density": 0.3455,
+      "top_passer_id": 109,
+      "top_receiver_id": 109
+    }
+  }
+}
