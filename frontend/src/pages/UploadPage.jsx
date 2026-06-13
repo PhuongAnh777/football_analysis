@@ -123,7 +123,7 @@ export default function UploadPage() {
     }
   }
 
-  if (isProcessing || status === 'done') {
+  if (isProcessing) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -165,6 +165,11 @@ export default function UploadPage() {
         <div>
           <h1 className="text-3xl font-bold text-text-primary">Tải lên video</h1>
           <p className="text-text-secondary mt-1">Tải lên video trận đấu để bắt đầu phân tích chiến thuật AI</p>
+          {status === 'done' && (
+            <p className="text-emerald-400/90 text-sm mt-2">
+              Đã có kết quả phân tích trước đó — chọn video mới bên dưới để phân tích lại.
+            </p>
+          )}
         </div>
 
         {/* Drop zone */}
@@ -187,7 +192,6 @@ export default function UploadPage() {
             : <div className="space-y-1">
                 <p className="text-text-primary font-semibold text-lg">Kéo thả video vào đây hoặc click để chọn file</p>
                 <p className="text-text-secondary text-sm">Hỗ trợ: <span className="text-text-primary font-medium">MP4, AVI</span> | Tối đa <span className="text-text-primary font-medium">500MB</span></p>
-                <p className="text-amber-400/90 text-xs">Chọn đúng file mới — kiểm tra dung lượng trước khi phân tích (vd. 100.mp4 ≈ 20MB, không phải ~50MB).</p>
               </div>}
           </div>
         </div>

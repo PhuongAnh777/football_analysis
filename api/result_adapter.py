@@ -133,15 +133,19 @@ def _build_players(
     for team_str, roster in player_report.items():
         team_id = int(team_str)
         team_raw = raw_scores.get(team_str, raw_scores.get(str(team_id), {}))
+        roster_items = sorted(roster.items(), key=lambda item: int(item[0]))
 
-        for tid_str, info in roster.items():
+        for squad_num, (tid_str, info) in enumerate(roster_items, start=1):
             raw = team_raw.get(tid_str, {})
+            role = info.get("role_in_line", "MID")
             players.append(
                 {
                     "team": team_id,
                     "team_id": team_id,
                     "track_id": int(tid_str),
-                    "position": info.get("role_in_line", "MID"),
+                    "squad_number": squad_num,
+                    "display_name": f"Cầu thủ {squad_num}",
+                    "position": role,
                     "total_score": info.get("overall_score", raw.get("overall_score", 0)),
                     "grade": info.get("grade", _grade(info.get("overall_score", 0))),
                     "avg_speed": raw.get("speed_score", 0),
@@ -155,17 +159,35 @@ def _build_players(
     return players
 
 
-def _build_timeline(passing_events: list[dict]) -> list[dict]:
+def _player_label_map(players: list[dict]) -> dict[int, str]:
+    labels: dict[int, str] = {}
+    for player in players:
+        track_id = player.get("track_id")
+        if track_id is None:
+            continue
+        name = player.get("display_name") or f"Cầu thủ {player.get('squad_number', '?')}"
+        role = player.get("position")
+        labels[int(track_id)] = f"{name} ({role})" if role else name
+    return labels
+
+
+def _build_timeline(
+    passing_events: list[dict],
+    players: list[dict] | None = None,
+) -> list[dict]:
+    labels = _player_label_map(players or [])
     timeline: list[dict] = []
     for ev in passing_events:
+        passer_id = ev.get("passer_id")
+        receiver_id = ev.get("receiver_id")
+        passer = labels.get(int(passer_id), f"Cầu thủ ?") if passer_id is not None else "—"
+        receiver = labels.get(int(receiver_id), f"Cầu thủ ?") if receiver_id is not None else "—"
         timeline.append(
             {
                 "frame": ev.get("frame", 0),
                 "team": max(0, int(ev.get("team", 1)) - 1),
                 "type": "pass",
-                "description": (
-                    f"Chuyền bóng #{ev.get('passer_id')} → #{ev.get('receiver_id')}"
-                ),
+                "description": f"Chuyền bóng {passer} → {receiver}",
             }
         )
     return timeline
@@ -346,13 +368,14 @@ def adapt_api_result(
     fps: float,
 ) -> dict:
     evaluation = normalize_evaluation(llm_eval, match_report)
+    players = _build_players(match_report, scored_report)
     return {
         "evaluation": evaluation,
         "match_report": match_report,
         "charts": charts,
         "teams": _build_teams(tactical_report, match_report, scored_report, llm_eval),
-        "players": _build_players(match_report, scored_report),
-        "timeline": _build_timeline(passing_events),
+        "players": players,
+        "timeline": _build_timeline(passing_events, players),
         "notable_players": _build_notable_players(llm_eval, match_report),
         "fps": fps,
     }

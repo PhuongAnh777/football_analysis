@@ -120,7 +120,11 @@ def main():
 
     view_transformer = ViewTransformer()
 
-    view_transformer.add_transformed_position_to_tracks(tracks)
+    cumulative_cam = CameraMovementEstimator.cumulative(camera_movement_per_frame)
+    pitch_offsets  = view_transformer.compute_pitch_offsets(
+        cumulative_cam, pitch_x_start=0.0
+    )
+    view_transformer.add_transformed_position_to_tracks(tracks, pitch_offsets=pitch_offsets)
 
 
 

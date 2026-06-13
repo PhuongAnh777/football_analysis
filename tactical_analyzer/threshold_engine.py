@@ -2,8 +2,11 @@
 ThresholdEngine
 ===============
 Converts a ``TacticalAnalyzer.analyze()`` report into normalised 0-100
-scores using **match-relative percentile thresholds** — no hard-coded
-absolute benchmarks (except pitch boundaries: x 0-68 m, y 0-23.32 m).
+scores using **match-relative percentile thresholds**.
+
+Coordinate system (matches ViewTransformer / TacticalAnalyzer):
+    pos[0] = x = along pitch LENGTH  (0 → _VISIBLE_LENGTH ≈ 23.32 m)
+    pos[1] = y = across pitch WIDTH  (0 → _PITCH_WIDTH = 68 m)
 
 All scores are clipped to [0, 100] and JSON-serialisable.
 """
@@ -13,10 +16,15 @@ from __future__ import annotations
 import numpy as np
 from typing import Any
 
-_PITCH_WIDTH = 68.0
-_PITCH_DEPTH = 23.32
-_FLANK_LEFT  = 17.0
-_FLANK_RIGHT = 51.0
+# FIFA-standard pitch dimensions
+_PITCH_LENGTH  = 105.0   # full pitch length (metres)
+_PITCH_WIDTH   =  68.0   # full pitch width  (metres)
+# Visible portion of pitch length in the default camera calibration
+_VISIBLE_LENGTH = 23.32
+# Flank thresholds on the WIDTH axis (y = 0-68 m):
+# players within outer 25 % of pitch width count as "flank contribution"
+_FLANK_LEFT  = 17.0   # 25 % of 68 m  (near far touchline)
+_FLANK_RIGHT = 51.0   # 75 % of 68 m  (near camera touchline)
 
 # ── tiny utilities ──────────────────────────────────────────────────────────
 
@@ -49,11 +57,21 @@ class ThresholdEngine:
         Video frame rate (default 24).
     R_pressing : float
         Pressing radius in metres (default 8.0).
+    pitch_length : float
+        Actual pitch length covered by pos[0].  Must match the value passed
+        to ``TacticalAnalyzer``.  Used only as a cap / normaliser in the
+        defensive-line scoring function.
     """
 
-    def __init__(self, fps: int = 24, R_pressing: float = 8.0) -> None:
-        self.fps        = fps
-        self.R_pressing = R_pressing
+    def __init__(
+        self,
+        fps: int = 24,
+        R_pressing: float = 8.0,
+        pitch_length: float = _PITCH_LENGTH,
+    ) -> None:
+        self.fps          = fps
+        self.R_pressing   = R_pressing
+        self.pitch_length = float(pitch_length)
 
     # ── public API ──────────────────────────────────────────────────────────
 
@@ -117,7 +135,7 @@ class ThresholdEngine:
             for w in rpt.get("def_line", {}).get(tk, {}).get("windows", [])
         ]
         dl33, dl67 = _safe_percentile(
-            np.array(dl_vals, dtype=float), [33, 67], fallback=_PITCH_DEPTH / 2
+            np.array(dl_vals, dtype=float), [33, 67], fallback=self.pitch_length / 2
         )
 
         # team_width
@@ -207,12 +225,14 @@ class ThresholdEngine:
         return _clip100(_lerp(0.0, 44.0, val / p40))
 
     @staticmethod
-    def _score_def_line_val(val: float, p33: float, p67: float) -> float:
+    def _score_def_line_val(
+        val: float, p33: float, p67: float, pitch_length: float = _PITCH_LENGTH
+    ) -> float:
         """def_line_height (metres) → 0-100, style-neutral."""
         if p33 <= 0 or p67 <= p33:
             return 50.0
         if val >= p67:
-            return _clip100(70.0 + ((val - p67) / max(_PITCH_DEPTH - p67, 1e-6)) * 30.0)
+            return _clip100(70.0 + ((val - p67) / max(pitch_length - p67, 1e-6)) * 30.0)
         if val >= p33:
             return _clip100(_lerp(50.0, 69.0, (val - p33) / (p67 - p33)))
         return _clip100(30.0 + (val / max(p33, 1e-6)) * 19.0)
@@ -331,6 +351,7 @@ class ThresholdEngine:
                     self._score_def_line_val(
                         w["def_line_height_m"],
                         p["def_line"]["p33"], p["def_line"]["p67"],
+                        self.pitch_length,
                     )
                     for w in dl_windows
                 ]))
@@ -488,18 +509,18 @@ class ThresholdEngine:
                         def_ids_by_team[t].add(pid)
                     break
 
-        # Team def-line mean y per frame
-        team_def_y: dict[int, list[float]] = {1: [float("nan")] * total_frames,
+        # Team def-line mean depth (pos[0] = along pitch length) per frame
+        team_def_x: dict[int, list[float]] = {1: [float("nan")] * total_frames,
                                                2: [float("nan")] * total_frames}
         for fi, frame in enumerate(frames):
             for t in (1, 2):
-                def_ys = [
-                    float(frame[tid]["position_transformed"][1])
+                def_xs = [
+                    float(frame[tid]["position_transformed"][0])  # depth direction
                     for tid in def_ids_by_team[t]
                     if tid in frame and frame[tid].get("position_transformed") is not None
                 ]
-                if def_ys:
-                    team_def_y[t][fi] = float(np.mean(def_ys))
+                if def_xs:
+                    team_def_x[t][fi] = float(np.mean(def_xs))
 
         # Per-team speed distributions
         spd_lists: dict[int, list[float]] = {1: [], 2: []}
@@ -581,16 +602,16 @@ class ThresholdEngine:
             team_adh        = rpt.get("formation", {}).get(tk_key, {}).get("adherence_score", 0.5)
             discipline_score = _clip100(float(team_adh) * 100.0)
 
-            # P5 defensive positioning
+            # P5 defensive positioning (deviation from team def-line depth)
             line = player_line.get(tid, "MID")
             if line == "DEF":
-                def_y_ref  = team_def_y[team_id]
+                def_x_ref  = team_def_x[team_id]
                 deviations = [
-                    v["pos"][1] - def_y_ref[fi]
+                    v["pos"][0] - def_x_ref[fi]  # depth direction
                     for fi, v in by_frame.items()
                     if v["pos"] is not None
-                    and fi < len(def_y_ref)
-                    and not np.isnan(def_y_ref[fi])
+                    and fi < len(def_x_ref)
+                    and not np.isnan(def_x_ref[fi])
                 ]
                 if deviations:
                     consistency   = 1.0 - float(np.std(deviations)) / 10.0
@@ -600,11 +621,12 @@ class ThresholdEngine:
             else:
                 def_pos_score = 50.0
 
-            # P6 width contribution
+            # P6 width contribution — fraction of frames player occupies a flank
+            # Uses pos[1] (y = across pitch width, 0-68 m)
             if line in ("MID", "FWD") and active_count > 0:
                 flank_count       = sum(
                     1 for x, y in active_positions
-                    if x <= _FLANK_LEFT or x >= _FLANK_RIGHT
+                    if y <= _FLANK_LEFT or y >= _FLANK_RIGHT
                 )
                 width_contrib_score = _clip100((flank_count / active_count) * 100.0)
             else:

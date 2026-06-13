@@ -3,8 +3,13 @@ TacticalAnalyzer
 ================
 Extracts raw tactical metrics from a pipeline ``tracks`` dict.
 
-All values are in **metres** (pitch: x 0-68 m, y 0-23.32 m) and
-**km/h** for speed, and are JSON-serialisable.
+All values are in **metres** and **km/h** for speed, and are JSON-serialisable.
+
+Coordinate system (matches ViewTransformer output)
+--------------------------------------------------
+  position_transformed[0]  = x  = along pitch LENGTH (0 → visible_length m)
+  position_transformed[1]  = y  = across pitch WIDTH  (0 = far touchline,
+                                                        68 = near/camera side)
 
 Methods
 -------
@@ -30,8 +35,11 @@ from typing import Any
 
 import numpy as np
 
-_PITCH_WIDTH = 68.0
-_PITCH_DEPTH = 23.32
+# FIFA-standard pitch dimensions
+_PITCH_LENGTH  = 105.0   # full pitch length (metres)
+_PITCH_WIDTH   =  68.0   # full pitch width  (metres)
+# Visible portion of pitch length in the default camera calibration
+_VISIBLE_LENGTH = 23.32
 
 # ---------------------------------------------------------------------------
 # Formation catalogue  (always 10 outfield players, GK excluded separately)
@@ -149,6 +157,13 @@ class TacticalAnalyzer:
         Analysis window length in seconds (default 30).
     R_pressing : float
         Pressing radius in metres (default 8.0).
+    pitch_length : float, optional
+        Actual pitch length covered by pos[0] in metres.
+        Use ``_VISIBLE_LENGTH`` (23.32 m) when no pitch-offset is applied
+        (legacy / single-frame mode).  Use 105.0 when ``ViewTransformer``
+        is called with ``pitch_offsets`` so that pos[0] spans the full
+        FIFA pitch.  All zone thresholds (midfield, final third, etc.)
+        are derived from this value.
     """
 
     def __init__(
@@ -156,11 +171,26 @@ class TacticalAnalyzer:
         fps: int = 24,
         window_sec: int = 30,
         R_pressing: float = 8.0,
+        pitch_length: float = _PITCH_LENGTH,
     ) -> None:
         self.fps           = fps
         self.window_sec    = window_sec
         self.window_frames = fps * window_sec
         self.R_pressing    = R_pressing
+        self.pitch_length  = float(pitch_length)
+
+        # Derived zone thresholds (scale proportionally with pitch_length)
+        # These are "distance from own goal line" markers along pos[0].
+        self._pitch_mid   = self.pitch_length / 2.0          # 52.5 m at 105 m
+        self._final_3rd   = self.pitch_length * (2.0 / 3.0)  # 70 m at 105 m
+        self._def_3rd     = self.pitch_length / 3.0          # 35 m at 105 m
+        # Defensive block thresholds (as fraction of pitch length):
+        #   high_block  ≥ 60 % of pitch from own goal → ≥ 63 m at 105 m
+        #   low_block   < 33 % of pitch from own goal → < 35 m at 105 m
+        self._high_block  = self.pitch_length * 0.60
+        self._low_block   = self.pitch_length * 0.33
+        # Formation adherence std normaliser (scales with window depth)
+        self._adh_std_norm = max(self.pitch_length / 10.0, 1.0)
 
     # ── public orchestrator ──────────────────────────────────────────────────
 
@@ -377,16 +407,16 @@ class TacticalAnalyzer:
                 if pos is None:
                     continue
                 if tid not in player_data:
-                    player_data[tid] = {"team": team, "ys": [], "xs": []}
-                player_data[tid]["ys"].append(float(pos[1]))
-                player_data[tid]["xs"].append(float(pos[0]))
+                    player_data[tid] = {"team": team, "depths": [], "widths": []}
+                player_data[tid]["depths"].append(float(pos[0]))  # x = along pitch length
+                player_data[tid]["widths"].append(float(pos[1]))  # y = across pitch width
 
         min_frames = max(1, int(n * 0.05))   # player must appear in ≥5 % of frames
 
         for team_idx in (1, 2):
             team_players = {
                 tid: d for tid, d in player_data.items()
-                if d["team"] == team_idx and len(d["ys"]) >= min_frames
+                if d["team"] == team_idx and len(d["depths"]) >= min_frames
             }
 
             if not team_players:
@@ -402,20 +432,22 @@ class TacticalAnalyzer:
             # Ghost/duplicate tracks appear in fewer frames; real players
             # appear consistently throughout the video.
             stable = sorted(
-                team_players.items(), key=lambda kv: len(kv[1]["ys"]), reverse=True
+                team_players.items(), key=lambda kv: len(kv[1]["depths"]), reverse=True
             )
             pool = dict(stable[:15])   # buffer for ghost tracks / mis-assignments
 
-            median_ys = {tid: float(np.median(d["ys"])) for tid, d in pool.items()}
-            sorted_p  = sorted(median_ys.items(), key=lambda x: x[1])
+            # Sort by median depth (pos[0] = along pitch length → separates DEF/MID/FWD)
+            median_depths = {tid: float(np.median(d["depths"])) for tid, d in pool.items()}
+            sorted_p      = sorted(median_depths.items(), key=lambda x: x[1])
 
             # ── Step 2: remove goalkeeper ─────────────────────────────────
-            # The GK sits at one y-extreme and moves the least (lowest std).
+            # The GK sits at one depth-extreme and moves the least along
+            # pitch length (lowest std in the depth direction).
             gk_tid: int | None = None
             if len(sorted_p) >= 2:
                 cand_lo, cand_hi = sorted_p[0], sorted_p[-1]
-                std_lo = float(np.std(pool[cand_lo[0]]["ys"]))
-                std_hi = float(np.std(pool[cand_hi[0]]["ys"]))
+                std_lo = float(np.std(pool[cand_lo[0]]["depths"]))
+                std_hi = float(np.std(pool[cand_hi[0]]["depths"]))
                 gk_tid = cand_lo[0] if std_lo <= std_hi else cand_hi[0]
                 sorted_p = [p for p in sorted_p if p[0] != gk_tid]
 
@@ -424,7 +456,7 @@ class TacticalAnalyzer:
                 # Keep the 10 most stable tracks, then re-sort by depth (y).
                 sorted_p = sorted(
                     sorted_p,
-                    key=lambda p: len(pool[p[0]]["ys"]),
+                    key=lambda p: len(pool[p[0]]["depths"]),
                     reverse=True,
                 )[:_OUTFIELD_COUNT]
                 sorted_p = sorted(sorted_p, key=lambda x: x[1])
@@ -432,7 +464,7 @@ class TacticalAnalyzer:
                 # Top up from the stable list (excluding GK) if possible.
                 used  = {p[0] for p in sorted_p} | ({gk_tid} if gk_tid else set())
                 extra = [
-                    (tid, float(np.median(d["ys"])))
+                    (tid, float(np.median(d["depths"])))
                     for tid, d in stable
                     if tid not in used
                 ]
@@ -440,7 +472,7 @@ class TacticalAnalyzer:
                 if len(sorted_p) > _OUTFIELD_COUNT:
                     sorted_p = sorted(
                         sorted_p,
-                        key=lambda p: len(team_players[p[0]]["ys"]),
+                        key=lambda p: len(team_players[p[0]]["depths"]),
                         reverse=True,
                     )[:_OUTFIELD_COUNT]
                     sorted_p = sorted(sorted_p, key=lambda x: x[1])
@@ -455,20 +487,21 @@ class TacticalAnalyzer:
                 continue
 
             # ── Step 4: template matching via gap scoring ─────────────────
-            ys_sorted = [p[1] for p in sorted_p]
-            template, match_conf = _match_formation(ys_sorted)
+            depths_sorted = [p[1] for p in sorted_p]
+            template, match_conf = _match_formation(depths_sorted)
             lines     = _assign_lines(sorted_p, template)
             formation = _formation_string(template)
 
             # ── Step 5: positional-discipline score ───────────────────────
-            # How tightly players stay near their median y (lower std = better).
+            # How consistently players maintain their depth position.
+            # Lower std along pitch length → tighter formation structure.
             outfield_ids = {p[0] for p in sorted_p}
             stds = [
-                float(np.std(pool[tid]["ys"]))
+                float(np.std(pool[tid]["depths"]))
                 for tid in outfield_ids if tid in pool
             ]
             mean_std        = float(np.mean(stds)) if stds else 5.0
-            adherence_score = float(np.clip(1.0 - mean_std / 10.0, 0.0, 1.0))
+            adherence_score = float(np.clip(1.0 - mean_std / self._adh_std_norm, 0.0, 1.0))
 
             result[f"team_{team_idx}"] = {
                 "detected_formation": formation,
@@ -574,8 +607,8 @@ class TacticalAnalyzer:
     def _defensive_line_height(self, tracks: dict) -> dict[str, Any]:
         """Average y-position of the defensive line per 30-s window (metres).
 
-        y-axis: 0 = own goal line, 23.32 m = opponent goal line.
-        high_block >= 14 m | mid_block 8-14 m | low_block < 8 m.
+        x-axis: 0 = own goal line, pitch_length m = opponent goal line.
+        high_block >= 60% | mid_block 33-60% | low_block < 33% of pitch_length.
 
         Returns
         -------
@@ -620,7 +653,7 @@ class TacticalAnalyzer:
                 for fi in range(w_start, w_end):
                     frame = frames[fi]
 
-                    # Collect DEF player y-positions
+                    # Collect DEF player x-positions (pos[0] = pitch depth)
                     def_ys: list[float] = []
 
                     if def_ids[team_idx]:
@@ -630,17 +663,17 @@ class TacticalAnalyzer:
                                 continue
                             pos = info.get("position_transformed")
                             if pos is not None:
-                                def_ys.append(float(pos[1]))
+                                def_ys.append(float(pos[0]))  # depth direction
                     else:
-                        # Fallback: 4 players with smallest y
-                        team_ys = [
-                            (float(info["position_transformed"][1]), tid)
+                        # Fallback: 4 players with smallest depth (closest to own goal)
+                        team_xs = [
+                            (float(info["position_transformed"][0]), tid)
                             for tid, info in frame.items()
                             if info.get("team") == team_idx
                             and info.get("position_transformed") is not None
                         ]
-                        team_ys.sort()
-                        def_ys = [y for y, _ in team_ys[:4]]
+                        team_xs.sort()
+                        def_ys = [x for x, _ in team_xs[:4]]
 
                     if len(def_ys) >= 3:
                         frame_heights.append(float(np.mean(def_ys)))
@@ -650,8 +683,8 @@ class TacticalAnalyzer:
 
                 avg_h = float(np.mean(frame_heights))
                 block = (
-                    "high_block" if avg_h >= 14.0 else
-                    "low_block"  if avg_h <   8.0 else
+                    "high_block" if avg_h >= self._high_block else
+                    "low_block"  if avg_h <  self._low_block  else
                     "mid_block"
                 )
                 windows.append({
@@ -698,7 +731,7 @@ class TacticalAnalyzer:
     # ── 6. team_width ────────────────────────────────────────────────────────
 
     def _team_width(self, tracks: dict) -> dict[str, Any]:
-        """Horizontal spread of a team per 30-s window (metres, x-axis 0-68 m).
+        """Lateral spread of a team per 30-s window (metres, y-axis 0-68 m).
 
         wide >= 45 m | medium 30-45 m | narrow < 30 m.
         Also computes mean width when team has/doesn't have the ball.
@@ -734,15 +767,16 @@ class TacticalAnalyzer:
 
                 for fi in range(w_start, w_end):
                     frame = frames[fi]
-                    xs = [
-                        float(info["position_transformed"][0])
+                    # pos[1] = y = across pitch WIDTH (0-68 m)
+                    ys = [
+                        float(info["position_transformed"][1])
                         for info in frame.values()
                         if info.get("team") == team_idx
                         and info.get("position_transformed") is not None
                     ]
-                    if len(xs) < 5:
+                    if len(ys) < 5:
                         continue
-                    w_frame = float(np.max(xs) - np.min(xs))
+                    w_frame = float(np.max(ys) - np.min(ys))
                     frame_widths.append(w_frame)
 
                     # Ball possession context
@@ -854,10 +888,10 @@ class TacticalAnalyzer:
                 for pid in ids:
                     player_role[int(pid)] = mapped
 
-        # Fallback role by median-y ranking
+        # Fallback role by median depth (pos[0] = along pitch length)
         if not player_role:
             for team_idx in (1, 2):
-                median_ys: dict[int, list[float]] = {}
+                median_depths_fb: dict[int, list[float]] = {}
                 for frame in frames:
                     for tid, info in frame.items():
                         if info.get("team") != team_idx:
@@ -865,9 +899,9 @@ class TacticalAnalyzer:
                         pos = info.get("position_transformed")
                         if pos is None:
                             continue
-                        median_ys.setdefault(int(tid), []).append(float(pos[1]))
+                        median_depths_fb.setdefault(int(tid), []).append(float(pos[0]))
                 ranked = sorted(
-                    {tid: float(np.median(ys)) for tid, ys in median_ys.items()}.items(),
+                    {tid: float(np.median(xs)) for tid, xs in median_depths_fb.items()}.items(),
                     key=lambda x: x[1],
                 )
                 n_p = len(ranked)
@@ -967,10 +1001,10 @@ class TacticalAnalyzer:
         A recovery = team_ball_control transitions to T for >= 3 consecutive
         frames from a state where T did not hold the ball.
 
-        Zone classification (y-axis metres):
-            own_half    y < 11.66
-            opp_half    11.66 <= y < 15.5
-            final_third y >= 15.5
+        Zone classification (x-axis = pitch depth, metres):
+            own_half    x < 11.66  (< 50 % of visible length)
+            opp_half    11.66 <= x < 15.5
+            final_third x >= 15.5  (> 66 % of visible length)
 
         Returns
         -------
@@ -983,8 +1017,8 @@ class TacticalAnalyzer:
         }
         """
         MIN_CTRL     = 3
-        PITCH_MID    = 11.66
-        FINAL_3RD    = 15.5
+        PITCH_MID    = self._pitch_mid
+        FINAL_3RD    = self._final_3rd
         ctrl         = team_ball_control
         total_frames = len(ctrl)
         half_split   = total_frames // 2
@@ -1013,10 +1047,10 @@ class TacticalAnalyzer:
 
                         zone = "own_half"
                         if pos is not None:
-                            y = float(pos[1])
-                            if y >= FINAL_3RD:
+                            x = float(pos[0])  # depth direction (along pitch length)
+                            if x >= FINAL_3RD:
                                 zone = "final_third"
-                            elif y >= PITCH_MID:
+                            elif x >= PITCH_MID:
                                 zone = "opp_half"
 
                         events.append({"frame": i, "zone": zone})
@@ -1050,9 +1084,9 @@ class TacticalAnalyzer:
         Only turnovers where T's ball carrier is inside their attacking
         final third are counted.
 
-        Attacking direction inferred from FWD players' median y:
-            y_increasing → final_third: y >= 15.5 m
-            y_decreasing → final_third: y <= 7.82 m
+        Attacking direction inferred from FWD players' median depth (pos[0]):
+            x_increasing → final_third: x >= 15.5 m  (FWD avg depth > 11.66 m)
+            x_decreasing → final_third: x <= 7.82 m
 
         Returns
         -------
@@ -1075,7 +1109,8 @@ class TacticalAnalyzer:
         except Exception:
             formation_data = {}
 
-        player_ys: dict[int, list[float]] = {}
+        # Collect per-player depth samples (pos[0] = along pitch length)
+        player_xs: dict[int, list[float]] = {}
         for frame in tracks["players"]:
             for tid, info in frame.items():
                 if info.get("team") not in (1, 2):
@@ -1083,7 +1118,7 @@ class TacticalAnalyzer:
                 pos = info.get("position_transformed")
                 if pos is None:
                     continue
-                player_ys.setdefault(int(tid), []).append(float(pos[1]))
+                player_xs.setdefault(int(tid), []).append(float(pos[0]))
 
         atk_dir: dict[int, str] = {}
         for team_idx in (1, 2):
@@ -1092,23 +1127,31 @@ class TacticalAnalyzer:
                 .get("lines", {})
                 .get("FWD", [])
             )
-            fwd_ys = [
-                float(np.median(player_ys[int(fid)]))
+            fwd_xs = [
+                float(np.median(player_xs[int(fid)]))
                 for fid in fwd_ids
-                if int(fid) in player_ys and player_ys[int(fid)]
+                if int(fid) in player_xs and player_xs[int(fid)]
             ]
-            if fwd_ys:
+            if fwd_xs:
                 atk_dir[team_idx] = (
-                    "y_increasing" if float(np.mean(fwd_ys)) > 11.66 else "y_decreasing"
+                    "y_increasing"
+                    if float(np.mean(fwd_xs)) > self._pitch_mid
+                    else "y_decreasing"
                 )
             else:
                 atk_dir[team_idx] = "y_increasing" if team_idx == 1 else "y_decreasing"
 
         result: dict[str, Any] = {}
         for team_idx in (1, 2):
-            direction = atk_dir[team_idx]
-            in_ft     = ((lambda y: y >= 15.5) if direction == "y_increasing"
-                         else (lambda y: y <= 7.82))
+            direction  = atk_dir[team_idx]
+            final_3rd  = self._final_3rd
+            def_3rd    = self._def_3rd
+            # in_ft checks pos[0] (depth direction)
+            in_ft = (
+                (lambda x, t=final_3rd: x >= t)
+                if direction == "y_increasing"
+                else (lambda x, t=def_3rd: x <= t)
+            )
 
             all_to: list[int] = []
             ft_to:  list[int] = []
@@ -1133,7 +1176,7 @@ class TacticalAnalyzer:
                                         and info.get("position_transformed") is not None):
                                     pos = info["position_transformed"]
                                     break
-                        if pos is not None and in_ft(float(pos[1])):
+                        if pos is not None and in_ft(float(pos[0])):
                             ft_to.append(i)
                     i = j
                 else:
@@ -1154,7 +1197,8 @@ class TacticalAnalyzer:
     def _passing_stats(self, passing_events: list[dict]) -> dict[str, Any]:
         """Compute passing statistics from detected pass events.
 
-        Progressive pass: receiver > 10 m further forward than passer.
+        Progressive pass: receiver > 10 m further forward than passer
+        (forward = increasing pos[0], along pitch length direction).
         Network density: unique (passer, receiver) pairs / max directed edges.
 
         Parameters
@@ -1196,18 +1240,21 @@ class TacticalAnalyzer:
             ]
 
             if valid:
-                y_diffs   = [float(ev["receiver_pos"][1]) - float(ev["passer_pos"][1])
-                             for ev in valid]
-                direction = "y_increasing" if float(np.mean(y_diffs)) >= 0 else "y_decreasing"
+                # pos[0] = depth direction (along pitch length)
+                x_diffs   = [
+                    float(ev["receiver_pos"][0]) - float(ev["passer_pos"][0])
+                    for ev in valid
+                ]
+                direction = "y_increasing" if float(np.mean(x_diffs)) >= 0 else "y_decreasing"
             else:
                 direction = "y_increasing"
 
             prog = sum(
                 1 for ev in valid
                 if (direction == "y_increasing"
-                    and float(ev["receiver_pos"][1]) - float(ev["passer_pos"][1]) > 10)
+                    and float(ev["receiver_pos"][0]) - float(ev["passer_pos"][0]) > 10)
                 or (direction == "y_decreasing"
-                    and float(ev["passer_pos"][1]) - float(ev["receiver_pos"][1]) > 10)
+                    and float(ev["passer_pos"][0]) - float(ev["receiver_pos"][0]) > 10)
             )
             prog_pct = round(prog / max(len(valid), 1) * 100, 4)
 

@@ -10,10 +10,13 @@ export default function TeamHeader({ teamName, formation, profile, score, grade,
 
   return (
     <div className={`rounded-xl border p-6 ${borderClass} flex flex-col items-center text-center gap-4`}>
-      <ProgressRing value={score} color={ringColor} size="xl">
-        <span className={`text-3xl font-bold font-mono ${accentClass}`}>{score}</span>
-        <span className="text-xs text-text-secondary">/ 100</span>
-      </ProgressRing>
+      <div className="flex flex-col items-center gap-1">
+        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Điểm tổng</p>
+        <ProgressRing value={score} color={ringColor} size="xl">
+          <span className={`text-3xl font-bold font-mono ${accentClass}`}>{Number(score).toFixed(1)}</span>
+        </ProgressRing>
+        <p className="text-xs text-text-secondary">thang điểm 100</p>
+      </div>
       <div>
         <h3 className="text-xl font-bold text-text-primary">{teamName}</h3>
         <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
@@ -21,7 +24,10 @@ export default function TeamHeader({ teamName, formation, profile, score, grade,
           <Badge variant="ghost" size="md">{profile}</Badge>
         </div>
       </div>
-      <GradeChip grade={grade} size="lg" showLabel />
+      <div className="flex flex-col items-center gap-1">
+        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Xếp loại</p>
+        <GradeChip grade={grade} size="lg" showLabel />
+      </div>
     </div>
   )
 }

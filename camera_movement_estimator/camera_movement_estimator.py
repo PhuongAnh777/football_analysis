@@ -80,6 +80,27 @@ class CameraMovementEstimator:
         
         return camera_movement
 
+    @staticmethod
+    def cumulative(camera_movement_per_frame):
+        """Convert per-frame camera deltas → cumulative offsets from frame 0.
+
+        camera_movement_per_frame : list of [dx, dy]
+            Per-frame feature displacement (new_feature - old_feature).
+            Negative dx = camera panned right (features moved left).
+
+        Returns
+        -------
+        list of [cum_x, cum_y] – same length as input.
+            cum_x < 0 means camera has panned right (toward higher-x pitch).
+        """
+        result = [[0.0, 0.0]]
+        cum_x, cum_y = 0.0, 0.0
+        for dx, dy in camera_movement_per_frame[1:]:
+            cum_x += dx
+            cum_y += dy
+            result.append([cum_x, cum_y])
+        return result
+
     def draw_camera_movement(self, frames, camera_movement_per_frame):
         for frame_num, frame in enumerate(frames):
             blend_filled_rectangle(frame, (0, 0), (500, 100), alpha=0.6)

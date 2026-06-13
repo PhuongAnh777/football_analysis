@@ -204,7 +204,11 @@ def execute_pipeline(
     cam_estimator.add_adjust_positions_to_tracks(tracks, camera_movement_per_frame)
 
     view_transformer = ViewTransformer()
-    view_transformer.add_transformed_position_to_tracks(tracks)
+    cumulative_cam = CameraMovementEstimator.cumulative(camera_movement_per_frame)
+    pitch_offsets  = view_transformer.compute_pitch_offsets(
+        cumulative_cam, pitch_x_start=0.0
+    )
+    view_transformer.add_transformed_position_to_tracks(tracks, pitch_offsets=pitch_offsets)
 
     _notify(4, "teams", _PIPELINE_STEPS[3][2])
     tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"])
@@ -248,12 +252,13 @@ def execute_pipeline(
     passing_events = extract_passing_events(tracks)
 
     _notify(6, "tactical", _PIPELINE_STEPS[5][2])
-    analyzer = TacticalAnalyzer(fps=fps_int, window_sec=30, R_pressing=8.0)
+    analyzer = TacticalAnalyzer(fps=fps_int, window_sec=30, R_pressing=8.0,
+                                pitch_length=105.0)
     tactical_report = analyzer.analyze(
         tracks, team_ball_control, passing_events=passing_events
     )
 
-    engine = ThresholdEngine(fps=fps_int, R_pressing=8.0)
+    engine = ThresholdEngine(fps=fps_int, R_pressing=8.0, pitch_length=105.0)
     scored_report = engine.compute(tactical_report, tracks)
 
     _dump_json(tactical_report, os.path.join(out_dir, "tactical_report.json"))
@@ -330,10 +335,10 @@ def execute_pipeline(
         "passing_network_team1": os.path.join(out_dir, "passing_network_team1.png"),
         "passing_network_team2": os.path.join(out_dir, "passing_network_team2.png"),
     }
-    generate_heatmap(tracks_t1, team_assigner.team_colors, output_path=chart_paths["heatmap_team1"])
-    generate_heatmap(tracks_t2, team_assigner.team_colors, output_path=chart_paths["heatmap_team2"])
-    generate_passing_network(tracks_t1, team_assigner.team_colors, output_path=chart_paths["passing_network_team1"])
-    generate_passing_network(tracks_t2, team_assigner.team_colors, output_path=chart_paths["passing_network_team2"])
+    generate_heatmap(tracks_t1, team_assigner.team_colors, output_path=chart_paths["heatmap_team1"], team_id=1)
+    generate_heatmap(tracks_t2, team_assigner.team_colors, output_path=chart_paths["heatmap_team2"], team_id=2)
+    generate_passing_network(tracks_t1, team_assigner.team_colors, output_path=chart_paths["passing_network_team1"], team_id=1)
+    generate_passing_network(tracks_t2, team_assigner.team_colors, output_path=chart_paths["passing_network_team2"], team_id=2)
 
     charts = {key: _encode_image(path) for key, path in chart_paths.items()}
 

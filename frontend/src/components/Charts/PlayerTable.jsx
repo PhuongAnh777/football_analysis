@@ -3,10 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import GradeChip from '../UI/GradeChip'
 
 const COLUMNS = [
-  { key: 'track_id',            label: '# ID',     sortable: true  },
   { key: 'position',            label: 'Vị trí',   sortable: false },
   { key: 'total_score',         label: 'Điểm',     sortable: true  },
-  { key: 'grade',               label: 'Grade',    sortable: false },
+  { key: 'grade',               label: 'Xếp loại', sortable: false },
   { key: 'avg_speed',           label: 'Tốc độ',   sortable: true  },
   { key: 'pressing',            label: 'Pressing', sortable: true  },
   { key: 'discipline',          label: 'Kỷ luật',  sortable: true  },
@@ -17,12 +16,9 @@ const COLUMNS = [
 
 const MEDAL = { 0: '🥇', 1: '🥈', 2: '🥉' }
 
-export default function PlayerTable({ team1Players = [], team2Players = [] }) {
-  const [activeTeam, setActiveTeam] = useState(0)
+function TeamPlayerTable({ players, teamLabel, accentClass }) {
   const [sortKey, setSortKey] = useState('total_score')
   const [sortDir, setSortDir] = useState('desc')
-
-  const players = activeTeam === 0 ? team1Players : team2Players
 
   const sorted = useMemo(() => {
     return [...players].sort((a, b) => {
@@ -38,26 +34,15 @@ export default function PlayerTable({ team1Players = [], team2Players = [] }) {
   }
 
   return (
-    <div>
-      <div className="flex gap-2 mb-4">
-        {['Đội 1', 'Đội 2'].map((label, i) => (
-          <button key={i} onClick={() => setActiveTeam(i)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTeam === i
-                ? i === 0 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
-                          : 'bg-red-500/20 text-red-400 border border-red-500/40'
-                : 'text-text-secondary border border-border hover:border-border-hover'
-            }`}>
-            {label} <span className="ml-1.5 text-xs opacity-60">({(i === 0 ? team1Players : team2Players).length})</span>
-          </button>
-        ))}
-      </div>
-
+    <div className="min-w-0">
+      <p className={`text-sm font-semibold mb-3 ${accentClass}`}>
+        {teamLabel} <span className="text-xs opacity-60 font-normal">({players.length} cầu thủ)</span>
+      </p>
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="data-table w-full">
           <thead>
             <tr style={{ background: 'var(--color-surface-2)' }}>
-              <th className="pl-4">#</th>
+              <th className="pl-4">Hạng</th>
               {COLUMNS.map(col => (
                 <th key={col.key} onClick={() => col.sortable && handleSort(col.key)}>
                   {col.label}
@@ -75,7 +60,7 @@ export default function PlayerTable({ team1Players = [], team2Players = [] }) {
                   </td>
                 </tr>
               ) : sorted.map((player, idx) => (
-                <motion.tr key={player.track_id ?? idx}
+                <motion.tr key={player.track_id ?? `${teamLabel}-${idx}`}
                   initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.03 }}
                   style={idx < 3 ? {
@@ -90,6 +75,7 @@ export default function PlayerTable({ team1Players = [], team2Players = [] }) {
                       {col.key === 'grade' ? <GradeChip grade={player.grade} size="sm" />
                       : col.key === 'total_score' ? <span className="font-mono font-bold text-sm">{Number(player.total_score ?? 0).toFixed(1)}</span>
                       : col.key === 'avg_speed' ? <span className="font-mono text-xs text-text-secondary">{Number(player[col.key] ?? 0).toFixed(1)} km/h</span>
+                      : col.key === 'position' ? <span className="text-xs text-text-primary">{player.position || '—'}</span>
                       : <span className="font-mono text-xs text-text-secondary">
                           {typeof player[col.key] === 'number' ? Number(player[col.key]).toFixed(1) : player[col.key] ?? '—'}
                         </span>}
@@ -101,6 +87,15 @@ export default function PlayerTable({ team1Players = [], team2Players = [] }) {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+export default function PlayerTable({ team1Players = [], team2Players = [], team1Name = 'Đội 1', team2Name = 'Đội 2' }) {
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <TeamPlayerTable players={team1Players} teamLabel={team1Name} accentClass="text-blue-400" />
+      <TeamPlayerTable players={team2Players} teamLabel={team2Name} accentClass="text-red-400" />
     </div>
   )
 }
