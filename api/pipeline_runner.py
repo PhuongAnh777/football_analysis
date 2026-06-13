@@ -45,6 +45,7 @@ from tactical_analyzer import (
 
 from api.job_store import JobState
 from api.result_adapter import adapt_api_result, build_streamlit_analysis_result
+from api.error_log import save_job_error
 
 _TOTAL_STEPS = 9
 _OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output_videos")
@@ -342,7 +343,6 @@ def execute_pipeline(
     _notify(8, "render", _PIPELINE_STEPS[7][2])
     team_ball_control_arr = np.array(team_ball_control)
     tracker.draw_annotations(video_frames, tracks, team_ball_control_arr)
-    cam_estimator.draw_camera_movement(video_frames, camera_movement_per_frame)
     speed_estimator.draw_speed_and_distance(video_frames, tracks)
 
     for stale in ("output_video.avi", "output_video.mp4"):
@@ -487,3 +487,26 @@ def run_pipeline(
         job.error = error_detail
         job.current_step = "Lỗi"
         job.step_key = "error"
+        job.error_log_path = save_job_error(
+            job_id,
+            error_detail,
+            output_dir=output_dir,
+            step_key=job.step_key,
+            source="pipeline",
+        )
+
+        from api.job_persistence import save_job_meta
+
+        save_job_meta(
+            output_dir,
+            {
+                "job_id": job_id,
+                "status": "error",
+                "error": error_detail,
+                "error_log_path": job.error_log_path,
+                "input_path": job.input_path,
+                "input_md5": job.input_md5,
+                "input_filename": job.input_filename,
+                "input_size_bytes": job.input_size_bytes,
+            },
+        )

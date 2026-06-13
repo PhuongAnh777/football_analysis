@@ -21,8 +21,8 @@ frontend/.env.local
 *.jpg
 *.mp4
 
-# IDE
-.idea/
+# Logs
+logs/
 .vscode/
 
 

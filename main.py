@@ -312,12 +312,6 @@ def main():
 
     tracker.draw_annotations(video_frames, tracks, team_ball_control)
 
-    camera_movement_estimator.draw_camera_movement(
-
-        video_frames, camera_movement_per_frame
-
-    )
-
     speed_and_distance_estimator.draw_speed_and_distance(video_frames, tracks)
 
     save_video(video_frames, "output_videos/output_video.avi", fps=fps)

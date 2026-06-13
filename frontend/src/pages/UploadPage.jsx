@@ -62,9 +62,10 @@ function StepIndicator({ steps, currentStepKey }) {
 export default function UploadPage() {
   const navigate = useNavigate()
   const { jobId, status, uploadProgress, processingProgress, currentStep, message,
-          setUploading, setJob, setProcessing, setDone, setError, reset } = useAnalysis()
+          error, errorLogPath, setUploading, setJob, setProcessing, setDone, setError, reset } = useAnalysis()
   const [file, setFile] = useState(null)
   const [toast, setToast] = useState(null)
+  const [copied, setCopied] = useState(false)
 
   const isUploading  = status === 'uploading'
   const isProcessing = status === 'processing'
@@ -91,8 +92,9 @@ export default function UploadPage() {
         setDone(results)
         navigate('/dashboard')
       } else if (data.status === 'error' || data.status === 'failed') {
-        setError(data.error || data.message || 'Xử lý thất bại')
-        showToast(data.error || data.message || 'Xử lý thất bại')
+        const errText = data.error || data.message || 'Xử lý thất bại'
+        setError(errText, data.error_log_path || null)
+        showToast('Xử lý thất bại — xem log bên dưới')
       }
     } catch { /* ignore */ }
   }, 2000, isProcessing)
@@ -109,6 +111,17 @@ export default function UploadPage() {
     multiple: false,
     disabled: isUploading || isProcessing,
   })
+
+  async function copyError() {
+    if (!error) return
+    try {
+      await navigator.clipboard.writeText(error)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      showToast('Không copy được — mở file log trên máy')
+    }
+  }
 
   async function handleAnalyze() {
     if (!file) return
@@ -257,14 +270,31 @@ export default function UploadPage() {
         </motion.button>
 
         {status === 'error' && (
-          <div className="card border-red-500/40 bg-red-500/5 flex items-start gap-3">
-            <span className="text-red-400 text-lg mt-0.5">⚠</span>
-            <div className="flex-1">
-              <p className="text-red-400 font-medium text-sm">Đã xảy ra lỗi</p>
-              <p className="text-text-secondary text-xs mt-0.5">{message}</p>
+          <div className="card border-red-500/40 bg-red-500/5 flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <span className="text-red-400 text-lg mt-0.5">⚠</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-red-400 font-medium text-sm">Đã xảy ra lỗi</p>
+                {errorLogPath && (
+                  <p className="text-text-secondary text-xs mt-1 break-all">
+                    Log: <code className="text-red-300/90">{errorLogPath}</code>
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={copyError}
+                  className="text-xs px-2 py-1 rounded border border-border hover:border-red-400/50 text-text-secondary hover:text-text-primary transition-colors">
+                  {copied ? 'Đã copy' : 'Copy log'}
+                </button>
+                <button onClick={() => { reset(); setFile(null); setCopied(false) }}
+                  className="text-xs text-text-secondary hover:text-text-primary transition-colors">Thử lại</button>
+              </div>
             </div>
-            <button onClick={() => { reset(); setFile(null) }}
-              className="text-xs text-text-secondary hover:text-text-primary transition-colors">Thử lại</button>
+            {error && (
+              <pre className="text-xs text-red-300/90 bg-black/30 rounded-lg p-3 overflow-auto max-h-64 whitespace-pre-wrap break-words border border-red-500/20">
+                {error}
+              </pre>
+            )}
           </div>
         )}
       </motion.div>

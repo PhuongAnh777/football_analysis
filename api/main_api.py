@@ -59,6 +59,7 @@ _load_dotenv()
 from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
 from api.job_persistence import load_job_meta, load_job_result
 from api.pipeline_runner import _convert_to_mp4, _job_output_dir, _job_stub_path, run_pipeline
+from api.error_log import job_error_log_path, save_job_error
 from utils.stub_io import remove_track_stub, video_fingerprint
 from utils.video_utils import ensure_browser_playable
 
@@ -245,10 +246,33 @@ def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
             import traceback as _tb
 
             job = jobs[job_id]
+            error_detail = f"{type(exc).__name__}: {exc}\n{_tb.format_exc()}"
             job.status = "error"
             job.step_key = "error"
             job.current_step = "Lỗi tracking Colab"
-            job.error = f"{type(exc).__name__}: {exc}\n{_tb.format_exc()}"
+            job.error = error_detail
+            job.error_log_path = save_job_error(
+                job_id,
+                error_detail,
+                output_dir=_job_output_dir(job_id),
+                step_key="tracking_remote",
+                source="colab",
+            )
+            from api.job_persistence import save_job_meta
+
+            save_job_meta(
+                _job_output_dir(job_id),
+                {
+                    "job_id": job_id,
+                    "status": "error",
+                    "error": error_detail,
+                    "error_log_path": job.error_log_path,
+                    "input_path": job.input_path,
+                    "input_md5": job.input_md5,
+                    "input_filename": job.input_filename,
+                    "input_size_bytes": job.input_size_bytes,
+                },
+            )
             return
     else:
         print(
@@ -329,6 +353,11 @@ async def analyze(video: UploadFile = File(...)):
 async def status(job_id: str):
     """Return the current progress of a pipeline job."""
     job = _require_job(job_id)
+    error_log = getattr(job, "error_log_path", None)
+    if not error_log and job.status == "error":
+        candidate = job_error_log_path(_job_output_dir(job_id))
+        if os.path.isfile(candidate):
+            error_log = os.path.abspath(candidate)
     return {
         "job_id":       job.job_id,
         "status":       job.status,
@@ -336,6 +365,7 @@ async def status(job_id: str):
         "current_step": job.current_step,
         "step_key":     job.step_key,
         "error":        job.error,
+        "error_log_path": error_log,
         "input_filename": job.input_filename,
         "input_md5":    job.input_md5,
         "input_size_bytes": job.input_size_bytes,

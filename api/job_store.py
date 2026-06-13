@@ -22,6 +22,7 @@ class JobState:
     current_step: str = ""
     step_key: str = ""
     error: Optional[str] = None
+    error_log_path: Optional[str] = None
     result: Optional[dict] = None       # populated when status == "done"
     video_path: Optional[str] = None    # path to output video file
     input_path: Optional[str] = None
