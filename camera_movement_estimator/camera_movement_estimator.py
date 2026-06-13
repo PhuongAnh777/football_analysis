@@ -104,12 +104,12 @@ class CameraMovementEstimator:
             result.append([cum_x, cum_y])
         return result
 
-    def draw_camera_movement(self, frames, camera_movement_per_frame):
-        for frame_num, frame in enumerate(frames):
-            blend_filled_rectangle(frame, (0, 0), (500, 100), alpha=0.6)
+    # def draw_camera_movement(self, frames, camera_movement_per_frame):
+    #     for frame_num, frame in enumerate(frames):
+    #         blend_filled_rectangle(frame, (0, 0), (500, 100), alpha=0.6)
 
-            x_movement, y_movement = camera_movement_per_frame[frame_num]
-            cv2.putText(frame, f"Camera Movement: {x_movement: .2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)
-            cv2.putText(frame, f"Camera Movement: {y_movement: .2f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)
+    #         x_movement, y_movement = camera_movement_per_frame[frame_num]
+    #         cv2.putText(frame, f"Camera Movement: {x_movement: .2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)
+    #         cv2.putText(frame, f"Camera Movement: {y_movement: .2f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)
 
-        return frames
+    #     return frames

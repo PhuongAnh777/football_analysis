@@ -239,13 +239,17 @@ def execute_pipeline(
     _notify(4, "teams", _PIPELINE_STEPS[3][2])
     tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"])
 
-    first_frame = next(
-        (i for i, p in enumerate(tracks["players"]) if len(p) >= 2), 0
-    )
     team_assigner = TeamAssigner()
-    team_assigner.assign_team_color(
-        video_frames[first_frame], tracks["players"][first_frame]
-    )
+    calib_data: list = []
+    for _fi, _pt in enumerate(tracks["players"]):
+        if len(_pt) >= TeamAssigner._MIN_PLAYERS:
+            calib_data.append((video_frames[_fi], _pt))
+        if len(calib_data) >= TeamAssigner._CALIB_FRAMES:
+            break
+    if not calib_data:
+        _fb = next((i for i, p in enumerate(tracks["players"]) if len(p) >= 2), 0)
+        calib_data = [(video_frames[_fb], tracks["players"][_fb])]
+    team_assigner.assign_team_color(calib_data)
 
     for frame_num, player_track in enumerate(tracks["players"]):
         for player_id, track in player_track.items():

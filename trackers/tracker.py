@@ -234,8 +234,8 @@ class Tracker:
                 if player.get("has_ball", False):
                     self.draw_traingle(frame, player["bbox"], (0,0,255))
 
-            for track_id, referee in referee_dict.items():
-                self.draw_ellipse(frame, referee["bbox"], (0,0,255))
+            # for track_id, referee in referee_dict.items():
+            #     self.draw_ellipse(frame, referee["bbox"], (0,0,255))
 
             for track_id, ball in ball_dict.items():
                 self.draw_traingle(frame, ball["bbox"], (0,255,0))
