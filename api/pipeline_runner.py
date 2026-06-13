@@ -46,10 +46,21 @@ from tactical_analyzer import (
 from api.job_store import JobState
 from api.result_adapter import adapt_api_result, build_streamlit_analysis_result
 
-_TOTAL_STEPS = 8
+_TOTAL_STEPS = 9
 _OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output_videos")
 _MODELS_DIR = os.path.join(_PROJECT_ROOT, "models")
 _DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
+
+def _resolve_model_path() -> str:
+    """Return model path: env YOLO_MODEL_PATH → best.pt → last.pt."""
+    env = os.getenv("YOLO_MODEL_PATH", "").strip()
+    if env:
+        return env if os.path.isabs(env) else os.path.join(_PROJECT_ROOT, env)
+    for name in ("best.pt", "last.pt"):
+        p = os.path.join(_MODELS_DIR, name)
+        if os.path.exists(p):
+            return p
+    return os.path.join(_MODELS_DIR, "best.pt")
 
 _PIPELINE_STEPS = [
     (1, "reading",  "Đang đọc video..."),
