@@ -1,0 +1,442 @@
+{
+  "meta": {
+    "formation_team_1": "4-2-3-1",
+    "formation_team_2": "3-4-1-2",
+    "possession_team_1": 58.47,
+    "possession_team_2": 41.53,
+    "dominant_team": 1,
+    "def_style_team_1": "low_block",
+    "def_style_team_2": "low_block",
+    "width_style_team_1": "narrow",
+    "width_style_team_2": "medium",
+    "total_frames": 2719
+  },
+  "team_report": {
+    "team_1": {
+      "scores": {
+        "overall": 63.18,
+        "possession": 58.47,
+        "compact": 70.33,
+        "pressing": 57.78,
+        "adherence": 50.0,
+        "speed": 100.0,
+        "stability": 0.0,
+        "def_line": 63.9,
+        "width": 57.42,
+        "high_runs": 100.0,
+        "recoveries": 47.59,
+        "turnovers": 100.0,
+        "passing": 80.72
+      },
+      "grades": {
+        "overall": "C",
+        "possession": "C",
+        "compact": "B",
+        "pressing": "C",
+        "adherence": "C",
+        "speed": "A",
+        "stability": "F",
+        "def_line": "C",
+        "width": "C",
+        "high_runs": "A",
+        "recoveries": "D",
+        "turnovers": "A",
+        "passing": "A"
+      },
+      "flags": {
+        "high_press_half": 2,
+        "formation_collapsed": true,
+        "speed_dominant": true,
+        "possession_dominant": true,
+        "deep_defending": false,
+        "high_pressing_block": true,
+        "wide_play_style": false,
+        "width_expands_with_ball": false,
+        "press_recovery": true,
+        "risky_buildup": false,
+        "progressive_team": false,
+        "high_runner_team": true
+      },
+      "tactical_profile": "High-press, narrow compact style, aggressive recovery",
+      "top_players": [
+        2,
+        8,
+        6
+      ],
+      "weak_players": [
+        7,
+        1,
+        11
+      ]
+    },
+    "team_2": {
+      "scores": {
+        "overall": 51.63,
+        "possession": 41.53,
+        "compact": 55.44,
+        "pressing": 43.89,
+        "adherence": 50.0,
+        "speed": 97.58,
+        "stability": 0.0,
+        "def_line": 43.2,
+        "width": 65.12,
+        "high_runs": 41.09,
+        "recoveries": 100.0,
+        "turnovers": 22.33,
+        "passing": 77.01
+      },
+      "grades": {
+        "overall": "C",
+        "possession": "D",
+        "compact": "C",
+        "pressing": "D",
+        "adherence": "C",
+        "speed": "A",
+        "stability": "F",
+        "def_line": "D",
+        "width": "B",
+        "high_runs": "D",
+        "recoveries": "A",
+        "turnovers": "F",
+        "passing": "B"
+      },
+      "flags": {
+        "high_press_half": 1,
+        "formation_collapsed": true,
+        "speed_dominant": false,
+        "possession_dominant": false,
+        "deep_defending": false,
+        "high_pressing_block": true,
+        "wide_play_style": false,
+        "width_expands_with_ball": false,
+        "press_recovery": true,
+        "risky_buildup": false,
+        "progressive_team": true,
+        "high_runner_team": false
+      },
+      "tactical_profile": "High-press, narrow compact style, aggressive recovery",
+      "top_players": [
+        101,
+        107,
+        106
+      ],
+      "weak_players": [
+        108,
+        105,
+        110
+      ]
+    }
+  },
+  "player_report": {
+    "1": {
+      "10": {
+        "overall_score": 47.13,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Khai thác biên dọc"
+        ]
+      },
+      "8": {
+        "overall_score": 54.59,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "5": {
+        "overall_score": 42.98,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Kỷ luật hàng thủ"
+        ]
+      },
+      "1": {
+        "overall_score": 40.34,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "9": {
+        "overall_score": 46.5,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Kỷ luật hàng thủ"
+        ]
+      },
+      "2": {
+        "overall_score": 55.79,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "11": {
+        "overall_score": 36.42,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Kỷ luật hàng thủ"
+        ]
+      },
+      "3": {
+        "overall_score": 45.22,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Kỷ luật hàng thủ"
+        ]
+      },
+      "4": {
+        "overall_score": 50.35,
+        "grade": "C",
+        "role_in_line": "MID",
+        "strengths": [
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "6": {
+        "overall_score": 54.08,
+        "grade": "C",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "7": {
+        "overall_score": 41.29,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      }
+    },
+    "2": {
+      "101": {
+        "overall_score": 54.95,
+        "grade": "C",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing",
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "110": {
+        "overall_score": 34.2,
+        "grade": "F",
+        "role_in_line": "MID",
+        "strengths": [],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Khai thác biên dọc",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "105": {
+        "overall_score": 39.27,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "106": {
+        "overall_score": 48.65,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      },
+      "108": {
+        "overall_score": 40.35,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "109": {
+        "overall_score": 45.95,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ pressing",
+          "Khai thác biên dọc"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Cường độ chạy nước rút"
+        ]
+      },
+      "104": {
+        "overall_score": 44.89,
+        "grade": "D",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "111": {
+        "overall_score": 42.28,
+        "grade": "D",
+        "role_in_line": "DEF",
+        "strengths": [
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân",
+          "Kỷ luật hàng thủ"
+        ]
+      },
+      "102": {
+        "overall_score": 45.78,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Khai thác biên dọc"
+        ]
+      },
+      "103": {
+        "overall_score": 47.7,
+        "grade": "D",
+        "role_in_line": "FWD",
+        "strengths": [
+          "Cường độ chạy nước rút"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật"
+        ]
+      },
+      "107": {
+        "overall_score": 49.03,
+        "grade": "D",
+        "role_in_line": "MID",
+        "strengths": [
+          "Tốc độ di chuyển",
+          "Cường độ pressing"
+        ],
+        "weaknesses": [
+          "Kỷ luật chiến thuật",
+          "Độ phủ sóng sân"
+        ]
+      }
+    }
+  },
+  "match_narrative_data": {
+    "pressing_intensity_half1": 0.12,
+    "pressing_intensity_half2": 0.07,
+    "compact_trend_team_1": "improving",
+    "compact_trend_team_2": "improving",
+    "speed_team_1": 25.97,
+    "speed_team_2": 24.4,
+    "sprint_pct_team_1": 53.03,
+    "sprint_pct_team_2": 49.69,
+    "formation_team_1": "4-2-3-1",
+    "formation_team_2": "3-4-1-2",
+    "adherence_team_1": 0.0,
+    "adherence_team_2": 0.0,
+    "def_line_avg_team_1": 30.74,
+    "def_line_avg_team_2": 19.73,
+    "def_line_trend_team_1": "rising",
+    "def_line_trend_team_2": "stable",
+    "width_avg_team_1": 34.36,
+    "width_avg_team_2": 41.1,
+    "width_with_ball_team_1": 39.54,
+    "width_with_ball_team_2": 47.8,
+    "width_without_ball_team_1": 38.91,
+    "width_without_ball_team_2": 46.02,
+    "high_runs_team_1": 351,
+    "high_runs_team_2": 289,
+    "high_runs_fwd_team_1": 38,
+    "high_runs_fwd_team_2": 78,
+    "recoveries_team_1": 30,
+    "recoveries_team_2": 33,
+    "opp_half_recovery_pct_team_1": 43.33,
+    "opp_half_recovery_pct_team_2": 60.61,
+    "turnovers_final_third_team_1": 0,
+    "turnovers_final_third_team_2": 4,
+    "dangerous_rate_team_1": 0.0,
+    "dangerous_rate_team_2": 14.29,
+    "total_passes_team_1": 56,
+    "total_passes_team_2": 34,
+    "progressive_pct_team_1": 21.88,
+    "progressive_pct_team_2": 46.67
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "tong_quan_tran_dau": {
+    "nhan_xet_chung": "Trận đấu chứng kiến sự đối lập về kiểm soát bóng khi Đội 1 (58.47% possession) áp đảo so với Đội 2 (41.53%). Cả hai đội đều áp dụng chiến thuật pressing tầm cao và duy trì đội hình compact, nhưng Đội 1 nổi bật hơn về tốc độ và cường độ vận động, trong khi Đội 2 lại hiệu quả hơn trong việc thu hồi bóng ở phần sân đối phương.",
+    "doi_noi_bat": 1,
+    "ly_do": "Đội 1 thể hiện sự vượt trội về kiểm soát bóng (58.47%) và tốc độ di chuyển (25.97 km/h), cùng với khả năng giữ bóng an toàn ở 1/3 cuối sân (0 lần mất bóng), dẫn đến điểm số tổng thể cao hơn (63.18 so với 51.63)."
+  },
+  "danh_gia_doi": {
+    "doi_1": {
+      "diem_so_tong": 63.18,
+      "xep_loai": "C",
+      "tactical_profile": "High-press, narrow compact style, aggressive recovery. Đội 1 chủ động gây áp lực từ sớm, duy trì đội hình hẹp và sẵn sàng thu hồi bóng nhanh chóng.",
+      "chien_thuat": "Đội 1 triển khai sơ đồ 4-2-3-1, tập trung vào kiểm soát bóng với 58.47% thời lượng. Họ áp dụng lối chơi pressing tầm cao và duy trì đội hình hẹp (width_style: narrow), thể hiện qua điểm số compact 70.33.",
+      "diem_manh": [
+        "Đội 1 kiểm soát bóng vượt trội với 58.47% thời lượng, cho thấy khả năng giữ nhịp và điều tiết trận đấu tốt.",
+        "Tốc độ di chuyển của đội rất cao, đạt trung bình 25.97 km/h và tỷ lệ chạy nước rút 53.03%, vượt trội so với Đội 2.",
+        "Khả năng giữ bóng ở 1/3 cuối sân rất tốt, không có lần mất bóng nào (0 lần turnovers_final_third), đảm bảo an toàn trong các pha tấn công quyết định.",
+        "Đội 1 thực hiện 351 lần chạy cường độ cao, cho thấy thể lực và sự tích cực trong di chuyển."
+      ],
+      "diem_yeu": [
+        "Kỷ luật chiến thuật của đội hình còn hạn chế với điểm adherence là 50.0, cho thấy sự thiếu nhất quán trong việc duy trì cấu trúc.",
+        "Khả năng thu hồi bóng còn chưa hiệu quả, chỉ đạt 30 lần recoveries và tỷ lệ thu hồi ở phần sân đối phương là 43.33%, thấp hơn Đội 2.",
+        "Điểm ổn định đội hình (stability) là 0.0, cho thấy đội hình dễ bị phá vỡ khi chịu áp lực."
+      ],
+      "nhan_xet_pressing": "Đội 1 có điểm pressing trung bình 57.78. Cường độ pressing thực tế giảm từ 0.12 ở hiệp 1 xuống 0.07 ở hiệp 2, cho thấy sự giảm sút về áp lực theo thời gian, dù vẫn cao hơn Đội 2 (43.89).",
+      "nhan_xet_doi_hinh": "Đội 1 duy trì đội hình compact với điểm số 70.33, cho thấy sự gắn kết giữa các tuyến. Tuy nhiên, điểm adherence là 50.0 và đội hình bị phá vỡ (formation_collapsed: true) cho thấy kỷ luật chiến thuật chưa thực sự ổn định.",
+      "nhan_xet_toc_do": "Đội 1 thể hiện tốc độ di chuyển vượt trội với trung bình 25.97 km/h và tỷ lệ chạy nước rút 53.03%, cao hơn đáng kể so với Đội 2 (24.4 km/h và 49.69%).",
+      "nhan_xet_hang_thu": "Đội 1 áp dụng chiến thuật phòng ngự lùi sâu (low block) với chiều cao trung bình của hàng thủ là 30.74m. Hàng thủ có xu hướng dâng cao dần trong trận đấu (rising), cho thấy sự điều chỉnh chiến thuật.",
+      "nhan_xet_do_rong": "Đội 1 duy trì đội hình hẹp (narrow) với chiều rộng trung bình 34.36m. Khi có bóng, chiều rộng tăng lên 39.54m và khi không bóng là 38.91m, cho thấy sự linh hoạt nhất định trong việc giãn biên.",
+      "nhan_xet_van_dong": "Đội 1 thực hiện tổng cộng 351 lần chạy cường độ cao, trong đó có 38 lần từ các cầu thủ tiền đạo, thể hiện sự tích cực trong di chuyển và gây áp lực.",
+      "nhan_xet_tranh_chap": "Đội 1 có 30 lần thu hồi bóng, với 43.33% số lần thu hồi diễn ra ở phần sân đối phương, cho thấy nỗ lực giành lại bóng nhưng chưa thực sự hiệu quả ở khu vực tấn công.",
+      "nhan_xet_mat_bong": "Đội 1 không có lần mất bóng nào ở 1/3 cuối sân (0 lần), với tỷ lệ nguy hiểm (dangerous_rate) là 0.0%, cho thấy sự cẩn trọng và an toàn trong việc triển khai tấn công ở khu vực quyết định.",
+      "nhan_xet_chuyen": "Đội 1 có 56 đường chuyền tổng cộng, với điểm chuyền bóng 80.72 và 21.88% là các đường chuyền tịnh tiến, cho thấy khả năng luân chuyển bóng tốt nhưng chưa thực sự đột biến."
+    },
+    "doi_2": {
+      "diem_so_tong": 51.63,
+      "xep_loai": "C",
+      "tactical_profile": "High-press, narrow compact style, aggressive recovery. Đội 2 cũng chủ động gây áp lực và duy trì đội hình hẹp, nhưng hiệu quả tổng thể thấp hơn.",
+      "chien_thuat": "Đội 2 sử dụng sơ đồ 3-4-1-2, tập trung vào phòng ngự và phản công với 41.53% thời lượng kiểm soát bóng. Họ cũng áp dụng pressing tầm cao và duy trì đội hình compact với điểm số 55.44.",
+      "diem_manh": [
+        "Đội 2 thể hiện khả năng thu hồi bóng xuất sắc với 33 lần recoveries, trong đó 60.61% diễn ra ở phần sân đối phương, vượt trội so với Đội 1.",
+        "Đội có tỷ lệ chuyền bóng tịnh tiến cao (46.67%), cho thấy ý đồ tấn công trực diện và hiệu quả trong việc đưa bóng lên phía trước.",
+        "Đội 2 có 78 lần chạy cường độ cao từ các cầu thủ tiền đạo, cao hơn đáng kể so với Đội 1 (38 lần), thể hiện sự năng nổ của hàng công."
+      ],
+      "diem_yeu": [
+        "Kiểm soát bóng hạn chế với chỉ 41.53% thời lượng, khiến đội phải chịu áp lực lớn hơn từ đối thủ.",
+        "Điểm pressing thấp (43.89) và cường độ pressing giảm từ 0.07 ở hiệp 1 xuống 0.04 ở hiệp 2, cho thấy hiệu quả gây áp lực chưa cao.",
+        "Điểm ổn định đội hình (stability) là 0.0, cho thấy đội hình dễ bị phá vỡ và thiếu sự gắn kết khi chịu sức ép.",
+        "Đội 2 có 4 lần mất bóng ở 1/3 cuối sân với tỷ lệ nguy hiểm là 14.29%, cho thấy rủi ro trong các pha tấn công quyết định."
+      ],
+      "nhan_xet_pressing": "Đội 2 có điểm pressing 43.89, thấp hơn Đội 1. Cường độ pressing của họ giảm từ 0.07 ở hiệp 1 xuống 0.04 ở hiệp 2, cho thấy sự giảm sút về khả năng gây áp lực theo thời gian.",
+      "nhan_xet_doi_hinh": "Đội 2 duy trì đội hình compact với điểm số 55.44, nhưng điểm adherence là 50.0 và đội hình bị phá vỡ (formation_collapsed: true), cho thấy sự thiếu kỷ luật trong việc giữ vững cấu trúc chiến thuật.",
+      "nhan_xet_toc_do": "Đội 2 có tốc độ di chuyển trung bình 24.4 km/h và tỷ lệ chạy nước rút 49.69%, thấp hơn so với Đội 1 (25.97 km/h và 53.03%).",
+      "nhan_xet_hang_thu": "Đội 2 cũng áp dụng chiến thuật phòng ngự lùi sâu (low block) với chiều cao trung bình của hàng thủ là 19.73m. Hàng thủ duy trì sự ổn định (stable) về vị trí trong suốt trận đấu.",
+      "nhan_xet_do_rong": "Đội 2 duy trì đội hình có chiều rộng trung bình (medium) với 41.1m. Khi có bóng, chiều rộng tăng lên 47.8m và khi không bóng là 46.02m, cho thấy sự chủ động trong việc giãn biên để tấn công và thu hẹp khi phòng ngự.",
+      "nhan_xet_van_dong": "Đội 2 thực hiện tổng cộng 289 lần chạy cường độ cao, trong đó có 78 lần từ các cầu thủ tiền đạo, cao hơn đáng kể so với Đội 1, cho thấy sự tích cực của hàng công trong việc tạo áp lực và tìm khoảng trống.",
+      "nhan_xet_tranh_chap": "Đội 2 có 33 lần thu hồi bóng, với 60.61% số lần thu hồi diễn ra ở phần sân đối phương, thể hiện khả năng tranh chấp và giành lại bóng hiệu quả ở khu vực cao.",
+      "nhan_xet_mat_bong": "Đội 2 có 4 lần mất bóng ở 1/3 cuối sân, với tỷ lệ nguy hiểm (dangerous_rate) là 14.29%, cho thấy họ chấp nhận rủi ro nhất định khi cố gắng tạo cơ hội tấn công ở khu vực nguy hiểm.",
+      "nhan_xet_chuyen": "Đội 2 có 34 đường chuyền tổng cộng, với điểm chuyền bóng 77.01 và 46.67% là các đường chuyền tịnh tiến, cho thấy họ ưu tiên các pha bóng trực diện và có tính đột phá."
+    }
+  },
+  "danh_gia_cau_thu": {
+    "doi_1": {
+      "xuat_sac": {
+        "track_id": 2,
+        "ly_do": "Cầu thủ #2 đạt điểm tổng thể 55.79 (grade C), nổi bật với độ phủ sóng sân và cường độ chạy nước rút, đóng góp tích cực vào lối chơi của đội.",
+        "chi_so_noi_bat": "Độ phủ sóng sân"
+      },
+      "can_cai_thien": {
+        "track_id": 7,
+        "ly_do": "Cầu thủ #7 có điểm tổng thể 41.29 (grade D), với các điểm yếu về kỷ luật chiến thuật, độ phủ sóng sân và cường độ chạy nước rút.",
+        "khuyen_nghi": "Cần cải thiện khả năng duy trì vị trí và tăng cường cường độ vận động để nâng cao hiệu quả đóng góp vào lối chơi chung."
+      }
+    },
+    "doi_2": {
+      "xuat_sac": {
+        "track_id": 101,
+        "ly_do": "Cầu thủ #101 đạt điểm tổng thể 54.95 (grade C), thể hiện tốt ở cường độ pressing và cường độ chạy nước rút, là một mắt xích quan trọng trong phòng ngự và chuyển đổi trạng thái.",
+        "chi_so_noi_bat": "Cường độ pressing"
+      },
+      "can_cai_thien": {
+        "track_id": 108,
+        "ly_do": "Cầu thủ #108 có điểm tổng thể 40.35 (grade D), với các điểm yếu về kỷ luật chiến thuật, độ phủ sóng sân và cường độ chạy nước rút.",
+        "khuyen_nghi": "Cần tập trung cải thiện kỷ luật vị trí và tăng cường khả năng di chuyển không bóng để hỗ trợ tốt hơn cho đồng đội."
+      }
+    }
+  },
+  "so_sanh_doi_dau": {
+    "pressing": "Đội 1 có điểm pressing cao hơn (57.78) so với Đội 2 (43.89). Tuy nhiên, cường độ pressing của cả hai đội đều giảm ở hiệp 2 (Đội 1 từ 0.12 xuống 0.07, Đội 2 từ 0.07 xuống 0.04).",
+    "doi_hinh": "Cả hai đội đều có điểm compact tương đối tốt (Đội 1: 70.33, Đội 2: 55.44) nhưng điểm adherence đều thấp (50.0 cho cả hai), cho thấy sự thiếu nhất quán trong việc duy trì kỷ luật đội hình.",
+    "the_luc": "Đội 1 vượt trội về thể lực với tốc độ trung bình 25.97 km/h và tỷ lệ chạy nước rút 53.03%, cao hơn Đội 2 (24.4 km/h và 49.69%).",
+    "kiem_soat_bong": "Đội 1 kiểm soát bóng vượt trội với 58.47% thời lượng, trong khi Đội 2 chỉ có 41.53%, cho thấy Đội 1 chủ động hơn trong việc kiểm soát thế trận.",
+    "chien_luoc_phong_ngu": "Cả hai đội đều áp dụng chiến thuật phòng ngự lùi sâu (low block). Đội 1 duy trì hàng thủ ở độ cao trung bình 30.74m và có xu hướng dâng cao dần, trong khi Đội 2 giữ hàng thủ thấp hơn (19.73m) và ổn định.",
+    "su_dung_bien": "Đội 1 chơi hẹp (narrow) với chiều rộng trung bình 34.36m, trong khi Đội 2 chơi rộng hơn (medium) với 41.1m. Cả hai đội đều có xu hướng giãn biên khi có bóng (Đội 1: 39.54m, Đội 2: 47.8m).",
+    "van_dong": "Đội 1 thực hiện tổng cộng 351 lần chạy cường độ cao, nhiều hơn Đội 2 (289 lần). Tuy nhiên, Đội 2 có số lần chạy cường độ cao từ tiền đạo nhiều hơn (78 so với 38 của Đội 1).",
+    "tranh_chap": "Đội 2 hiệu quả hơn trong tranh chấp với 33 lần thu hồi bóng và 60.61% ở phần sân đối phương, so với 30 lần thu hồi của Đội 1 và 43.33% ở phần sân đối phương.",
+    "mat_bong": "Đội 1 không có lần mất bóng nào ở 1/3 cuối sân (0 lần), trong khi Đội 2 có 4 lần mất bóng với tỷ lệ nguy hiểm là 14.29%, cho thấy Đội 2 chấp nhận rủi ro cao hơn trong các pha tấn công quyết định.",
+    "kien_tao": "Đội 1 có điểm chuyền bóng cao hơn (80.72) với 56 đường chuyền tổng cộng, nhưng Đội 2 có tỷ lệ chuyền tịnh tiến cao hơn (46.67% so với 21.88% của Đội 1), cho thấy sự khác biệt về ý đồ tấn công."
+  },
+  "ket_luan": "Trận đấu này là minh chứng cho sự đối đầu giữa hai chiến thuật pressing tầm cao và đội hình compact. Đội 1, với hồ sơ chiến thuật 'High-press, narrow compact style, aggressive recovery', đã thể hiện khả năng kiểm soát bóng và tốc độ vượt trội. Ngược lại, Đội 2, dù cũng áp dụng chiến thuật tương tự, lại nổi bật hơn ở khả năng thu hồi bóng và các đường chuyền tịnh tiến, cho thấy sự hiệu quả trong việc chuyển đổi trạng thái."
+}

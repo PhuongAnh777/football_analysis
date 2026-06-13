@@ -304,7 +304,7 @@ async def analyze(video: UploadFile = File(...)):
     job.input_path = _INPUT_VIDEO_PATH
     job.input_md5 = input_md5
     job.input_size_bytes = len(contents)
-    job.input_filename = video.filename or os.path.basename(input_path)
+    job.input_filename = video.filename or os.path.basename(_INPUT_VIDEO_PATH)
 
     print(
         f"[analyze] job={job_id} file={job.input_filename!r} "

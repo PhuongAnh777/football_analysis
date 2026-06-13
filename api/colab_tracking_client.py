@@ -71,7 +71,16 @@ def fetch_colab_tracking_stub(
 
     health = requests.get(f"{base}/api/health", headers=_headers(), timeout=30)
     health.raise_for_status()
-    health_data = health.json()
+    try:
+        health_data = health.json()
+    except Exception:
+        raise RuntimeError(
+            f"Colab health endpoint trả về response không phải JSON (body rỗng hoặc HTML).\n"
+            f"Nguyên nhân có thể: ngrok tunnel hết hạn, Colab session đã đóng, hoặc URL sai.\n"
+            f"→ Kiểm tra lại COLAB_TRACKING_URL trong .env hoặc bỏ trống để dùng CPU local.\n"
+            f"URL hiện tại: {base}\n"
+            f"Response: {health.text[:500]!r}"
+        )
     if health_data.get("service") != "colab-tracking":
         raise RuntimeError(
             f"URL không phải Colab tracking server: {health_data!r}"
