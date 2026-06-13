@@ -1,0 +1,330 @@
+{
+  "thresholds": {
+    "compact": {
+      "p25": 10.9446,
+      "p50": 12.4756,
+      "p75": 14.4372
+    },
+    "pressing": {
+      "p33": 0.5389,
+      "p67": 1.5032
+    },
+    "adherence": {
+      "p40": 0.2466,
+      "p70": 0.3733
+    },
+    "def_line": {
+      "p33": 15.6631,
+      "p67": 24.9426
+    },
+    "width": {
+      "p33": 29.2745,
+      "p67": 34.677
+    },
+    "high_runs": {
+      "p33": 104.88,
+      "p67": 151.12
+    },
+    "recoveries": {
+      "p33": 21.66,
+      "p67": 22.34
+    },
+    "turnovers": {
+      "p33": 0.33,
+      "p67": 0.67
+    }
+  },
+  "team_scores": {
+    "team_1": {
+      "possession_score": 33.42,
+      "compact_score": 62.64,
+      "pressing_score": 34.97,
+      "adherence_score": 80.05,
+      "speed_score": 97.09,
+      "stability_score": 75.0,
+      "def_line_score": 60.78,
+      "width_score": 54.36,
+      "high_runs_score": 25.17,
+      "recoveries_score": 100.0,
+      "turnovers_score": 100.0,
+      "passing_score": 77.08,
+      "overall_score": 61.8
+    },
+    "team_2": {
+      "possession_score": 66.58,
+      "compact_score": 66.09,
+      "pressing_score": 86.94,
+      "adherence_score": 13.86,
+      "speed_score": 100.0,
+      "stability_score": 100.0,
+      "def_line_score": 58.55,
+      "width_score": 62.49,
+      "high_runs_score": 100.0,
+      "recoveries_score": 42.66,
+      "turnovers_score": 22.33,
+      "passing_score": 77.96,
+      "overall_score": 67.99
+    }
+  },
+  "player_scores": {
+    "1": {
+      "4": {
+        "speed_score": 53.63,
+        "pressing_score": 77.27,
+        "discipline_score": 50.0,
+        "activity_score": 21.55,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 6.83,
+        "high_run_score": 30.77,
+        "passing_involvement_score": 50.0,
+        "overall_score": 44.59
+      },
+      "9": {
+        "speed_score": 82.24,
+        "pressing_score": 59.09,
+        "discipline_score": 50.0,
+        "activity_score": 11.47,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 34.62,
+        "high_run_score": 15.38,
+        "passing_involvement_score": 50.0,
+        "overall_score": 45.62
+      },
+      "6": {
+        "speed_score": 65.04,
+        "pressing_score": 95.45,
+        "discipline_score": 50.0,
+        "activity_score": 24.27,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 50.0,
+        "high_run_score": 100.0,
+        "passing_involvement_score": 50.0,
+        "overall_score": 64.0
+      },
+      "10": {
+        "speed_score": 46.95,
+        "pressing_score": 68.18,
+        "discipline_score": 50.0,
+        "activity_score": 18.09,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 2.85,
+        "high_run_score": 30.77,
+        "passing_involvement_score": 50.0,
+        "overall_score": 41.48
+      },
+      "8": {
+        "speed_score": 67.98,
+        "pressing_score": 27.27,
+        "discipline_score": 50.0,
+        "activity_score": 12.1,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 77.81,
+        "high_run_score": 38.46,
+        "passing_involvement_score": 50.0,
+        "overall_score": 46.55
+      },
+      "11": {
+        "speed_score": 86.32,
+        "pressing_score": 27.27,
+        "discipline_score": 50.0,
+        "activity_score": 4.49,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 98.36,
+        "high_run_score": 23.08,
+        "passing_involvement_score": 50.0,
+        "overall_score": 48.28
+      },
+      "1": {
+        "speed_score": 51.07,
+        "pressing_score": 86.36,
+        "discipline_score": 50.0,
+        "activity_score": 17.54,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 94.55,
+        "high_run_score": 23.08,
+        "passing_involvement_score": 50.0,
+        "overall_score": 52.79
+      },
+      "3": {
+        "speed_score": 48.91,
+        "pressing_score": 90.91,
+        "discipline_score": 50.0,
+        "activity_score": 33.43,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 20.79,
+        "high_run_score": 23.08,
+        "passing_involvement_score": 50.0,
+        "overall_score": 47.36
+      },
+      "7": {
+        "speed_score": 73.14,
+        "pressing_score": 63.64,
+        "discipline_score": 50.0,
+        "activity_score": 20.67,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 26.51,
+        "high_run_score": 53.85,
+        "passing_involvement_score": 50.0,
+        "overall_score": 50.81
+      },
+      "5": {
+        "speed_score": 67.98,
+        "pressing_score": 50.0,
+        "discipline_score": 50.0,
+        "activity_score": 23.35,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 6.3,
+        "high_run_score": 53.85,
+        "passing_involvement_score": 50.0,
+        "overall_score": 46.24
+      },
+      "2": {
+        "speed_score": 56.01,
+        "pressing_score": 81.82,
+        "discipline_score": 50.0,
+        "activity_score": 37.37,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 14.67,
+        "high_run_score": 69.23,
+        "passing_involvement_score": 50.0,
+        "overall_score": 53.76
+      }
+    },
+    "2": {
+      "106": {
+        "speed_score": 58.75,
+        "pressing_score": 100.0,
+        "discipline_score": 7.77,
+        "activity_score": 57.82,
+        "def_positioning_score": 66.16,
+        "width_contrib_score": 50.0,
+        "high_run_score": 95.65,
+        "passing_involvement_score": 50.0,
+        "overall_score": 61.72
+      },
+      "105": {
+        "speed_score": 75.05,
+        "pressing_score": 27.27,
+        "discipline_score": 7.77,
+        "activity_score": 30.34,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 34.06,
+        "high_run_score": 100.0,
+        "passing_involvement_score": 50.0,
+        "overall_score": 47.95
+      },
+      "103": {
+        "speed_score": 64.74,
+        "pressing_score": 40.91,
+        "discipline_score": 7.77,
+        "activity_score": 45.16,
+        "def_positioning_score": 46.13,
+        "width_contrib_score": 50.0,
+        "high_run_score": 91.3,
+        "passing_involvement_score": 50.0,
+        "overall_score": 49.84
+      },
+      "110": {
+        "speed_score": 54.97,
+        "pressing_score": 54.55,
+        "discipline_score": 7.77,
+        "activity_score": 35.97,
+        "def_positioning_score": 71.07,
+        "width_contrib_score": 50.0,
+        "high_run_score": 73.91,
+        "passing_involvement_score": 50.0,
+        "overall_score": 49.38
+      },
+      "101": {
+        "speed_score": 62.3,
+        "pressing_score": 31.82,
+        "discipline_score": 7.77,
+        "activity_score": 35.23,
+        "def_positioning_score": 61.39,
+        "width_contrib_score": 50.0,
+        "high_run_score": 91.3,
+        "passing_involvement_score": 50.0,
+        "overall_score": 48.64
+      },
+      "102": {
+        "speed_score": 58.83,
+        "pressing_score": 72.73,
+        "discipline_score": 7.77,
+        "activity_score": 57.12,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 35.87,
+        "high_run_score": 91.3,
+        "passing_involvement_score": 50.0,
+        "overall_score": 53.89
+      },
+      "108": {
+        "speed_score": 64.27,
+        "pressing_score": 45.45,
+        "discipline_score": 7.77,
+        "activity_score": 33.36,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 17.31,
+        "high_run_score": 65.22,
+        "passing_involvement_score": 50.0,
+        "overall_score": 42.47
+      },
+      "109": {
+        "speed_score": 59.22,
+        "pressing_score": 27.27,
+        "discipline_score": 7.77,
+        "activity_score": 26.77,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 32.83,
+        "high_run_score": 52.17,
+        "passing_involvement_score": 50.0,
+        "overall_score": 37.93
+      },
+      "107": {
+        "speed_score": 51.34,
+        "pressing_score": 36.36,
+        "discipline_score": 7.77,
+        "activity_score": 41.49,
+        "def_positioning_score": 62.75,
+        "width_contrib_score": 50.0,
+        "high_run_score": 52.17,
+        "passing_involvement_score": 50.0,
+        "overall_score": 42.57
+      },
+      "104": {
+        "speed_score": 53.82,
+        "pressing_score": 27.27,
+        "discipline_score": 7.77,
+        "activity_score": 58.48,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 8.36,
+        "high_run_score": 73.91,
+        "passing_involvement_score": 50.0,
+        "overall_score": 41.1
+      },
+      "111": {
+        "speed_score": 54.46,
+        "pressing_score": 27.27,
+        "discipline_score": 7.77,
+        "activity_score": 39.1,
+        "def_positioning_score": 50.0,
+        "width_contrib_score": 29.73,
+        "high_run_score": 65.22,
+        "passing_involvement_score": 50.0,
+        "overall_score": 40.09
+      }
+    }
+  },
+  "match_summary": {
+    "dominant_team": 2,
+    "possession_balance": "dominant",
+    "avg_press_level": "low",
+    "formation_team_1": "unknown",
+    "formation_team_2": "5-3-1-1",
+    "def_style_team_1": "low_block",
+    "def_style_team_2": "low_block",
+    "width_style_team_1": "narrow",
+    "width_style_team_2": "medium",
+    "press_recovery_team": null,
+    "risky_team": 2
+  }
+}

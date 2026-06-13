@@ -118,7 +118,9 @@ def main():
 
 
 
-    view_transformer = ViewTransformer()
+    frame_w = video_frames[0].shape[1]
+    frame_h = video_frames[0].shape[0]
+    view_transformer = ViewTransformer(frame_size=(frame_w, frame_h))
 
     cumulative_cam = CameraMovementEstimator.cumulative(camera_movement_per_frame)
     pitch_offsets  = view_transformer.compute_pitch_offsets(

@@ -203,7 +203,9 @@ def execute_pipeline(
     )
     cam_estimator.add_adjust_positions_to_tracks(tracks, camera_movement_per_frame)
 
-    view_transformer = ViewTransformer()
+    frame_w = video_frames[0].shape[1]
+    frame_h = video_frames[0].shape[0]
+    view_transformer = ViewTransformer(frame_size=(frame_w, frame_h))
     cumulative_cam = CameraMovementEstimator.cumulative(camera_movement_per_frame)
     pitch_offsets  = view_transformer.compute_pitch_offsets(
         cumulative_cam, pitch_x_start=0.0

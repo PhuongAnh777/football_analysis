@@ -133,37 +133,63 @@ class ViewTransformer:
         ``pitch_region`` are ignored.
     """
 
-    # ── Default calibration for the demo broadcast video ──────────────────
-    # Near-left  [110, 1035] → (x=0,     y=68)  near touchline, left goal end
-    # Far-left   [265,  275] → (x=0,     y=0 )  far  touchline, left goal end
-    # Far-right  [910,  260] → (x=23.32, y=0 )  far  touchline, visible right
-    # Near-right [1640, 915] → (x=23.32, y=68)  near touchline, visible right
-    _DEFAULT_PIXELS: np.ndarray = np.array([
-        [110,  1035],
-        [265,   275],
-        [910,   260],
-        [1640,  915],
+    # ── Default calibration — measured on 1280×720 broadcast video ────────
+    # Camera: elevated midfield view (AJX vs TOT style broadcast angle).
+    # Covers goal line (left) → right penalty area line (x=88.5 m).
+    #
+    # near-left  [51,  699] → (x=0,    y=68)  goal line,  near touchline
+    # far-left   [50,  300] → (x=0,    y=0 )  goal line,  far  touchline
+    # far-right  [1252, 301] → (x=88.5, y=0 )  right pen., far  touchline
+    # near-right [1252, 702] → (x=88.5, y=68)  right pen., near touchline
+    _DEFAULT_PIXELS_1920: np.ndarray = np.array([
+        [51,   699],
+        [50,   300],
+        [1252, 301],
+        [1252, 702],
     ], dtype=np.float32)
 
+    # Keep _DEFAULT_PIXELS for backward compatibility
+    _DEFAULT_PIXELS: np.ndarray = _DEFAULT_PIXELS_1920
+
     _DEFAULT_REGION: PitchRegion = PitchRegion(
-        x_min=0.0, x_max=23.32, y_min=0.0, y_max=68.0
+        x_min=0.0, x_max=88.5, y_min=0.0, y_max=68.0
     )
+
+    # Reference resolution the default pixels were measured at
+    _REF_W: int = 1280
+    _REF_H: int = 720
 
     def __init__(
         self,
         pixel_vertices: np.ndarray | None = None,
         pitch_region: PitchRegion | None  = None,
         calibrator: PitchCalibrator | None = None,
+        frame_size: tuple[int, int] | None = None,
     ) -> None:
+        """
+        Parameters
+        ----------
+        frame_size : (width, height), optional
+            Actual video resolution.  When provided and ``pixel_vertices`` is
+            None, the default 1920×1080 calibration corners are scaled to this
+            resolution automatically.  Pass ``video_frames[0].shape[1::-1]``
+            (i.e. (w, h)) from the pipeline.
+        """
         if calibrator is not None:
             self.perspective_transform = calibrator.H
             self.pixel_vertices        = None
         else:
-            pv = (
-                np.array(pixel_vertices, dtype=np.float32)
-                if pixel_vertices is not None
-                else self._DEFAULT_PIXELS.copy()
-            )
+            if pixel_vertices is not None:
+                pv = np.array(pixel_vertices, dtype=np.float32)
+            else:
+                pv = self._DEFAULT_PIXELS_1920.copy()
+                # Scale default corners from reference 1920×1080 to actual resolution
+                if frame_size is not None:
+                    fw, fh = frame_size
+                    sx = fw / self._REF_W
+                    sy = fh / self._REF_H
+                    pv[:, 0] *= sx
+                    pv[:, 1] *= sy
             pr = pitch_region or self._DEFAULT_REGION
 
             # Target vertices: order matches pixel_vertices

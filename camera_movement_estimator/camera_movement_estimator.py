@@ -6,7 +6,7 @@ from utils import measure_distance, measure_xy_distance, blend_filled_rectangle
 
 class CameraMovementEstimator:
     def __init__(self, frame):
-        self.minimum_distance = 5
+        self.minimum_distance = 2
         self.lk_params = dict (
             winSize = (15, 15),
             maxLevel = 2,
@@ -14,9 +14,14 @@ class CameraMovementEstimator:
         )
 
         first_frame_grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_w = frame.shape[1]
+        # Scale mask columns proportionally to actual frame width
+        # Original design: 1920px wide → center strip at 900:1500 (47–78%)
+        c_start = int(frame_w * 0.47)
+        c_end   = int(frame_w * 0.78)
         mask_features = np.zeros_like(first_frame_grayscale)
-        mask_features[:, 0:20] =  1
-        mask_features[:, 900:1500] = 1
+        mask_features[:, 0:20]           = 1
+        mask_features[:, c_start:c_end]  = 1
 
         self.features = dict(
             maxCorners = 100,
@@ -53,21 +58,24 @@ class CameraMovementEstimator:
             frame_gray = cv2.cvtColor(frames[frame_num], cv2.COLOR_BGR2GRAY)
             new_features, _,_ = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, old_features, None, **self.lk_params)
 
-            max_distance = 0
-            camera_movement_x, camera_movement_y = 0, 0
+            # Collect all valid feature displacements
+            dxs, dys, dists = [], [], []
+            for new_pt, old_pt in zip(new_features, old_features):
+                np_ = new_pt.ravel()
+                op_ = old_pt.ravel()
+                dist = measure_distance(np_, op_)
+                dx, dy = measure_xy_distance(np_, op_)
+                dxs.append(dx); dys.append(dy); dists.append(dist)
 
-            for i, (new, old) in enumerate(zip(new_features, old_features)):
-                new_features_point = new.ravel()
-                old_features_point = old.ravel()
-
-                distance = measure_distance(new_features_point, old_features_point)
-
-                if distance > max_distance:
-                    max_distance = distance
-                    camera_movement_x, camera_movement_y = measure_xy_distance(new_features_point, old_features_point)
-
+            if dists:
+                max_distance = float(np.max(dists))
+            else:
+                max_distance = 0
 
             if max_distance > self.minimum_distance:
+                # Use median to ignore fast-moving players / outliers
+                camera_movement_x = float(np.median(dxs))
+                camera_movement_y = float(np.median(dys))
                 camera_movement[frame_num] = [camera_movement_x, camera_movement_y]
                 old_features = cv2.goodFeaturesToTrack(frame_gray, **self.features)
             
