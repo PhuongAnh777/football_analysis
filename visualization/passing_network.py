@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')  # non-interactive backend — required when running in threads
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches

@@ -14,14 +14,9 @@ class CameraMovementEstimator:
         )
 
         first_frame_grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        frame_w = frame.shape[1]
-        # Scale mask columns proportionally to actual frame width
-        # Original design: 1920px wide → center strip at 900:1500 (47–78%)
-        c_start = int(frame_w * 0.47)
-        c_end   = int(frame_w * 0.78)
         mask_features = np.zeros_like(first_frame_grayscale)
-        mask_features[:, 0:20]           = 1
-        mask_features[:, c_start:c_end]  = 1
+        mask_features[:, 0:20]    = 1
+        mask_features[:, 900:1500] = 1
 
         self.features = dict(
             maxCorners = 100,
