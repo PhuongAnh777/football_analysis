@@ -4,7 +4,10 @@ Gọi Colab tracking server (ngrok) từ local backend sau khi user upload video
 
 from __future__ import annotations
 
+import base64
+import json
 import os
+import re
 import time
 from typing import Callable, Optional
 
@@ -36,7 +39,33 @@ def _response_detail(resp: requests.Response) -> str:
     return (resp.text or "")[:4000]
 
 
+def _ngrok_offline_hint(resp: requests.Response) -> str | None:
+    """Detect ngrok 'endpoint is offline' HTML (404) when Colab tab/runtime đã tắt."""
+    text = resp.text or ""
+    m = re.search(r'data-payload="([^"]+)"', text)
+    if not m:
+        return None
+    try:
+        payload = json.loads(base64.b64decode(m.group(1)).decode())
+    except Exception:
+        return None
+    msg = str(payload.get("message", "")).strip()
+    if "offline" in msg.lower() or payload.get("code") == "3200":
+        return msg or "Ngrok tunnel offline."
+    return None
+
+
 def _raise_colab_http_error(resp: requests.Response, label: str) -> None:
+    ngrok_offline = _ngrok_offline_hint(resp)
+    if ngrok_offline:
+        raise RuntimeError(
+            f"Colab/ngrok offline ({ngrok_offline}).\n"
+            "→ Mở lại tab Colab, chạy lại cell server (Cell 5).\n"
+            "→ Copy URL ngrok mới vào .env (COLAB_TRACKING_URL=...).\n"
+            "→ Restart backend: uvicorn api.main_api:app --reload --port 8000\n"
+            "→ Giữ tab Colab mở trong suốt quá trình upload."
+        )
+
     detail = _response_detail(resp).strip()
     if not detail or detail == "Internal Server Error":
         detail = (
@@ -70,7 +99,8 @@ def fetch_colab_tracking_stub(
             on_progress(msg)
 
     health = requests.get(f"{base}/api/health", headers=_headers(), timeout=30)
-    health.raise_for_status()
+    if not health.ok:
+        _raise_colab_http_error(health, "/api/health")
     try:
         health_data = health.json()
     except Exception:
