@@ -126,7 +126,27 @@ def main():
     )
     view_transformer.add_transformed_position_to_tracks(tracks, pitch_offsets=pitch_offsets)
 
-
+    # ── In kích thước sân đo được ra console ─────────────────────────────────
+    _all_x, _all_y = [], []
+    for _frame in tracks["players"]:
+        for _info in _frame.values():
+            _pos = _info.get("position_transformed")
+            if _pos is not None:
+                _all_x.append(_pos[0])
+                _all_y.append(_pos[1])
+    if _all_x:
+        _x_span = max(_all_x) - min(_all_x)
+        _y_span = max(_all_y) - min(_all_y)
+        print(
+            f"[Pitch] Kích thước sân đo được: "
+            f"dài = {_x_span:.1f} m  ({min(_all_x):.1f}→{max(_all_x):.1f} m)  |  "
+            f"rộng = {_y_span:.1f} m  ({min(_all_y):.1f}→{max(_all_y):.1f} m)"
+        )
+        print(
+            f"[Pitch] m_per_px = {view_transformer.pan_scale_mpp():.4f}  |  "
+            f"offset span = {max(pitch_offsets)-min(pitch_offsets):.1f} m"
+        )
+    # ─────────────────────────────────────────────────────────────────────────
 
     speed_and_distance_estimator = SpeedAndDistance_Estimator()
 
