@@ -39,8 +39,8 @@ def _response_detail(resp: requests.Response) -> str:
     return (resp.text or "")[:4000]
 
 
-def _ngrok_offline_hint(resp: requests.Response) -> str | None:
-    """Detect ngrok 'endpoint is offline' HTML (404) when Colab tab/runtime đã tắt."""
+def _ngrok_page_hint(resp: requests.Response) -> str | None:
+    """Parse ngrok HTML error page (404 offline, 403 bandwidth, ...)."""
     text = resp.text or ""
     m = re.search(r'data-payload="([^"]+)"', text)
     if not m:
@@ -49,22 +49,30 @@ def _ngrok_offline_hint(resp: requests.Response) -> str | None:
         payload = json.loads(base64.b64decode(m.group(1)).decode())
     except Exception:
         return None
-    msg = str(payload.get("message", "")).strip()
-    if "offline" in msg.lower() or payload.get("code") == "3200":
-        return msg or "Ngrok tunnel offline."
-    return None
+    return str(payload.get("message") or payload.get("title") or "").strip() or None
 
 
 def _raise_colab_http_error(resp: requests.Response, label: str) -> None:
-    ngrok_offline = _ngrok_offline_hint(resp)
-    if ngrok_offline:
-        raise RuntimeError(
-            f"Colab/ngrok offline ({ngrok_offline}).\n"
-            "→ Mở lại tab Colab, chạy lại cell server (Cell 5).\n"
-            "→ Copy URL ngrok mới vào .env (COLAB_TRACKING_URL=...).\n"
-            "→ Restart backend: uvicorn api.main_api:app --reload --port 8000\n"
-            "→ Giữ tab Colab mở trong suốt quá trình upload."
-        )
+    ngrok_msg = _ngrok_page_hint(resp)
+    if ngrok_msg:
+        lower = ngrok_msg.lower()
+        if "bandwidth" in lower or "limit" in lower:
+            raise RuntimeError(
+                f"Ngrok chặn request: {ngrok_msg}\n"
+                "→ Tài khoản ngrok free đã hết băng thông tháng này.\n"
+                "→ Cách 1: đăng nhập https://dashboard.ngrok.com/billing (nâng cấp hoặc đợi reset).\n"
+                "→ Cách 2: tạo tài khoản ngrok mới, authtoken mới → chạy lại Cell 5 Colab.\n"
+                "→ Cách 3: bỏ COLAB_TRACKING_URL trong .env → tracking chạy CPU trên máy local (chậm)."
+            )
+        if "offline" in lower or resp.status_code == 404:
+            raise RuntimeError(
+                f"Colab/ngrok offline ({ngrok_msg}).\n"
+                "→ Mở lại tab Colab, chạy lại cell server (Cell 5).\n"
+                "→ Copy URL ngrok mới vào .env (COLAB_TRACKING_URL=...).\n"
+                "→ Restart backend: uvicorn api.main_api:app --reload --port 8000\n"
+                "→ Giữ tab Colab mở trong suốt quá trình upload."
+            )
+        raise RuntimeError(f"Ngrok lỗi ({resp.status_code}): {ngrok_msg}")
 
     detail = _response_detail(resp).strip()
     if not detail or detail == "Internal Server Error":

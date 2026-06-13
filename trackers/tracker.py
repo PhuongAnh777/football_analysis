@@ -11,6 +11,18 @@ import pandas as pd
 # Path to the football-tuned BoT-SORT config bundled alongside this file
 _BOTSORT_CFG = os.path.join(os.path.dirname(__file__), "botsort_football.yaml")
 
+
+def _bgr_color(color) -> tuple[int, int, int]:
+    """OpenCV expects (B, G, R) ints; team_color may be np.float32 array."""
+    if color is None:
+        return (0, 0, 255)
+    if isinstance(color, np.ndarray):
+        vals = color.flatten()[:3]
+    else:
+        vals = color
+    return (int(vals[0]), int(vals[1]), int(vals[2]))
+
+
 class Tracker:
     def __init__(self, model_path):
         self.model = YOLO(model_path)
@@ -141,6 +153,7 @@ class Tracker:
 
     def draw_ellipse(self, frame, bbox, color, track_id=None):
         y2 = int(bbox[3])
+        color = _bgr_color(color)
 
         x_center, y_center = get_center_of_bbox(bbox)
         width = get_bbox_width(bbox)
@@ -189,6 +202,7 @@ class Tracker:
         return frame
 
     def draw_traingle(self, frame, bbox, color):
+        color = _bgr_color(color)
         y = int(bbox[1])
         x,_ = get_center_of_bbox(bbox)
 
