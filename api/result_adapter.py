@@ -11,11 +11,13 @@ from __future__ import annotations
 from typing import Any
 
 
-def _grade(score: float) -> str:
-    for threshold, letter in ((80, "A"), (65, "B"), (50, "C"), (35, "D")):
-        if score >= threshold:
-            return letter
-    return "F"
+# ── helpers ──────────────────────────────────────────────────────────────────
+
+def _r2(v: Any) -> float:
+    try:
+        return round(float(v), 2)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _team_metrics(
@@ -24,12 +26,12 @@ def _team_metrics(
     match_report: dict,
     scored_report: dict,
 ) -> dict[str, Any]:
-    tk = f"team_{team_idx}"
-    meta = match_report.get("meta", {})
+    tk        = f"team_{team_idx}"
+    meta      = match_report.get("meta", {})
     narrative = match_report.get("match_narrative_data", {})
-    team_tr = match_report.get("team_report", {}).get(tk, {})
-    scores = team_tr.get("scores", {})
-    ts = scored_report.get("team_scores", {}).get(tk, {})
+    press_rec = match_report.get("press_and_recovery", {}).get(tk, {})
+    cau_truc  = match_report.get("cau_truc_doi_hinh",  {}).get(tk, {})
+    mo_hinh   = match_report.get("mo_hinh_tran",       {}).get(tk, {})
 
     compact_windows = (
         tactical_report.get("compact", {}).get(tk)
@@ -37,56 +39,38 @@ def _team_metrics(
         or []
     )
     avg_compact = (
-        sum(w.get("compact_score", 0) for w in compact_windows) / len(compact_windows)
-        if compact_windows
-        else 0.0
+        sum(w.get("mean_area", w.get("compact_score", 0)) for w in compact_windows) / len(compact_windows)
+        if compact_windows else 0.0
     )
 
-    press_windows = tactical_report.get("pressing", {}).get("windows", [])
-    team_press = [
-        w.get("intensity", 0)
-        for w in press_windows
-        if w.get("pressing_team") == team_idx
-    ]
-    avg_press = sum(team_press) / len(team_press) if team_press else 0.0
-
-    to_data = tactical_report.get("turnovers", {}).get(tk, {})
+    to_data   = tactical_report.get("turnovers", {}).get(tk, {})
     pass_data = (tactical_report.get("passing") or {}).get(tk, {})
 
     return {
-        "possession": float(meta.get(f"possession_team_{team_idx}", 0)),
-        "compact_score": round(avg_compact, 2),
-        "pressing_intensity": round(avg_press, 3),
-        "formation_adherence": float(
-            narrative.get(f"adherence_team_{team_idx}", scores.get("adherence", 0))
-        ),
-        "avg_speed": float(narrative.get(f"speed_team_{team_idx}", 0)),
-        "sprint_pct": float(narrative.get(f"sprint_pct_team_{team_idx}", 0)),
-        "defensive_line_height": float(
-            narrative.get(f"def_line_avg_team_{team_idx}", 0)
-        ),
-        "width": float(narrative.get(f"width_avg_team_{team_idx}", 0)),
-        "high_intensity_runs": int(narrative.get(f"high_runs_team_{team_idx}", 0)),
-        "ball_recoveries": int(narrative.get(f"recoveries_team_{team_idx}", 0)),
-        "dangerous_turnovers": int(
-            to_data.get("total_turnovers_in_final_third", 0)
-        ),
-        "forward_passes_pct": float(
+        "possession":           float(meta.get(f"possession_team_{team_idx}", 0)),
+        "compact_score":        round(avg_compact, 2),
+        "compact_scored":       float(cau_truc.get("compact_score", 0)),
+        "compact_trend":        cau_truc.get("compact_trend", "stable"),
+        "pressing_h1":          float(press_rec.get("pressing_h1", 0)),
+        "pressing_h2":          float(press_rec.get("pressing_h2", 0)),
+        "pressing_drop_pct":    float(press_rec.get("pressing_drop_pct", 0)),
+        "avg_speed":            float(narrative.get(f"speed_team_{team_idx}", 0)),
+        "sprint_pct":           float(narrative.get(f"sprint_pct_team_{team_idx}", 0)),
+        "defensive_line_height": float(narrative.get(f"def_line_avg_team_{team_idx}", 0)),
+        "block_type":           mo_hinh.get("block_type", "mid_block"),
+        "width":                float(narrative.get(f"width_avg_team_{team_idx}", 0)),
+        "width_with_ball":      float(narrative.get(f"width_with_ball_team_{team_idx}", 0)),
+        "width_without_ball":   float(narrative.get(f"width_without_ball_team_{team_idx}", 0)),
+        "width_delta":          float(cau_truc.get("width_delta_m", 0)),
+        "ball_recoveries":      int(press_rec.get("recoveries_total", 0)),
+        "recoveries_opp_pct":   float(press_rec.get("recoveries_opp_pct", 0)),
+        "turnovers_final_third":    int(to_data.get("total_turnovers_in_final_third", 0)),
+        "high_risk_count":          int(to_data.get("high_risk_count",      0)),
+        "high_risk_rate_pct":       float(to_data.get("high_risk_rate_pct", 0)),
+        "avg_distance_to_goal_m":   float(to_data.get("avg_distance_to_goal_m", 0)),
+        "avg_transition_potential": float(to_data.get("avg_transition_potential", 0)),
+        "forward_passes_pct":   float(
             pass_data.get("progressive_pass_pct", 0) if isinstance(pass_data, dict) else 0
-        ),
-        "overall_score": float(scores.get("overall", ts.get("overall_score", 50))),
-        "stability": float(scores.get("stability", 50)),
-        "discipline": float(scores.get("adherence", 50)),
-        "width_normalized": min(
-            100, float(narrative.get(f"width_avg_team_{team_idx}", 0)) / 0.55
-        ),
-        "avg_speed_normalized": min(
-            100, float(narrative.get(f"speed_team_{team_idx}", 0)) / 0.3
-        ),
-        "defensive_score": float(scores.get("def_line", 50)),
-        "ball_control": float(meta.get(f"possession_team_{team_idx}", 0)),
-        "formation_adherence_pct": float(
-            narrative.get(f"adherence_team_{team_idx}", scores.get("adherence", 0))
         ),
     }
 
@@ -98,27 +82,23 @@ def _build_teams(
     llm_eval: dict | None,
 ) -> list[dict]:
     teams: list[dict] = []
-    meta = match_report.get("meta", {})
-    danh_gia = (llm_eval or {}).get("danh_gia_doi", {})
+    meta      = match_report.get("meta", {})
+    danh_gia  = (llm_eval or {}).get("danh_gia_doi", {})
+    cau_truc  = match_report.get("cau_truc_doi_hinh", {})
+    insights  = match_report.get("insights", {})
 
     for team_idx in (1, 2):
-        tk = f"team_{team_idx}"
-        team_tr = match_report.get("team_report", {}).get(tk, {})
-        scores = team_tr.get("scores", {})
-        grades = team_tr.get("grades", {})
+        tk       = f"team_{team_idx}"
         llm_team = danh_gia.get(f"doi_{team_idx}", {})
+        c_score  = float(cau_truc.get(tk, {}).get("compact_score", 50))
 
-        overall = float(scores.get("overall", 50))
-        teams.append(
-            {
-                "name": llm_team.get("ten") or f"Đội {team_idx}",
-                "formation": meta.get(f"formation_team_{team_idx}", "unknown"),
-                "overall_score": overall,
-                "grade": grades.get("overall") or _grade(overall),
-                "tactical_profile": team_tr.get("tactical_profile", ""),
-                "metrics": _team_metrics(team_idx, tactical_report, match_report, scored_report),
-            }
-        )
+        teams.append({
+            "name":             llm_team.get("ten") or f"Đội {team_idx}",
+            "formation":        meta.get(f"formation_team_{team_idx}", "unknown"),
+            "tactical_profile": llm_team.get("chien_thuat", ""),
+            "insights":         insights.get(tk, []),
+            "metrics":          _team_metrics(team_idx, tactical_report, match_report, scored_report),
+        })
     return teams
 
 
@@ -127,35 +107,42 @@ def _build_players(
     scored_report: dict,
 ) -> list[dict]:
     players: list[dict] = []
-    player_report = match_report.get("player_report", {})
+    cau_thu = match_report.get("cau_thu_then_chot", {})
     raw_scores = scored_report.get("player_scores", {})
 
-    for team_str, roster in player_report.items():
-        team_id = int(team_str)
-        team_raw = raw_scores.get(team_str, raw_scores.get(str(team_id), {}))
-        roster_items = sorted(roster.items(), key=lambda item: int(item[0]))
+    # Collect all known player track_ids from scored_report for a full roster
+    for team_str, team_raw in raw_scores.items():
+        team_id    = int(team_str)
+        team_chot  = cau_thu.get(f"team_{team_str}", {})
+        top_press  = {p["track_id"] for p in team_chot.get("top_pressers",    [])}
+        top_width  = {p["track_id"] for p in team_chot.get("top_width_users", [])}
+        poor_pos   = {p["track_id"] for p in team_chot.get("poor_positioning", [])}
 
-        for squad_num, (tid_str, info) in enumerate(roster_items, start=1):
-            raw = team_raw.get(tid_str, {})
-            role = info.get("role_in_line", "MID")
-            players.append(
-                {
-                    "team": team_id,
-                    "team_id": team_id,
-                    "track_id": int(tid_str),
-                    "squad_number": squad_num,
-                    "display_name": f"Cầu thủ {squad_num}",
-                    "position": role,
-                    "total_score": info.get("overall_score", raw.get("overall_score", 0)),
-                    "grade": info.get("grade", _grade(info.get("overall_score", 0))),
-                    "avg_speed": raw.get("speed_score", 0),
-                    "pressing": raw.get("pressing_score", 0),
-                    "discipline": raw.get("discipline_score", 0),
-                    "coverage": raw.get("activity_score", 0),
-                    "high_intensity_runs": raw.get("high_run_score", 0),
-                    "creative_passes": raw.get("passing_involvement_score", 0),
-                }
-            )
+        roster_items = sorted(team_raw.items(), key=lambda item: int(item[0]))
+        for squad_num, (tid_str, raw) in enumerate(roster_items, start=1):
+            tid = int(tid_str)
+            tags: list[str] = []
+            if tid in top_press:
+                tags.append("top_presser")
+            if tid in top_width:
+                tags.append("top_width")
+            if tid in poor_pos:
+                tags.append("poor_positioning")
+
+            players.append({
+                "team":         team_id,
+                "team_id":      team_id,
+                "track_id":     tid,
+                "squad_number": squad_num,
+                "display_name": f"Cầu thủ {squad_num}",
+                "position":     raw.get("role", "MID"),
+                "tags":         tags,
+                "pressing":     raw.get("pressing_score",        0),
+                "width_contrib":raw.get("width_contrib_score",   0),
+                "def_position": raw.get("def_positioning_score", 0),
+                "speed":        raw.get("speed_score",           0),
+                "activity":     raw.get("activity_score",        0),
+            })
     return players
 
 
@@ -175,51 +162,68 @@ def _build_timeline(
     passing_events: list[dict],
     players: list[dict] | None = None,
 ) -> list[dict]:
-    labels = _player_label_map(players or [])
+    labels   = _player_label_map(players or [])
     timeline: list[dict] = []
     for ev in passing_events:
-        passer_id = ev.get("passer_id")
+        passer_id   = ev.get("passer_id")
         receiver_id = ev.get("receiver_id")
-        passer = labels.get(int(passer_id), f"Cầu thủ ?") if passer_id is not None else "—"
-        receiver = labels.get(int(receiver_id), f"Cầu thủ ?") if receiver_id is not None else "—"
-        timeline.append(
-            {
-                "frame": ev.get("frame", 0),
-                "team": max(0, int(ev.get("team", 1)) - 1),
-                "type": "pass",
-                "description": f"Chuyền bóng {passer} → {receiver}",
-            }
-        )
+        passer   = labels.get(int(passer_id),   "Cầu thủ ?") if passer_id   is not None else "—"
+        receiver = labels.get(int(receiver_id), "Cầu thủ ?") if receiver_id is not None else "—"
+        timeline.append({
+            "frame":       ev.get("frame", 0),
+            "team":        max(0, int(ev.get("team", 1)) - 1),
+            "type":        "pass",
+            "description": f"Chuyền bóng {passer} → {receiver}",
+        })
     return timeline
 
 
-def _build_notable_players(llm_eval: dict | None, match_report: dict) -> dict:
+def _build_notable_players(
+    llm_eval: dict | None, match_report: dict
+) -> dict:
+    # Prefer LLM player data
     if llm_eval and llm_eval.get("danh_gia_cau_thu"):
         dc = llm_eval["danh_gia_cau_thu"]
-        return {
-            "team1_best": _player_card(dc.get("doi_1", {}).get("xuat_sac")),
-            "team1_improve": _player_card(dc.get("doi_1", {}).get("can_cai_thien")),
-            "team2_best": _player_card(dc.get("doi_2", {}).get("xuat_sac")),
-            "team2_improve": _player_card(dc.get("doi_2", {}).get("can_cai_thien")),
-        }
+        notable: dict[str, Any] = {}
+        for team_idx in (1, 2):
+            doi_key = f"doi_{team_idx}"
+            prefix  = f"team{team_idx}"
+            press   = dc.get(doi_key, {}).get("pressing_tot")
+            width   = dc.get(doi_key, {}).get("width_tot")
+            poor    = dc.get(doi_key, {}).get("can_cai_thien")
+            if press:
+                notable[f"{prefix}_best_presser"] = _player_card(press)
+            if width:
+                notable[f"{prefix}_best_width"] = _player_card(width)
+            if poor:
+                notable[f"{prefix}_improve"] = _player_card(poor)
+        return notable
 
-    notable: dict[str, Any] = {}
+    # Fallback: use cau_thu_then_chot from match_report
+    notable = {}
+    cau_thu = match_report.get("cau_thu_then_chot", {})
     for team_idx in (1, 2):
-        tk = f"team_{team_idx}"
-        tr = match_report.get("team_report", {}).get(tk, {})
-        top = tr.get("top_players") or []
-        weak = tr.get("weak_players") or []
+        tk     = f"team_{team_idx}"
         prefix = f"team{team_idx}"
-        if top:
-            notable[f"{prefix}_best"] = {
-                "track_id": top[0],
-                "reason": f"Cầu thủ #{top[0]} — điểm cao nhất đội {team_idx}",
+        team   = cau_thu.get(tk, {})
+        pressers = team.get("top_pressers", [])
+        widths   = team.get("top_width_users", [])
+        poor     = team.get("poor_positioning", [])
+        if pressers:
+            notable[f"{prefix}_best_presser"] = {
+                "track_id": pressers[0]["track_id"],
+                "reason":   f"Cầu thủ #{pressers[0]['track_id']} — pressing cao nhất đội {team_idx}",
             }
-        if weak:
+        if widths:
+            notable[f"{prefix}_best_width"] = {
+                "track_id": widths[0]["track_id"],
+                "reason":   f"Cầu thủ #{widths[0]['track_id']} — khai thác biên hiệu quả nhất",
+            }
+        if poor:
             notable[f"{prefix}_improve"] = {
-                "track_id": weak[0],
-                "reason": f"Cầu thủ #{weak[0]} — cần cải thiện hiệu suất",
-                "recommendation": "Tăng cường pressing và kỷ luật vị trí.",
+                "track_id":       poor[0]["track_id"],
+                "reason":         f"Cầu thủ #{poor[0]['track_id']} — cần cải thiện kỷ luật vị trí hàng thủ",
+                "recommendation": "Tập trung vào kỷ luật chiều sâu hàng thủ.",
             }
     return notable
 
@@ -228,85 +232,68 @@ def _player_card(entry: dict | None) -> dict | None:
     if not entry:
         return None
     return {
-        "track_id": entry.get("track_id"),
-        "reason": entry.get("ly_do") or entry.get("reason"),
+        "track_id":       entry.get("track_id"),
+        "reason":         entry.get("ly_do") or entry.get("reason"),
         "recommendation": entry.get("khuyen_nghi") or entry.get("recommendation"),
-        "highlights": entry.get("chi_so_noi_bat"),
-        "grade": entry.get("grade"),
-        "position": entry.get("position"),
+        "highlights":     entry.get("chi_so_noi_bat"),
     }
 
 
 def _build_fallback_evaluation(match_report: dict) -> dict:
     """Structured evaluation from match_report when LLM is unavailable."""
-    meta = match_report.get("meta", {})
+    meta     = match_report.get("meta", {})
     narrative = match_report.get("match_narrative_data", {})
+    insights  = match_report.get("insights", {})
+    mo_hinh   = match_report.get("mo_hinh_tran", {})
+    press_rec = match_report.get("press_and_recovery", {})
+
     teams_out: dict[str, Any] = {}
 
     for team_idx in (1, 2):
-        tk = f"team_{team_idx}"
-        tr = match_report.get("team_report", {}).get(tk, {})
-        scores = tr.get("scores", {})
-        grades = tr.get("grades", {})
-        overall = float(scores.get("overall", 50))
+        tk        = f"team_{team_idx}"
+        formation = mo_hinh.get(tk, {}).get("formation", meta.get(f"formation_team_{team_idx}", "unknown"))
+        possession = meta.get(f"possession_team_{team_idx}", 0)
+        pr        = press_rec.get(tk, {})
+        h1        = pr.get("pressing_h1", 0)
+        h2        = pr.get("pressing_h2", 0)
+        drop      = pr.get("pressing_drop_pct", 0)
+        rec_total = pr.get("recoveries_total", 0)
+        rec_opp   = pr.get("recoveries_opp_pct", 0)
+        to_total  = narrative.get(f"turnovers_final_third_team_{team_idx}", 0)
+        hr_rate   = narrative.get(f"high_risk_rate_pct_team_{team_idx}", 0)
+        high_risk_ct = narrative.get(f"high_risk_count_team_{team_idx}", 0)
+        prog_pct  = narrative.get(f"progressive_pct_team_{team_idx}")
 
         teams_out[f"doi_{team_idx}"] = {
-            "ten": f"Đội {team_idx}",
-            "diem_tong": overall,
-            "diem_so_tong": overall,
-            "xep_loai": grades.get("overall") or _grade(overall),
-            "phong_cach": tr.get("tactical_profile", ""),
-            "tactical_profile": tr.get("tactical_profile", ""),
-            "so_do": meta.get(f"formation_team_{team_idx}", "unknown"),
-            "chien_thuat": (
-                f"Sơ đồ {meta.get(f'formation_team_{team_idx}', 'unknown')}, "
-                f"kiểm soát bóng {meta.get(f'possession_team_{team_idx}', 0):.1f}%."
+            "ten":          f"Đội {team_idx}",
+            "so_do":        formation,
+            "chien_thuat":  (
+                f"Sơ đồ {formation}, kiểm soát bóng {possession:.1f}%."
             ),
-            "diem_manh": [
-                f"Tốc độ trung bình {narrative.get(f'speed_team_{team_idx}', 0):.1f} km/h",
-                f"Adherence đội hình {narrative.get(f'adherence_team_{team_idx}', 0):.1f}%",
-            ],
-            "diem_yeu": [
-                f"Mất bóng vùng cuối sân: {narrative.get(f'turnovers_final_third_team_{team_idx}', 0)} lần",
-            ],
-            "nhan_xet_pressing": (
-                f"Cường độ pressing H1/H2: "
-                f"{narrative.get('pressing_intensity_half1', 0):.2f} / "
-                f"{narrative.get('pressing_intensity_half2', 0):.2f}"
+            "pressing":     (
+                f"H1: {h1:.2f} | H2: {h2:.2f} "
+                f"({'giảm' if drop < 0 else 'tăng'} {abs(drop):.0f}%)"
+                if h1 else "Không có dữ liệu pressing."
             ),
-            "nhan_xet_doi_hinh": (
-                f"Adherence {narrative.get(f'adherence_team_{team_idx}', 0):.1f}%, "
-                f"compact trend: {narrative.get(f'compact_trend_team_{team_idx}', 'stable')}"
+            "doi_hinh":     (
+                f"Compact trend: {narrative.get(f'compact_trend_team_{team_idx}', 'stable')}"
             ),
-            "nhan_xet_toc_do": (
-                f"{narrative.get(f'speed_team_{team_idx}', 0):.1f} km/h, "
-                f"sprint {narrative.get(f'sprint_pct_team_{team_idx}', 0):.1f}%"
-            ),
-            "nhan_xet_hang_thu": (
+            "hang_thu":     (
                 f"Hàng thủ trung bình {narrative.get(f'def_line_avg_team_{team_idx}', 0):.1f} m, "
                 f"xu hướng {narrative.get(f'def_line_trend_team_{team_idx}', 'stable')}"
             ),
-            "nhan_xet_do_rong": (
-                f"Độ rộng TB {narrative.get(f'width_avg_team_{team_idx}', 0):.1f} m"
+            "xay_dung":     (
+                f"Progressive pass: {prog_pct:.1f}%." if prog_pct is not None
+                else "Không đủ dữ liệu chuyền bóng."
             ),
-            "nhan_xet_van_dong": (
-                f"{narrative.get(f'high_runs_team_{team_idx}', 0)} lần chạy cường độ cao"
-            ),
-            "nhan_xet_tranh_chap": (
-                f"{narrative.get(f'recoveries_team_{team_idx}', 0)} lần cướp bóng"
-            ),
-            "nhan_xet_mat_bong": (
-                f"{narrative.get(f'turnovers_final_third_team_{team_idx}', 0)} lần mất bóng ở phần sân đối phương"
-            ),
-            "nhan_xet_chuyen": (
-                f"{narrative.get(f'total_passes_team_{team_idx}', 0) or 0} đường chuyền"
-                if narrative.get(f"total_passes_team_{team_idx}") is not None
-                else "Không đủ dữ liệu chuyền bóng để đánh giá."
-            ),
+            "diem_manh":    [i for i in insights.get(tk, []) if "tăng" in i or "%" in i or "counter" in i][:2]
+                            or [f"Thu hồi bóng {rec_total} lần ({rec_opp:.0f}% ở sân đối phương)"],
+            "diem_yeu":     [f"Mất bóng {to_total} lần ở 1/3 cuối ({high_risk_ct} High-Risk, {hr_rate:.0f}% chuyển đổi nguy hiểm)"],
+            "khuyen_nghi_hlv": ["Cải thiện pressing ở hiệp 2", "Tăng cường kỷ luật vị trí hàng thủ"],
+            "insights":     insights.get(tk, []),
         }
 
     dom = meta.get("dominant_team")
-    dom_name = f"Đội {dom}" if dom else "Cân bằng"
     return {
         "tong_quan_tran_dau": {
             "nhan_xet_chung": (
@@ -314,30 +301,27 @@ def _build_fallback_evaluation(match_report: dict) -> dict:
                 f"Kiểm soát bóng {meta.get('possession_team_1', 0):.1f}% — "
                 f"{meta.get('possession_team_2', 0):.1f}%."
             ),
-            "doi_noi_bat": dom_name if dom else None,
-            "ly_do": f"Đội {dom} có overall score cao hơn." if dom else None,
+            "doi_noi_bat": dom,
+            "ly_do": f"Đội {dom} có compact và pressing tốt hơn." if dom else None,
         },
-        "danh_gia_doi": teams_out,
-        "doi_1": teams_out["doi_1"],
-        "doi_2": teams_out["doi_2"],
+        "danh_gia_doi":     teams_out,
+        "doi_1":            teams_out["doi_1"],
+        "doi_2":            teams_out["doi_2"],
         "so_sanh_doi_dau": {
             "pressing": (
-                f"Pressing H1: {narrative.get('pressing_intensity_half1', 0):.2f}, "
-                f"H2: {narrative.get('pressing_intensity_half2', 0):.2f}"
+                f"H1: {press_rec.get('team_1', {}).get('pressing_h1', 0):.2f} / "
+                f"{press_rec.get('team_2', {}).get('pressing_h1', 0):.2f} | "
+                f"H2: {press_rec.get('team_1', {}).get('pressing_h2', 0):.2f} / "
+                f"{press_rec.get('team_2', {}).get('pressing_h2', 0):.2f}"
             ),
             "kiem_soat_bong": (
                 f"Đội 1 {meta.get('possession_team_1', 0):.1f}% — "
                 f"Đội 2 {meta.get('possession_team_2', 0):.1f}%"
             ),
-            "the_luc": (
-                f"Tốc độ: {narrative.get('speed_team_1', 0):.1f} vs "
-                f"{narrative.get('speed_team_2', 0):.1f} km/h"
-            ),
         },
         "ket_luan": (
-            f"Trận đấu nghiêng về {dom_name} về mặt chỉ số tổng thể."
-            if dom
-            else "Hai đội cân bằng về chỉ số tổng thể."
+            f"Trận đấu nghiêng về Đội {dom} về mặt compact và pressing."
+            if dom else "Hai đội cân bằng về chỉ số chiến thuật."
         ),
     }
 
@@ -368,16 +352,16 @@ def adapt_api_result(
     fps: float,
 ) -> dict:
     evaluation = normalize_evaluation(llm_eval, match_report)
-    players = _build_players(match_report, scored_report)
+    players    = _build_players(match_report, scored_report)
     return {
-        "evaluation": evaluation,
-        "match_report": match_report,
-        "charts": charts,
-        "teams": _build_teams(tactical_report, match_report, scored_report, llm_eval),
-        "players": players,
-        "timeline": _build_timeline(passing_events, players),
+        "evaluation":      evaluation,
+        "match_report":    match_report,
+        "charts":          charts,
+        "teams":           _build_teams(tactical_report, match_report, scored_report, llm_eval),
+        "players":         players,
+        "timeline":        _build_timeline(passing_events, players),
         "notable_players": _build_notable_players(llm_eval, match_report),
-        "fps": fps,
+        "fps":             fps,
     }
 
 
@@ -389,12 +373,11 @@ def build_streamlit_analysis_result(tactical_report: dict) -> dict[int, list[dic
         tk = f"team_{team_idx}"
         compact_w = (
             tactical_report.get("compact", {}).get(tk)
-            or tactical_report.get("compact_score", {}).get(tk)
             or []
         )
-        press_w = tactical_report.get("pressing", {}).get("windows", [])
-        poss = tactical_report.get("possession", {})
-        speeds = poss.get("avg_speed", {}).get(tk, {})
+        press_w   = tactical_report.get("pressing", {}).get("windows", [])
+        poss      = tactical_report.get("possession", {})
+        speeds    = poss.get("avg_speed", {}).get(tk, {})
         team_speed = float(speeds.get("overall", 0)) if isinstance(speeds, dict) else 0.0
 
         formation_info = (
@@ -411,25 +394,21 @@ def build_streamlit_analysis_result(tactical_report: dict) -> dict[int, list[dic
 
         for w in compact_w:
             frame = w.get("window_start_frame", 0)
-            result[team_idx].append(
-                {
-                    "frame": frame,
-                    "formation": w.get("formation") or default_formation,
-                    "compact": w.get("compact_score", 0),
-                    "pressing": press_by_frame.get(frame, 0),
-                    "avg_speed": team_speed,
-                }
-            )
+            result[team_idx].append({
+                "frame":     frame,
+                "formation": w.get("formation") or default_formation,
+                "compact":   w.get("mean_area", w.get("compact_score", 0)),
+                "pressing":  press_by_frame.get(frame, 0),
+                "avg_speed": team_speed,
+            })
 
         if not result[team_idx]:
-            result[team_idx].append(
-                {
-                    "frame": 0,
-                    "formation": default_formation,
-                    "compact": 0,
-                    "pressing": 0,
-                    "avg_speed": team_speed,
-                }
-            )
+            result[team_idx].append({
+                "frame":     0,
+                "formation": default_formation,
+                "compact":   0,
+                "pressing":  0,
+                "avg_speed": team_speed,
+            })
 
     return result
