@@ -11,7 +11,6 @@ const COLUMNS = [
   { key: 'discipline',          label: 'Kỷ luật',  sortable: true  },
   { key: 'coverage',            label: 'Phủ sóng', sortable: true  },
   { key: 'high_intensity_runs', label: 'HI Runs',  sortable: true  },
-  { key: 'creative_passes',     label: 'Kiến tạo', sortable: true  },
 ]
 
 const MEDAL = { 0: '🥇', 1: '🥈', 2: '🥉' }

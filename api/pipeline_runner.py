@@ -159,6 +159,7 @@ def execute_pipeline(
     use_track_stub: bool = False,
     output_dir: str | None = None,
     on_step: Optional[Callable[[int, str, str], None]] = None,
+    manual_team_names: dict[int, str] | None = None,
 ) -> dict:
     """Run the full CV + tactical pipeline and return raw + adapted outputs."""
 
@@ -316,10 +317,17 @@ def execute_pipeline(
     )
     _dump_json(match_report, os.path.join(out_dir, "match_report.json"))
 
-    # ── Scoreboard team-name detection ─────────────────────────────────────
+    # ── Team name resolution: manual > scoreboard auto-detect ───────────────
+    # Prefer manually provided names; fall back to LLM vision scoreboard reader
     team_names: dict[int, str] = {}
+    if manual_team_names:
+        team_names.update({k: v for k, v in manual_team_names.items() if v})
+        print(f"[pipeline] Team names (manual): {team_names}", flush=True)
+
     llm_api_key = os.getenv("OPENAI_API_KEY", "")
-    if llm_api_key:
+
+    # Only try scoreboard detection if we still have missing names
+    if llm_api_key and len(team_names) < 2:
         try:
             t1, t2 = detect_team_names(
                 video_frames,
@@ -328,16 +336,16 @@ def execute_pipeline(
                 base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
                 timeout=30,
             )
-            if t1:
+            if t1 and 1 not in team_names:
                 team_names[1] = t1
-            if t2:
+            if t2 and 2 not in team_names:
                 team_names[2] = t2
             if team_names:
                 print(f"[pipeline] Scoreboard detected: {team_names}", flush=True)
             else:
                 print("[pipeline] No team names detected from scoreboard.", flush=True)
         except Exception as exc:
-            print(f"[pipeline] Scoreboard detection failed: {exc}", flush=True)
+            print(f"[pipeline] Scoreboard detection skipped: {exc}", flush=True)
 
     llm_eval: dict = {}
     if llm_api_key:
@@ -465,6 +473,7 @@ def run_pipeline(
     *,
     track_stub_path: str | None = None,
     use_track_stub: bool = False,
+    team_names: dict[int, str] | None = None,
 ) -> None:
     """Execute pipeline for a background API job."""
 
@@ -485,6 +494,7 @@ def run_pipeline(
             use_track_stub=use_track_stub,
             output_dir=output_dir,
             on_step=_step,
+            manual_team_names=team_names,
         )
         job: JobState = jobs_store[job_id]
         job.result = _sanitize(outputs["adapted"])

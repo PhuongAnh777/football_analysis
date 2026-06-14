@@ -27,9 +27,11 @@ export function getVideoUrl(jobId) {
   return `${API_BASE}/video/${jobId}?v=${encodeURIComponent(jobId)}`
 }
 
-export async function uploadVideo(file, onProgress) {
+export async function uploadVideo(file, onProgress, { team1Name, team2Name } = {}) {
   const form = new FormData()
   form.append('video', file)
+  if (team1Name?.trim()) form.append('team1_name', team1Name.trim())
+  if (team2Name?.trim()) form.append('team2_name', team2Name.trim())
   const { data } = await api.post('/analyze', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 600_000,

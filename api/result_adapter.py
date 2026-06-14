@@ -139,6 +139,24 @@ def _compute_grade(score: float) -> str:
     return "D"
 
 
+_ROLE_MAP = {
+    "DEF": "DEF", "GK": "GK",
+    "MID": "MID", "DM": "MID", "AM": "MID", "SS": "MID",
+    "FWD": "FWD", "ST": "FWD",
+}
+
+
+def _build_position_lookup(match_report: dict) -> dict[int, str]:
+    """Map track_id → role (DEF/MID/FWD) from formation lines in mo_hinh_tran."""
+    lookup: dict[int, str] = {}
+    for tk_val in match_report.get("mo_hinh_tran", {}).values():
+        for raw_label, ids in tk_val.get("lines", {}).items():
+            role = _ROLE_MAP.get(raw_label.upper(), "MID")
+            for pid in ids:
+                lookup[int(pid)] = role
+    return lookup
+
+
 def _build_players(
     match_report: dict,
     scored_report: dict,
@@ -147,6 +165,9 @@ def _build_players(
     players: list[dict] = []
     cau_thu    = match_report.get("cau_thu_then_chot", {})
     raw_scores = scored_report.get("player_scores", {})
+
+    # Build position lookup from formation lines
+    pos_lookup = _build_position_lookup(match_report)
 
     # Build per-player high-intensity run counts from tactical_report
     hi_runs_by_player: dict[int, int] = {}
@@ -184,7 +205,7 @@ def _build_players(
                 "track_id":           tid,
                 "squad_number":       squad_num,
                 "display_name":       f"Cầu thủ {squad_num}",
-                "position":           raw.get("role", "MID"),
+                "position":           pos_lookup.get(tid, "MID"),
                 "tags":               tags,
                 # PlayerTable columns
                 "total_score":        round(overall, 1),

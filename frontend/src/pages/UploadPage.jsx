@@ -66,6 +66,8 @@ export default function UploadPage() {
   const [file, setFile] = useState(null)
   const [toast, setToast] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [team1Name, setTeam1Name] = useState('')
+  const [team2Name, setTeam2Name] = useState('')
 
   const isUploading  = status === 'uploading'
   const isProcessing = status === 'processing'
@@ -128,7 +130,7 @@ export default function UploadPage() {
     try {
       reset()
       setUploading(0)
-      const { job_id } = await uploadVideo(file, pct => setUploading(pct))
+      const { job_id } = await uploadVideo(file, pct => setUploading(pct), { team1Name, team2Name })
       setJob(job_id)
     } catch (err) {
       setError(err.message)
@@ -230,6 +232,38 @@ export default function UploadPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Team names */}
+        <div className="card space-y-3">
+          <p className="text-sm font-semibold text-text-primary">Tên đội <span className="font-normal text-text-secondary">(tuỳ chọn)</span></p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs text-blue-400 font-medium">Đội 1 (trái)</label>
+              <input
+                type="text"
+                value={team1Name}
+                onChange={e => setTeam1Name(e.target.value)}
+                placeholder="Tên đội 1..."
+                maxLength={40}
+                disabled={isUploading || isProcessing}
+                className="w-full px-3 py-2 rounded-lg text-sm bg-surface-2 border border-border text-text-primary placeholder-text-secondary focus:outline-none focus:border-blue-500/60 transition-colors disabled:opacity-40"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-red-400 font-medium">Đội 2 (phải)</label>
+              <input
+                type="text"
+                value={team2Name}
+                onChange={e => setTeam2Name(e.target.value)}
+                placeholder="Tên đội 2..."
+                maxLength={40}
+                disabled={isUploading || isProcessing}
+                className="w-full px-3 py-2 rounded-lg text-sm bg-surface-2 border border-border text-text-primary placeholder-text-secondary focus:outline-none focus:border-red-500/60 transition-colors disabled:opacity-40"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-text-secondary">Nhập tên đội theo bảng tỉ số trong video để hiển thị đúng trong báo cáo.</p>
+        </div>
 
         {/* Upload progress */}
         <AnimatePresence>

@@ -27,7 +27,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import aiofiles
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -214,7 +214,7 @@ def _colab_tracking_url() -> str | None:
     return url or None
 
 
-def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
+def _run_job_with_optional_colab(video_path: str, job_id: str, team_names: dict | None = None) -> None:
     """Colab GPU tracking (optional) → local pipeline."""
     colab_url = _colab_tracking_url()
     stub_path = _job_stub_path(job_id)
@@ -287,6 +287,7 @@ def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
         jobs,
         track_stub_path=stub_path,
         use_track_stub=use_stub,
+        team_names=team_names,
     )
 
 
@@ -295,7 +296,11 @@ def _run_job_with_optional_colab(video_path: str, job_id: str) -> None:
 # ── POST /api/analyze ─────────────────────────────────────────────────────────
 
 @app.post("/api/analyze", status_code=202)
-async def analyze(video: UploadFile = File(...)):
+async def analyze(
+    video: UploadFile = File(...),
+    team1_name: Optional[str] = Form(default=None),
+    team2_name: Optional[str] = Form(default=None),
+):
     """Accept a video file and start the analysis pipeline.
 
     Returns a ``job_id`` that can be used to poll status and retrieve
@@ -330,9 +335,16 @@ async def analyze(video: UploadFile = File(...)):
     job.input_size_bytes = len(contents)
     job.input_filename = video.filename or os.path.basename(_INPUT_VIDEO_PATH)
 
+    # Build team name dict from optional form fields
+    _team_names: dict[int, str] = {}
+    if team1_name and team1_name.strip():
+        _team_names[1] = team1_name.strip()
+    if team2_name and team2_name.strip():
+        _team_names[2] = team2_name.strip()
+
     print(
         f"[analyze] job={job_id} file={job.input_filename!r} "
-        f"({len(contents):,} bytes, md5={input_md5}) → {_INPUT_VIDEO_PATH}",
+        f"({len(contents):,} bytes, md5={input_md5}) team_names={_team_names or 'auto'} → {_INPUT_VIDEO_PATH}",
         flush=True,
     )
 
@@ -342,6 +354,7 @@ async def analyze(video: UploadFile = File(...)):
         _run_job_with_optional_colab,
         _INPUT_VIDEO_PATH,
         job_id,
+        _team_names or None,
     )
 
     return {"job_id": job_id, "status": "processing"}
