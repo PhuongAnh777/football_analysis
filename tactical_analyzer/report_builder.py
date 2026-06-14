@@ -346,7 +346,7 @@ class ReportBuilder:
                 verb = "giảm" if drop < 0 else "tăng"
                 insights.append(
                     f"Pressing {verb} {abs(drop):.0f}% "
-                    f"từ H1 ({h1:.2f}) → H2 ({h2:.2f})"
+                    f"từ nửa đầu ({h1:.2f}) → nửa sau ({h2:.2f})"
                 )
 
         # 2. Recovery zone

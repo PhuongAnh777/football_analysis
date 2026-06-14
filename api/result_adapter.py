@@ -46,6 +46,21 @@ def _team_metrics(
     to_data   = tactical_report.get("turnovers", {}).get(tk, {})
     pass_data = (tactical_report.get("passing") or {}).get(tk, {})
 
+    # pressing_intensity: 0-100 scored value from scored_report
+    pressing_intensity = float(
+        scored_report.get("team_scores", {}).get(tk, {}).get("pressing_score", 0)
+    )
+
+    # high_intensity_runs: total runs from tactical_report
+    hi_runs = int(
+        tactical_report.get("high_intensity_runs", {}).get(tk, {}).get("total_runs", 0)
+    )
+
+    # formation_adherence: formation detection confidence as %
+    formation_adherence = _r2(
+        tactical_report.get("formation", {}).get(tk, {}).get("confidence", 0) * 100
+    )
+
     return {
         "possession":           float(meta.get(f"possession_team_{team_idx}", 0)),
         "compact_score":        round(avg_compact, 2),
@@ -54,6 +69,7 @@ def _team_metrics(
         "pressing_h1":          float(press_rec.get("pressing_h1", 0)),
         "pressing_h2":          float(press_rec.get("pressing_h2", 0)),
         "pressing_drop_pct":    float(press_rec.get("pressing_drop_pct", 0)),
+        "pressing_intensity":   pressing_intensity,
         "avg_speed":            float(narrative.get(f"speed_team_{team_idx}", 0)),
         "sprint_pct":           float(narrative.get(f"sprint_pct_team_{team_idx}", 0)),
         "defensive_line_height": float(narrative.get(f"def_line_avg_team_{team_idx}", 0)),
@@ -66,9 +82,12 @@ def _team_metrics(
         "recoveries_opp_pct":   float(press_rec.get("recoveries_opp_pct", 0)),
         "turnovers_final_third":    int(to_data.get("total_turnovers_in_final_third", 0)),
         "high_risk_count":          int(to_data.get("high_risk_count",      0)),
+        "dangerous_turnovers":      int(to_data.get("high_risk_count",      0)),
         "high_risk_rate_pct":       float(to_data.get("high_risk_rate_pct", 0)),
         "avg_distance_to_goal_m":   float(to_data.get("avg_distance_to_goal_m", 0)),
         "avg_transition_potential": float(to_data.get("avg_transition_potential", 0)),
+        "high_intensity_runs":      hi_runs,
+        "formation_adherence":      formation_adherence,
         "forward_passes_pct":   float(
             pass_data.get("progressive_pass_pct", 0) if isinstance(pass_data, dict) else 0
         ),
@@ -80,20 +99,28 @@ def _build_teams(
     match_report: dict,
     scored_report: dict,
     llm_eval: dict | None,
+    team_names: dict[int, str] | None = None,
 ) -> list[dict]:
     teams: list[dict] = []
     meta      = match_report.get("meta", {})
     danh_gia  = (llm_eval or {}).get("danh_gia_doi", {})
     cau_truc  = match_report.get("cau_truc_doi_hinh", {})
     insights  = match_report.get("insights", {})
+    _names    = team_names or {}
 
     for team_idx in (1, 2):
         tk       = f"team_{team_idx}"
         llm_team = danh_gia.get(f"doi_{team_idx}", {})
-        c_score  = float(cau_truc.get(tk, {}).get("compact_score", 50))
+
+        # Priority: detected scoreboard name > LLM name > fallback
+        name = (
+            _names.get(team_idx)
+            or llm_team.get("ten")
+            or f"Đội {team_idx}"
+        )
 
         teams.append({
-            "name":             llm_team.get("ten") or f"Đội {team_idx}",
+            "name":             name,
             "formation":        meta.get(f"formation_team_{team_idx}", "unknown"),
             "tactical_profile": llm_team.get("chien_thuat", ""),
             "insights":         insights.get(tk, []),
@@ -102,15 +129,35 @@ def _build_teams(
     return teams
 
 
+def _compute_grade(score: float) -> str:
+    if score >= 80:
+        return "A"
+    if score >= 65:
+        return "B"
+    if score >= 50:
+        return "C"
+    return "D"
+
+
 def _build_players(
     match_report: dict,
     scored_report: dict,
+    tactical_report: dict | None = None,
 ) -> list[dict]:
     players: list[dict] = []
-    cau_thu = match_report.get("cau_thu_then_chot", {})
+    cau_thu    = match_report.get("cau_thu_then_chot", {})
     raw_scores = scored_report.get("player_scores", {})
 
-    # Collect all known player track_ids from scored_report for a full roster
+    # Build per-player high-intensity run counts from tactical_report
+    hi_runs_by_player: dict[int, int] = {}
+    if tactical_report:
+        hi_data = tactical_report.get("high_intensity_runs", {})
+        for _tk, team_hi in hi_data.items():
+            for ev in team_hi.get("run_events", []):
+                pid = ev.get("track_id")
+                if pid is not None:
+                    hi_runs_by_player[int(pid)] = hi_runs_by_player.get(int(pid), 0) + 1
+
     for team_str, team_raw in raw_scores.items():
         team_id    = int(team_str)
         team_chot  = cau_thu.get(f"team_{team_str}", {})
@@ -129,19 +176,30 @@ def _build_players(
             if tid in poor_pos:
                 tags.append("poor_positioning")
 
+            overall = float(raw.get("overall_score", 0))
+
             players.append({
-                "team":         team_id,
-                "team_id":      team_id,
-                "track_id":     tid,
-                "squad_number": squad_num,
-                "display_name": f"Cầu thủ {squad_num}",
-                "position":     raw.get("role", "MID"),
-                "tags":         tags,
-                "pressing":     raw.get("pressing_score",        0),
-                "width_contrib":raw.get("width_contrib_score",   0),
-                "def_position": raw.get("def_positioning_score", 0),
-                "speed":        raw.get("speed_score",           0),
-                "activity":     raw.get("activity_score",        0),
+                "team":               team_id,
+                "team_id":            team_id,
+                "track_id":           tid,
+                "squad_number":       squad_num,
+                "display_name":       f"Cầu thủ {squad_num}",
+                "position":           raw.get("role", "MID"),
+                "tags":               tags,
+                # PlayerTable columns
+                "total_score":        round(overall, 1),
+                "avg_speed":          round(float(raw.get("avg_speed_kmh", 0)), 1),
+                "grade":              _compute_grade(overall),
+                "pressing":           round(float(raw.get("pressing_score",        0)), 1),
+                "discipline":         round(float(raw.get("def_positioning_score", 0)), 1),
+                "coverage":           round(float(raw.get("activity_score",        0)), 1),
+                "high_intensity_runs": hi_runs_by_player.get(tid, 0),
+                "creative_passes":    None,
+                # Extra fields kept for other components
+                "width_contrib":      round(float(raw.get("width_contrib_score",   0)), 1),
+                "def_position":       round(float(raw.get("def_positioning_score", 0)), 1),
+                "speed":              round(float(raw.get("speed_score",           0)), 1),
+                "activity":           round(float(raw.get("activity_score",        0)), 1),
             })
     return players
 
@@ -239,13 +297,17 @@ def _player_card(entry: dict | None) -> dict | None:
     }
 
 
-def _build_fallback_evaluation(match_report: dict) -> dict:
+def _build_fallback_evaluation(
+    match_report: dict,
+    team_names: dict[int, str] | None = None,
+) -> dict:
     """Structured evaluation from match_report when LLM is unavailable."""
     meta     = match_report.get("meta", {})
     narrative = match_report.get("match_narrative_data", {})
     insights  = match_report.get("insights", {})
     mo_hinh   = match_report.get("mo_hinh_tran", {})
     press_rec = match_report.get("press_and_recovery", {})
+    _names    = team_names or {}
 
     teams_out: dict[str, Any] = {}
 
@@ -265,13 +327,13 @@ def _build_fallback_evaluation(match_report: dict) -> dict:
         prog_pct  = narrative.get(f"progressive_pct_team_{team_idx}")
 
         teams_out[f"doi_{team_idx}"] = {
-            "ten":          f"Đội {team_idx}",
+            "ten":          _names.get(team_idx) or f"Đội {team_idx}",
             "so_do":        formation,
             "chien_thuat":  (
                 f"Sơ đồ {formation}, kiểm soát bóng {possession:.1f}%."
             ),
             "pressing":     (
-                f"H1: {h1:.2f} | H2: {h2:.2f} "
+                f"Đầu: {h1:.2f} | Cuối: {h2:.2f} "
                 f"({'giảm' if drop < 0 else 'tăng'} {abs(drop):.0f}%)"
                 if h1 else "Không có dữ liệu pressing."
             ),
@@ -289,11 +351,14 @@ def _build_fallback_evaluation(match_report: dict) -> dict:
             "diem_manh":    [i for i in insights.get(tk, []) if "tăng" in i or "%" in i or "counter" in i][:2]
                             or [f"Thu hồi bóng {rec_total} lần ({rec_opp:.0f}% ở sân đối phương)"],
             "diem_yeu":     [f"Mất bóng {to_total} lần ở 1/3 cuối ({high_risk_ct} High-Risk, {hr_rate:.0f}% chuyển đổi nguy hiểm)"],
-            "khuyen_nghi_hlv": ["Cải thiện pressing ở hiệp 2", "Tăng cường kỷ luật vị trí hàng thủ"],
+            "khuyen_nghi_hlv": ["Cải thiện pressing ở nửa sau video", "Tăng cường kỷ luật vị trí hàng thủ"],
             "insights":     insights.get(tk, []),
         }
 
-    dom = meta.get("dominant_team")
+    dom      = meta.get("dominant_team")
+    name_1   = _names.get(1) or "Đội 1"
+    name_2   = _names.get(2) or "Đội 2"
+    dom_name = _names.get(dom) or f"Đội {dom}" if dom else None
     return {
         "tong_quan_tran_dau": {
             "nhan_xet_chung": (
@@ -302,26 +367,26 @@ def _build_fallback_evaluation(match_report: dict) -> dict:
                 f"{meta.get('possession_team_2', 0):.1f}%."
             ),
             "doi_noi_bat": dom,
-            "ly_do": f"Đội {dom} có compact và pressing tốt hơn." if dom else None,
+            "ly_do": f"{dom_name} có compact và pressing tốt hơn." if dom_name else None,
         },
         "danh_gia_doi":     teams_out,
         "doi_1":            teams_out["doi_1"],
         "doi_2":            teams_out["doi_2"],
         "so_sanh_doi_dau": {
             "pressing": (
-                f"H1: {press_rec.get('team_1', {}).get('pressing_h1', 0):.2f} / "
+                f"Đầu: {press_rec.get('team_1', {}).get('pressing_h1', 0):.2f} / "
                 f"{press_rec.get('team_2', {}).get('pressing_h1', 0):.2f} | "
-                f"H2: {press_rec.get('team_1', {}).get('pressing_h2', 0):.2f} / "
+                f"Cuối: {press_rec.get('team_1', {}).get('pressing_h2', 0):.2f} / "
                 f"{press_rec.get('team_2', {}).get('pressing_h2', 0):.2f}"
             ),
             "kiem_soat_bong": (
-                f"Đội 1 {meta.get('possession_team_1', 0):.1f}% — "
-                f"Đội 2 {meta.get('possession_team_2', 0):.1f}%"
+                f"{name_1} {meta.get('possession_team_1', 0):.1f}% — "
+                f"{name_2} {meta.get('possession_team_2', 0):.1f}%"
             ),
         },
         "ket_luan": (
-            f"Trận đấu nghiêng về Đội {dom} về mặt compact và pressing."
-            if dom else "Hai đội cân bằng về chỉ số chiến thuật."
+            f"Trận đấu nghiêng về {dom_name} về mặt compact và pressing."
+            if dom_name else "Hai đội cân bằng về chỉ số chiến thuật."
         ),
     }
 
@@ -329,17 +394,25 @@ def _build_fallback_evaluation(match_report: dict) -> dict:
 def normalize_evaluation(
     llm_eval: dict | None,
     match_report: dict,
+    team_names: dict[int, str] | None = None,
 ) -> dict:
     if llm_eval and llm_eval.get("danh_gia_doi"):
-        out = dict(llm_eval)
-        out["doi_1"] = llm_eval["danh_gia_doi"].get("doi_1", {})
-        out["doi_2"] = llm_eval["danh_gia_doi"].get("doi_2", {})
+        out  = dict(llm_eval)
+        _nm  = team_names or {}
+        # Inject detected team names into the LLM evaluation
+        for team_idx in (1, 2):
+            doi_key = f"doi_{team_idx}"
+            detected = _nm.get(team_idx)
+            if detected:
+                out.setdefault("danh_gia_doi", {}).setdefault(doi_key, {})["ten"] = detected
+        out["doi_1"] = out.get("danh_gia_doi", {}).get("doi_1", {})
+        out["doi_2"] = out.get("danh_gia_doi", {}).get("doi_2", {})
         if llm_eval.get("tong_quan_tran_dau") and not out.get("overview"):
             out["overview"] = llm_eval["tong_quan_tran_dau"]
         return out
     if llm_eval and not llm_eval.get("warning"):
         return llm_eval
-    return _build_fallback_evaluation(match_report)
+    return _build_fallback_evaluation(match_report, team_names)
 
 
 def adapt_api_result(
@@ -350,14 +423,15 @@ def adapt_api_result(
     passing_events: list[dict],
     llm_eval: dict | None,
     fps: float,
+    team_names: dict[int, str] | None = None,
 ) -> dict:
-    evaluation = normalize_evaluation(llm_eval, match_report)
-    players    = _build_players(match_report, scored_report)
+    evaluation = normalize_evaluation(llm_eval, match_report, team_names)
+    players    = _build_players(match_report, scored_report, tactical_report)
     return {
         "evaluation":      evaluation,
         "match_report":    match_report,
         "charts":          charts,
-        "teams":           _build_teams(tactical_report, match_report, scored_report, llm_eval),
+        "teams":           _build_teams(tactical_report, match_report, scored_report, llm_eval, team_names),
         "players":         players,
         "timeline":        _build_timeline(passing_events, players),
         "notable_players": _build_notable_players(llm_eval, match_report),

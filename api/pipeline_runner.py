@@ -46,6 +46,7 @@ from tactical_analyzer import (
 from api.job_store import JobState
 from api.result_adapter import adapt_api_result, build_streamlit_analysis_result
 from api.error_log import save_job_error
+from utils.scoreboard_reader import detect_team_names
 
 _TOTAL_STEPS = 9
 _OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output_videos")
@@ -315,8 +316,30 @@ def execute_pipeline(
     )
     _dump_json(match_report, os.path.join(out_dir, "match_report.json"))
 
-    llm_eval: dict = {}
+    # ── Scoreboard team-name detection ─────────────────────────────────────
+    team_names: dict[int, str] = {}
     llm_api_key = os.getenv("OPENAI_API_KEY", "")
+    if llm_api_key:
+        try:
+            t1, t2 = detect_team_names(
+                video_frames,
+                api_key=llm_api_key,
+                model=os.getenv("LLM_MODEL", "gpt-4o"),
+                base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
+                timeout=30,
+            )
+            if t1:
+                team_names[1] = t1
+            if t2:
+                team_names[2] = t2
+            if team_names:
+                print(f"[pipeline] Scoreboard detected: {team_names}", flush=True)
+            else:
+                print("[pipeline] No team names detected from scoreboard.", flush=True)
+        except Exception as exc:
+            print(f"[pipeline] Scoreboard detection failed: {exc}", flush=True)
+
+    llm_eval: dict = {}
     if llm_api_key:
         try:
             print("[pipeline] Running TacticalNarrator (LLM)...", flush=True)
@@ -327,7 +350,13 @@ def execute_pipeline(
                 max_tokens=int(os.getenv("LLM_MAX_TOKENS", "8192")),
                 timeout=int(os.getenv("LLM_TIMEOUT", "180")),
             )
-            llm_eval = narrator.analyze(match_report)
+            # Inject detected team names into the report so the LLM uses them
+            report_for_llm = dict(match_report)
+            if team_names:
+                report_for_llm["team_names"] = {
+                    f"doi_{k}": v for k, v in team_names.items()
+                }
+            llm_eval = narrator.analyze(report_for_llm)
             _dump_json(llm_eval, os.path.join(out_dir, "llm_analysis.json"))
             print(f"[pipeline] LLM analysis saved → {os.path.join(out_dir, 'llm_analysis.json')}", flush=True)
         except Exception as exc:
@@ -391,6 +420,7 @@ def execute_pipeline(
         passing_events=passing_events,
         llm_eval=llm_eval or None,
         fps=fps,
+        team_names=team_names or None,
     )
 
     meta = match_report.get("meta", {})

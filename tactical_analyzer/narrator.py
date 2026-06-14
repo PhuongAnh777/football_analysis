@@ -39,7 +39,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
     "danh_gia_doi": {
         "doi_1": {
             "chien_thuat":         "<sơ đồ + block style + cách chơi, 2-3 câu có số liệu>",
-            "pressing":            "<H1/H2 intensity, tỷ lệ thay đổi, so với đội kia, 1-2 câu>",
+            "pressing":            "<nửa đầu/nửa sau intensity, tỷ lệ thay đổi, so với đội kia, 1-2 câu>",
             "doi_hinh":            "<compact trend + hull area avg + width delta, 1-2 câu — trung lập>",
             "hang_thu":            "<def_line_height avg, block style, trend — TUYỆT ĐỐI TRUNG LẬP>",
             "xay_dung":            "<progressive_pass_pct + high_risk_count/total + avg_distance_to_goal, 1-2 câu>",
@@ -49,7 +49,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
         },
         "doi_2": {
             "chien_thuat":         "<sơ đồ + block style + cách chơi, 2-3 câu>",
-            "pressing":            "<H1/H2 intensity, tỷ lệ thay đổi, 1-2 câu>",
+            "pressing":            "<nửa đầu/nửa sau intensity, tỷ lệ thay đổi, 1-2 câu>",
             "doi_hinh":            "<compact trend + hull area avg + width delta, 1-2 câu — trung lập>",
             "hang_thu":            "<def_line_height avg, block style, trend — TUYỆT ĐỐI TRUNG LẬP>",
             "xay_dung":            "<progressive_pass_pct + high_risk_count/total + avg_distance_to_goal, 1-2 câu>",
@@ -71,7 +71,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
         },
     },
     "so_sanh_doi_dau": {
-        "pressing":             "<ai pressing hiệu quả hơn + tỷ lệ thay đổi theo hiệp, cả 2 đội>",
+        "pressing":             "<ai pressing hiệu quả hơn + tỷ lệ thay đổi nửa đầu/nửa sau, cả 2 đội>",
         "doi_hinh":             "<compact trend + hull area avg cả 2 đội — trung lập>",
         "kiem_soat_bong":       "<possession % cả 2 đội>",
         "chien_luoc_phong_ngu": "<def_line avg cả 2 đội, ý đồ chiến thuật — TRUNG LẬP>",
@@ -205,13 +205,14 @@ mỗi nhận xét gắn với hành động có thể thực hiện.
 RULE 1 — LUÔN CÓ SỐ LIỆU
 Mỗi nhận xét phải trích dẫn ít nhất một con số từ JSON.
 ✗ "Đội 1 pressing tốt."
-✓ "Đội 1 pressing giảm 41% từ H1 (0.12) → H2 (0.07)."
+✓ "Đội 1 pressing giảm 41% từ nửa đầu (0.12) → nửa sau (0.07)."
 
 RULE 2 — SO SÁNH NỘI BỘ
 Chỉ so sánh 2 đội với nhau trong trận này. Không dùng chuẩn ngoài.
 
-RULE 3 — TÊN CẦU THỦ
-Gọi là "Cầu thủ #<track_id>". Không đặt tên.
+RULE 3 — TÊN ĐỘI VÀ CẦU THỦ
+Nếu có "team_names" trong JSON, dùng đúng tên đó thay vì "Đội 1"/"Đội 2".
+Cầu thủ: gọi là "Cầu thủ #<track_id>". Không đặt tên cầu thủ.
 
 RULE 4 — PHONG CÁCH
 Ngắn gọn, trực tiếp. Không dùng "đáng chú ý", "điều này cho thấy",
@@ -245,7 +246,7 @@ Nếu total_passes = null: ghi "Không đủ dữ liệu chuyền bóng." — kh
 RULE 11 — KHUYẾN NGHỊ HLV
 khuyen_nghi_hlv: mỗi khuyến nghị phải cụ thể, có thể tập luyện ngay.
 ✗ "Cần cải thiện pressing."
-✓ "Bổ sung bài tập pressing trap ở khu vực giữa sân để duy trì cường độ H2."
+✓ "Bổ sung bài tập pressing trap ở khu vực giữa sân để duy trì cường độ nửa sau."
 
 ════════════════════ OUTPUT SCHEMA ════════════════════
 
@@ -264,8 +265,22 @@ Lưu ý quan trọng:
 
     def _user_prompt(self, match_report: dict) -> str:
         report_json = json.dumps(match_report, ensure_ascii=False, indent=2)
+
+        # Build team name context from the optional "team_names" key
+        team_names_block = ""
+        tn = match_report.get("team_names", {})
+        if tn:
+            lines = []
+            for k, v in tn.items():
+                lines.append(f'  - {k}: "{v}"')
+            team_names_block = (
+                "\n\nTên đội đã xác định từ bảng tỉ số trong video:\n"
+                + "\n".join(lines)
+                + "\nHãy dùng đúng tên này (thay cho 'Đội 1'/'Đội 2') trong toàn bộ báo cáo."
+            )
+
         return f"""\
-Dưới đây là báo cáo thống kê trận đấu được trích xuất từ video phân tích:
+Dưới đây là báo cáo thống kê trận đấu được trích xuất từ video phân tích:{team_names_block}
 
 <match_report>
 {report_json}

@@ -1,0 +1,302 @@
+{
+  "meta": {
+    "formation_team_1": "4-2-3-1",
+    "formation_team_2": "3-4-1-2",
+    "possession_team_1": 58.47,
+    "possession_team_2": 41.53,
+    "dominant_team": 2,
+    "def_style_team_1": "low_block",
+    "def_style_team_2": "low_block",
+    "width_style_team_1": "narrow",
+    "width_style_team_2": "medium",
+    "total_frames": 2719
+  },
+  "mo_hinh_tran": {
+    "team_1": {
+      "formation": "4-2-3-1",
+      "formation_conf": 0.55,
+      "lines": {
+        "DEF": [
+          11,
+          5,
+          3,
+          9
+        ],
+        "DM": [
+          4,
+          8
+        ],
+        "AM": [
+          2,
+          10,
+          7
+        ],
+        "FWD": [
+          6
+        ]
+      },
+      "possession_pct": 58.47,
+      "block_type": "low_block",
+      "block_height_m": 30.74,
+      "width_style": "narrow",
+      "width_avg_m": 34.36
+    },
+    "team_2": {
+      "formation": "3-4-1-2",
+      "formation_conf": 0.5,
+      "lines": {
+        "DEF": [
+          111,
+          106,
+          101
+        ],
+        "DM": [
+          105,
+          110,
+          107,
+          108
+        ],
+        "AM": [
+          109
+        ],
+        "FWD": [
+          104,
+          103
+        ]
+      },
+      "possession_pct": 41.53,
+      "block_type": "low_block",
+      "block_height_m": 19.73,
+      "width_style": "medium",
+      "width_avg_m": 41.1
+    }
+  },
+  "press_and_recovery": {
+    "team_1": {
+      "pressing_h1": 0.12,
+      "pressing_h2": 0.07,
+      "pressing_drop_pct": -41.67,
+      "recoveries_total": 30,
+      "recoveries_opp_pct": 43.33,
+      "ppda": null
+    },
+    "team_2": {
+      "pressing_h1": 0.12,
+      "pressing_h2": 0.07,
+      "pressing_drop_pct": -41.67,
+      "recoveries_total": 33,
+      "recoveries_opp_pct": 60.61,
+      "ppda": null
+    }
+  },
+  "cau_truc_doi_hinh": {
+    "team_1": {
+      "compact_trend": "improving",
+      "compact_score": 64.55,
+      "compact_avg_m2": 518.22,
+      "width_with_ball_m": 39.54,
+      "width_without_ball_m": 38.91,
+      "width_delta_m": 0.63
+    },
+    "team_2": {
+      "compact_trend": "improving",
+      "compact_score": 60.47,
+      "compact_avg_m2": 576.18,
+      "width_with_ball_m": 47.8,
+      "width_without_ball_m": 46.02,
+      "width_delta_m": 1.78
+    }
+  },
+  "buildup_and_risk": {
+    "team_1": {
+      "total_passes": 56,
+      "progressive_pass_pct": 21.88,
+      "network_density": 0.35,
+      "top_passer_id": 6,
+      "top_receiver_id": 10,
+      "turnovers_final_third": 0,
+      "high_risk_count": 0,
+      "low_risk_count": 0,
+      "high_risk_rate_pct": 0.0,
+      "avg_distance_to_goal_m": 0.0,
+      "avg_transition_potential": 0.0
+    },
+    "team_2": {
+      "total_passes": 34,
+      "progressive_pass_pct": 46.67,
+      "network_density": 0.28,
+      "top_passer_id": 102,
+      "top_receiver_id": 102,
+      "turnovers_final_third": 4,
+      "high_risk_count": 4,
+      "low_risk_count": 0,
+      "high_risk_rate_pct": 100.0,
+      "avg_distance_to_goal_m": 24.47,
+      "avg_transition_potential": 0.72
+    }
+  },
+  "cau_thu_then_chot": {
+    "team_1": {
+      "top_pressers": [
+        {
+          "track_id": 8,
+          "score": 95.45,
+          "role": "MID"
+        },
+        {
+          "track_id": 10,
+          "score": 81.82,
+          "role": "MID"
+        },
+        {
+          "track_id": 6,
+          "score": 68.18,
+          "role": "FWD"
+        }
+      ],
+      "top_width_users": [
+        {
+          "track_id": 1,
+          "score": 100.0,
+          "role": "MID"
+        },
+        {
+          "track_id": 7,
+          "score": 100.0,
+          "role": "MID"
+        },
+        {
+          "track_id": 4,
+          "score": 87.91,
+          "role": "MID"
+        }
+      ],
+      "poor_positioning": [
+        {
+          "track_id": 5,
+          "score": 0.0,
+          "role": "DEF"
+        },
+        {
+          "track_id": 9,
+          "score": 0.0,
+          "role": "DEF"
+        },
+        {
+          "track_id": 11,
+          "score": 0.0,
+          "role": "DEF"
+        }
+      ]
+    },
+    "team_2": {
+      "top_pressers": [
+        {
+          "track_id": 106,
+          "score": 100.0,
+          "role": "DEF"
+        },
+        {
+          "track_id": 111,
+          "score": 90.91,
+          "role": "DEF"
+        },
+        {
+          "track_id": 109,
+          "score": 86.36,
+          "role": "MID"
+        }
+      ],
+      "top_width_users": [
+        {
+          "track_id": 109,
+          "score": 100.0,
+          "role": "MID"
+        },
+        {
+          "track_id": 105,
+          "score": 98.6,
+          "role": "MID"
+        },
+        {
+          "track_id": 108,
+          "score": 65.25,
+          "role": "MID"
+        }
+      ],
+      "poor_positioning": [
+        {
+          "track_id": 111,
+          "score": 0.0,
+          "role": "DEF"
+        },
+        {
+          "track_id": 106,
+          "score": 42.59,
+          "role": "DEF"
+        },
+        {
+          "track_id": 101,
+          "score": 53.33,
+          "role": "DEF"
+        }
+      ]
+    }
+  },
+  "insights": {
+    "team_1": [
+      "Pressing giảm 41% từ H1 (0.12) → H2 (0.07)",
+      "43% (13/30) lần thu hồi bóng ở phần sân đối phương → cướp bóng chủ yếu ở sân nhà",
+      "Không mất bóng ở 1/3 cuối sân — xây dựng bóng thận trọng",
+      "21.9% đường chuyền tiến bộ — ưu tiên giữ bóng an toàn",
+      "Độ compact ngày càng chặt chẽ qua trận (hull area trung bình 518.2 m²)"
+    ],
+    "team_2": [
+      "Pressing giảm 41% từ H1 (0.12) → H2 (0.07)",
+      "61% (20/33) lần thu hồi bóng ở phần sân đối phương → counter-press hiệu quả",
+      "4 lần mất bóng ở 1/3 cuối: 4 High-Risk / 0 Low-Risk (100% chuyển đổi nguy hiểm, cách khung thành TB 24.5 m)",
+      "46.7% đường chuyền tiến bộ → lối chơi tấn công trực tiếp",
+      "Độ compact ngày càng chặt chẽ qua trận (hull area trung bình 576.2 m²)"
+    ]
+  },
+  "match_narrative_data": {
+    "pressing_intensity_half1": 0.12,
+    "pressing_intensity_half2": 0.07,
+    "compact_trend_team_1": "improving",
+    "compact_trend_team_2": "improving",
+    "speed_team_1": 25.97,
+    "speed_team_2": 24.4,
+    "sprint_pct_team_1": 41.69,
+    "sprint_pct_team_2": 38.32,
+    "formation_team_1": "4-2-3-1",
+    "formation_team_2": "3-4-1-2",
+    "def_line_avg_team_1": 30.74,
+    "def_line_avg_team_2": 19.73,
+    "def_line_trend_team_1": "rising",
+    "def_line_trend_team_2": "stable",
+    "width_avg_team_1": 34.36,
+    "width_avg_team_2": 41.1,
+    "width_with_ball_team_1": 39.54,
+    "width_with_ball_team_2": 47.8,
+    "width_without_ball_team_1": 38.91,
+    "width_without_ball_team_2": 46.02,
+    "recoveries_team_1": 30,
+    "recoveries_team_2": 33,
+    "opp_half_recovery_pct_team_1": 43.33,
+    "opp_half_recovery_pct_team_2": 60.61,
+    "turnovers_final_third_team_1": 0,
+    "turnovers_final_third_team_2": 4,
+    "high_risk_count_team_1": 0,
+    "high_risk_count_team_2": 4,
+    "high_risk_rate_pct_team_1": 0.0,
+    "high_risk_rate_pct_team_2": 100.0,
+    "avg_distance_to_goal_team_1": 0.0,
+    "avg_distance_to_goal_team_2": 24.47,
+    "avg_transition_potential_team_1": 0.0,
+    "avg_transition_potential_team_2": 0.72,
+    "total_passes_team_1": 56,
+    "total_passes_team_2": 34,
+    "progressive_pct_team_1": 21.88,
+    "progressive_pct_team_2": 46.67
+  }
+}

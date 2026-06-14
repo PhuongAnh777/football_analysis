@@ -550,6 +550,7 @@ class ThresholdEngine:
 
             result[str(team_id)][str(tid)] = {
                 "speed_score":           round(speed_score,          2),
+                "avg_speed_kmh":         round(avg_spd,              2),
                 "pressing_score":        round(press_score,          2),
                 "activity_score":        round(activity_score,       2),
                 "def_positioning_score": round(def_pos_score,        2),
