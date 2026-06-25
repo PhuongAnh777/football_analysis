@@ -29,47 +29,35 @@ def _team_metrics(
     tk        = f"team_{team_idx}"
     meta      = match_report.get("meta", {})
     narrative = match_report.get("match_narrative_data", {})
-    press_rec = match_report.get("press_and_recovery", {}).get(tk, {})
     cau_truc  = match_report.get("cau_truc_doi_hinh",  {}).get(tk, {})
     mo_hinh   = match_report.get("mo_hinh_tran",       {}).get(tk, {})
+    press_rec = match_report.get("press_and_recovery", {}).get(tk, {})
 
     compact_windows = (
         tactical_report.get("compact", {}).get(tk)
-        or tactical_report.get("compact_score", {}).get(tk)
         or []
     )
     avg_compact = (
-        sum(w.get("mean_area", w.get("compact_score", 0)) for w in compact_windows) / len(compact_windows)
+        sum(w.get("mean_area", 0) for w in compact_windows) / len(compact_windows)
         if compact_windows else 0.0
     )
 
     to_data   = tactical_report.get("turnovers", {}).get(tk, {})
     pass_data = (tactical_report.get("passing") or {}).get(tk, {})
 
-    # pressing_intensity: 0-100 scored value from scored_report
-    pressing_intensity = float(
-        scored_report.get("team_scores", {}).get(tk, {}).get("pressing_score", 0)
-    )
-
-    # high_intensity_runs: total runs from tactical_report
-    hi_runs = int(
-        tactical_report.get("high_intensity_runs", {}).get(tk, {}).get("total_runs", 0)
-    )
-
-    # formation_adherence: formation detection confidence as %
-    formation_adherence = _r2(
-        tactical_report.get("formation", {}).get(tk, {}).get("confidence", 0) * 100
-    )
+    ppda = press_rec.get("ppda")
 
     return {
         "possession":           float(meta.get(f"possession_team_{team_idx}", 0)),
-        "compact_score":        round(avg_compact, 2),
-        "compact_scored":       float(cau_truc.get("compact_score", 0)),
+        "compact_avg_m2":       round(avg_compact, 2),
+        "compact_attacking_m2": cau_truc.get("compact_attacking_m2"),
+        "compact_defending_m2": cau_truc.get("compact_defending_m2"),
         "compact_trend":        cau_truc.get("compact_trend", "stable"),
         "pressing_h1":          float(press_rec.get("pressing_h1", 0)),
         "pressing_h2":          float(press_rec.get("pressing_h2", 0)),
         "pressing_drop_pct":    float(press_rec.get("pressing_drop_pct", 0)),
-        "pressing_intensity":   pressing_intensity,
+        "ppda":                 float(ppda) if ppda is not None else None,
+        "ppda_label":           press_rec.get("ppda_label"),
         "avg_speed":            float(narrative.get(f"speed_team_{team_idx}", 0)),
         "sprint_pct":           float(narrative.get(f"sprint_pct_team_{team_idx}", 0)),
         "defensive_line_height": float(narrative.get(f"def_line_avg_team_{team_idx}", 0)),
@@ -86,8 +74,12 @@ def _team_metrics(
         "high_risk_rate_pct":       float(to_data.get("high_risk_rate_pct", 0)),
         "avg_distance_to_goal_m":   float(to_data.get("avg_distance_to_goal_m", 0)),
         "avg_transition_potential": float(to_data.get("avg_transition_potential", 0)),
-        "high_intensity_runs":      hi_runs,
-        "formation_adherence":      formation_adherence,
+        "high_intensity_runs":      int(
+            tactical_report.get("high_intensity_runs", {}).get(tk, {}).get("total_runs", 0)
+        ),
+        "formation_adherence":      _r2(
+            tactical_report.get("formation", {}).get(tk, {}).get("confidence", 0) * 100
+        ),
         "forward_passes_pct":   float(
             pass_data.get("progressive_pass_pct", 0) if isinstance(pass_data, dict) else 0
         ),
@@ -197,8 +189,6 @@ def _build_players(
             if tid in poor_pos:
                 tags.append("poor_positioning")
 
-            overall = float(raw.get("overall_score", 0))
-
             players.append({
                 "team":               team_id,
                 "team_id":            team_id,
@@ -207,20 +197,17 @@ def _build_players(
                 "display_name":       f"Cầu thủ {squad_num}",
                 "position":           pos_lookup.get(tid, "MID"),
                 "tags":               tags,
-                # PlayerTable columns
-                "total_score":        round(overall, 1),
                 "avg_speed":          round(float(raw.get("avg_speed_kmh", 0)), 1),
-                "grade":              _compute_grade(overall),
-                "pressing":           round(float(raw.get("pressing_score",        0)), 1),
-                "discipline":         round(float(raw.get("def_positioning_score", 0)), 1),
-                "coverage":           round(float(raw.get("activity_score",        0)), 1),
+                "pressing":           round(float(raw.get("pressing_contrib", 0)) * 100, 1),
+                "pressing_frames":    int(raw.get("pressing_frames", 0)),
+                "discipline":         round(float(raw.get("def_line_std_m") or 0), 2),
+                "coverage":           int(raw.get("active_frames", 0)),
                 "high_intensity_runs": hi_runs_by_player.get(tid, 0),
                 "creative_passes":    None,
-                # Extra fields kept for other components
-                "width_contrib":      round(float(raw.get("width_contrib_score",   0)), 1),
-                "def_position":       round(float(raw.get("def_positioning_score", 0)), 1),
-                "speed":              round(float(raw.get("speed_score",           0)), 1),
-                "activity":           round(float(raw.get("activity_score",        0)), 1),
+                "width_contrib":      int(raw.get("flank_frames", 0)),
+                "def_position":       raw.get("def_line_std_m"),
+                "speed":              round(float(raw.get("avg_speed_kmh", 0)), 1),
+                "activity":           int(raw.get("active_frames", 0)),
             })
     return players
 
@@ -327,6 +314,7 @@ def _build_fallback_evaluation(
     narrative = match_report.get("match_narrative_data", {})
     insights  = match_report.get("insights", {})
     mo_hinh   = match_report.get("mo_hinh_tran", {})
+    cau_truc  = match_report.get("cau_truc_doi_hinh", {})
     press_rec = match_report.get("press_and_recovery", {})
     _names    = team_names or {}
 
@@ -354,12 +342,19 @@ def _build_fallback_evaluation(
                 f"Sơ đồ {formation}, kiểm soát bóng {possession:.1f}%."
             ),
             "pressing":     (
-                f"Đầu: {h1:.2f} | Cuối: {h2:.2f} "
-                f"({'giảm' if drop < 0 else 'tăng'} {abs(drop):.0f}%)"
-                if h1 else "Không có dữ liệu pressing."
+                f"PPDA {pr.get('ppda'):.1f} ({pr.get('ppda_label', '')}). "
+                f"Nửa đầu video: {pr.get('ppda_half1', '—')} | "
+                f"Nửa sau: {pr.get('ppda_half2', '—')}"
+                if pr.get("ppda") is not None
+                else (
+                    f"Proximity nửa đầu video: {h1:.2f} | nửa sau: {h2:.2f} "
+                    f"({'giảm' if drop < 0 else 'tăng'} {abs(drop):.0f}%)"
+                    if h1 else "Không có dữ liệu pressing."
+                )
             ),
             "doi_hinh":     (
-                f"Compact trend: {narrative.get(f'compact_trend_team_{team_idx}', 'stable')}"
+                cau_truc.get(tk, {}).get("compact_phase_comment")
+                or f"Compact trend: {narrative.get(f'compact_trend_team_{team_idx}', 'stable')}"
             ),
             "hang_thu":     (
                 f"Hàng thủ trung bình {narrative.get(f'def_line_avg_team_{team_idx}', 0):.1f} m, "

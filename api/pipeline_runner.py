@@ -23,7 +23,11 @@ if _PROJECT_ROOT not in sys.path:
 
 from utils import read_video, save_video
 from utils.video_utils import ensure_browser_playable, transcode_to_browser_mp4
-from utils.pipeline_helpers import assign_ball_to_tracks, extract_passing_events
+from utils.pipeline_helpers import (
+    assign_ball_to_tracks,
+    extract_defensive_events,
+    extract_passing_events,
+)
 from utils.stub_io import (
     load_track_stub,
     stub_matches_video,
@@ -46,8 +50,6 @@ from tactical_analyzer import (
 from api.job_store import JobState
 from api.result_adapter import adapt_api_result, build_streamlit_analysis_result
 from api.error_log import save_job_error
-from utils.scoreboard_reader import detect_team_names
-
 _TOTAL_STEPS = 9
 _OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output_videos")
 _MODELS_DIR = os.path.join(_PROJECT_ROOT, "models")
@@ -291,15 +293,19 @@ def execute_pipeline(
     team_ball_control = assign_ball_to_tracks(tracks)
 
     _notify(5, "speed", _PIPELINE_STEPS[4][2])
-    speed_estimator = SpeedAndDistance_Estimator()
+    speed_estimator = SpeedAndDistance_Estimator(fps=fps_int)
     speed_estimator.add_speed_and_distance_to_tracks(tracks)
     passing_events = extract_passing_events(tracks)
+    defensive_events = extract_defensive_events(tracks, team_ball_control)
 
     _notify(6, "tactical", _PIPELINE_STEPS[5][2])
     analyzer = TacticalAnalyzer(fps=fps_int, window_sec=30, R_pressing=8.0,
                                 pitch_length=105.0)
     tactical_report = analyzer.analyze(
-        tracks, team_ball_control, passing_events=passing_events
+        tracks,
+        team_ball_control,
+        passing_events=passing_events,
+        defensive_events=defensive_events,
     )
 
     engine = ThresholdEngine(fps=fps_int, R_pressing=8.0, pitch_length=105.0)
@@ -317,35 +323,18 @@ def execute_pipeline(
     )
     _dump_json(match_report, os.path.join(out_dir, "match_report.json"))
 
-    # ── Team name resolution: manual > scoreboard auto-detect ───────────────
-    # Prefer manually provided names; fall back to LLM vision scoreboard reader
+    # ── Team names (required) ───────────────────────────────────────────────
     team_names: dict[int, str] = {}
     if manual_team_names:
-        team_names.update({k: v for k, v in manual_team_names.items() if v})
-        print(f"[pipeline] Team names (manual): {team_names}", flush=True)
+        team_names.update({k: v.strip() for k, v in manual_team_names.items() if v and v.strip()})
+    missing = [k for k in (1, 2) if not team_names.get(k)]
+    if missing:
+        raise ValueError(
+            f"Thiếu tên đội: cần nhập tên cho đội {', '.join(str(k) for k in missing)}."
+        )
+    print(f"[pipeline] Team names: {team_names}", flush=True)
 
     llm_api_key = os.getenv("OPENAI_API_KEY", "")
-
-    # Only try scoreboard detection if we still have missing names
-    if llm_api_key and len(team_names) < 2:
-        try:
-            t1, t2 = detect_team_names(
-                video_frames,
-                api_key=llm_api_key,
-                model=os.getenv("LLM_MODEL", "gpt-4o"),
-                base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
-                timeout=30,
-            )
-            if t1 and 1 not in team_names:
-                team_names[1] = t1
-            if t2 and 2 not in team_names:
-                team_names[2] = t2
-            if team_names:
-                print(f"[pipeline] Scoreboard detected: {team_names}", flush=True)
-            else:
-                print("[pipeline] No team names detected from scoreboard.", flush=True)
-        except Exception as exc:
-            print(f"[pipeline] Scoreboard detection skipped: {exc}", flush=True)
 
     llm_eval: dict = {}
     if llm_api_key:

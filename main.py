@@ -3,7 +3,11 @@ import json
 import os
 
 from utils import read_video, save_video
-from utils.pipeline_helpers import assign_ball_to_tracks, extract_passing_events
+from utils.pipeline_helpers import (
+    assign_ball_to_tracks,
+    extract_defensive_events,
+    extract_passing_events,
+)
 from utils.stub_io import load_track_stub
 
 from trackers import Tracker, merge_player_tracks
@@ -150,7 +154,7 @@ def main():
         )
     # ─────────────────────────────────────────────────────────────────────────
 
-    speed_and_distance_estimator = SpeedAndDistance_Estimator()
+    speed_and_distance_estimator = SpeedAndDistance_Estimator(fps=fps_int)
 
     speed_and_distance_estimator.add_speed_and_distance_to_tracks(tracks)
 
@@ -217,25 +221,20 @@ def main():
     os.makedirs("output_videos", exist_ok=True)
 
     passing_events = extract_passing_events(tracks)
-
-
+    defensive_events = extract_defensive_events(tracks, team_ball_control)
 
     print(f"      Detected {len(passing_events)} passing events "
-
           f"(team 1: {sum(1 for e in passing_events if e['team']==1)}, "
-
           f"team 2: {sum(1 for e in passing_events if e['team']==2)})")
-
-
+    print(f"      Inferred {len(defensive_events)} defensive events for PPDA")
 
     print("[1/4] Running TacticalAnalyzer...")
-
     analyzer = TacticalAnalyzer(fps=fps_int, window_sec=30, R_pressing=8.0)
-
     tactical_report = analyzer.analyze(
-
-        tracks, team_ball_control, passing_events=passing_events
-
+        tracks,
+        team_ball_control,
+        passing_events=passing_events,
+        defensive_events=defensive_events,
     )
 
     with open("output_videos/tactical_report.json", "w", encoding="utf-8") as f:

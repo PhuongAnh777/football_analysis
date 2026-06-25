@@ -2,8 +2,8 @@ import MetricBar from '../UI/MetricBar'
 
 const METRICS = [
   { key: 'possession',            label: 'Kiểm soát bóng',       unit: '%',     icon: '⚽' },
-  { key: 'compact_score',         label: 'Độ compact đội hình',  unit: ' m',    icon: '📐' },
-  { key: 'pressing_intensity',    label: 'Cường độ pressing',    unit: '',      icon: '🔥' },
+  { key: 'compact_avg_m2',        label: 'Độ compact đội hình',  unit: ' m²',   icon: '📐' },
+  { key: 'ppda',                    label: 'PPDA',                 unit: '',      icon: '🔥' },
   { key: 'formation_adherence',   label: 'Tuân thủ đội hình',   unit: '%',     icon: '🧩' },
   { key: 'avg_speed',             label: 'Tốc độ trung bình',    unit: ' km/h', icon: '⚡' },
   { key: 'sprint_pct',            label: 'Tỷ lệ sprint',         unit: '%',     icon: '🏃' },

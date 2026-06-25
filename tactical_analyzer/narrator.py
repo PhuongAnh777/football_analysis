@@ -39,8 +39,8 @@ OUTPUT_SCHEMA: dict[str, Any] = {
     "danh_gia_doi": {
         "doi_1": {
             "chien_thuat":         "<sơ đồ + block style + cách chơi, 2-3 câu có số liệu>",
-            "pressing":            "<nửa đầu/nửa sau intensity, tỷ lệ thay đổi, so với đội kia, 1-2 câu>",
-            "doi_hinh":            "<compact trend + hull area avg + width delta, 1-2 câu — trung lập>",
+            "pressing":            "<PPDA nếu có, hoặc proximity; nửa đầu/nửa sau video, 1-2 câu>",
+            "doi_hinh":            "<compact theo phase tấn công/phòng ngự (m²) + width delta, 1-2 câu — trung lập>",
             "hang_thu":            "<def_line_height avg, block style, trend — TUYỆT ĐỐI TRUNG LẬP>",
             "xay_dung":            "<progressive_pass_pct + high_risk_count/total + avg_distance_to_goal, 1-2 câu>",
             "diem_manh":           ["<2-3 điểm mạnh, mỗi điểm BẮT BUỘC có con số>"],
@@ -71,8 +71,8 @@ OUTPUT_SCHEMA: dict[str, Any] = {
         },
     },
     "so_sanh_doi_dau": {
-        "pressing":             "<ai pressing hiệu quả hơn + tỷ lệ thay đổi nửa đầu/nửa sau, cả 2 đội>",
-        "doi_hinh":             "<compact trend + hull area avg cả 2 đội — trung lập>",
+        "pressing":             "<PPDA hoặc proximity; so sánh nửa đầu/nửa sau video, cả 2 đội>",
+        "doi_hinh":             "<compact phase tấn công/phòng ngự (m²) cả 2 đội — trung lập>",
         "kiem_soat_bong":       "<possession % cả 2 đội>",
         "chien_luoc_phong_ngu": "<def_line avg cả 2 đội, ý đồ chiến thuật — TRUNG LẬP>",
         "su_dung_bien":         "<width avg + width_delta khi có/không bóng cả 2 đội — TRUNG LẬP>",
@@ -246,7 +246,19 @@ Nếu total_passes = null: ghi "Không đủ dữ liệu chuyền bóng." — kh
 RULE 11 — KHUYẾN NGHỊ HLV
 khuyen_nghi_hlv: mỗi khuyến nghị phải cụ thể, có thể tập luyện ngay.
 ✗ "Cần cải thiện pressing."
-✓ "Bổ sung bài tập pressing trap ở khu vực giữa sân để duy trì cường độ nửa sau."
+✓ "Bổ sung bài tập pressing trap ở khu vực giữa sân để duy trì cường độ nửa sau video."
+
+RULE 12 — KHÔNG DÙNG "HIỆP"
+Video có thể là clip ngắn, không phải trận 90 phút. TUYỆT ĐỐI không dùng
+"hiệp một", "hiệp hai", "hiệp 1", "hiệp 2" trong diem_manh, diem_yeu,
+nhan_xet_chung, pressing, hay bất kỳ mục nào.
+✗ "Cường độ pressing giảm trong hiệp hai."
+✓ "PPDA tăng từ 8.2 (nửa đầu video) → 12.1 (nửa sau) — pressing giảm cường độ."
+
+RULE 13 — COMPACT THEO PHASE
+Khi có compact_attacking_m2 / compact_defending_m2 trong cau_truc_doi_hinh,
+mô tả đội hình theo phase tấn công vs phòng ngự (m² hull area), không dùng
+điểm 0-100. Ưu tiên PPDA (press_and_recovery.ppda) cho pressing nếu có.
 
 ════════════════════ OUTPUT SCHEMA ════════════════════
 

@@ -90,10 +90,9 @@ export default function DashboardPage() {
 
   const t1Name  = team1?.name || evaluation?.doi_1?.ten || evaluation?.danh_gia_doi?.doi_1?.ten || 'Đội 1'
   const t2Name  = team2?.name || evaluation?.doi_2?.ten || evaluation?.danh_gia_doi?.doi_2?.ten || 'Đội 2'
-  const t1Score = Number(team1?.overall_score || evaluation?.doi_1?.diem_tong || evaluation?.danh_gia_doi?.doi_1?.diem_so_tong || 72)
-  const t2Score = Number(team2?.overall_score || evaluation?.doi_2?.diem_tong || evaluation?.danh_gia_doi?.doi_2?.diem_so_tong || 68)
-  const t1Grade = team1?.grade || evaluation?.doi_1?.xep_loai || evaluation?.danh_gia_doi?.doi_1?.xep_loai || 'B'
-  const t2Grade = team2?.grade || evaluation?.doi_2?.xep_loai || evaluation?.danh_gia_doi?.doi_2?.xep_loai || 'C'
+  const meta = results?.match_report?.meta || {}
+  const t1Poss  = team1?.metrics?.possession ?? meta?.possession_team_1 ?? 0
+  const t2Poss  = team2?.metrics?.possession ?? meta?.possession_team_2 ?? 0
   const t1Form  = team1?.formation || evaluation?.doi_1?.so_do || evaluation?.danh_gia_doi?.doi_1?.so_do || '4-3-3'
   const t2Form  = team2?.formation || evaluation?.doi_2?.so_do || evaluation?.danh_gia_doi?.doi_2?.so_do || '4-4-2'
   const t1Prof  = team1?.tactical_profile || evaluation?.doi_1?.phong_cach || evaluation?.danh_gia_doi?.doi_1?.tactical_profile || 'Pressing mạnh'
@@ -147,8 +146,8 @@ export default function DashboardPage() {
           <span className="w-1 h-5 rounded" style={{ background: 'var(--color-team-1)' }} /> Tổng quan trận đấu
         </motion.h2>
         <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <TeamHeader teamName={t1Name} formation={t1Form} profile={t1Prof} score={t1Score} grade={t1Grade} side="team1" />
-          <TeamHeader teamName={t2Name} formation={t2Form} profile={t2Prof} score={t2Score} grade={t2Grade} side="team2" />
+          <TeamHeader teamName={t1Name} formation={t1Form} profile={t1Prof} possession={t1Poss} side="team1" />
+          <TeamHeader teamName={t2Name} formation={t2Form} profile={t2Prof} possession={t2Poss} side="team2" />
         </motion.div>
       </motion.section>
 

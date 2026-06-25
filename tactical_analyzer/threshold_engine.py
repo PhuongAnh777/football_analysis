@@ -269,19 +269,16 @@ class ThresholdEngine:
             poss_pct        = float(rpt.get("possession", {}).get("possession", {}).get(tk, 50.0))
             possession_score = _clip100(poss_pct)
 
-            # ── 2. Compact ─────────────────────────────────────────────────
+            # ── 2. Compact (raw hull area m² — no 0-100 normalisation) ───────
             c_windows = rpt.get("compact", {}).get(tk, [])
             if c_windows:
-                compact_score = float(np.mean([
-                    self._score_compact_val(
-                        w["mean_area"],
-                        p["compact"]["p25"], p["compact"]["p50"], p["compact"]["p75"],
-                    )
+                compact_avg_m2 = float(np.mean([
+                    w["mean_area"]
                     for w in c_windows
                     if "mean_area" in w
                 ]))
             else:
-                compact_score = 50.0
+                compact_avg_m2 = None
 
             # ── 3. Pressing ─────────────────────────────────────────────────
             press_windows_team = [
@@ -373,7 +370,7 @@ class ThresholdEngine:
 
             result[tk] = {
                 "possession_score":  round(possession_score,  2),
-                "compact_score":     round(compact_score,     2),
+                "compact_avg_m2":    round(compact_avg_m2, 2) if compact_avg_m2 is not None else None,
                 "pressing_score":    round(pressing_score,    2),
                 "def_line_score":    round(def_line_score,    2),
                 "width_score":       round(width_score,       2),
@@ -434,7 +431,7 @@ class ThresholdEngine:
                 if def_xs:
                     team_def_x[t][fi] = float(np.mean(def_xs))
 
-        # Per-team speed distributions
+        # Per-team speed distributions (kept for future use; players use raw km/h)
         spd_lists: dict[int, list[float]] = {1: [], 2: []}
         for fi, frame in enumerate(frames):
             for tid, info in frame.items():
@@ -442,13 +439,7 @@ class ThresholdEngine:
                 spd = info.get("speed")
                 if t in (1, 2) and spd is not None:
                     spd_lists[t].append(float(spd))
-        spd_arrs: dict[int, np.ndarray] = {
-            t: np.array(v, dtype=float) if v else np.array([0.0])
-            for t, v in spd_lists.items()
-        }
 
-        # All pressing contribs (for cross-player ranking)
-        all_press_contribs: list[float] = []
         player_data: dict[int, dict] = {}
 
         for fi, frame in enumerate(frames):
@@ -484,11 +475,6 @@ class ThresholdEngine:
                         if dist <= R:
                             player_data[tid]["pressing_frames"] += 1
 
-        for d in player_data.values():
-            contrib = d["pressing_frames"] / max(d["opp_has_ball_frames"], 1)
-            all_press_contribs.append(contrib)
-        all_press_arr = np.array(all_press_contribs, dtype=float)
-
         result: dict[str, dict] = {"1": {}, "2": {}}
 
         for tid, data in player_data.items():
@@ -496,66 +482,51 @@ class ThresholdEngine:
             by_frame = data["by_frame"]
             active_positions = [v["pos"] for v in by_frame.values() if v["pos"] is not None]
             active_count     = len(active_positions)
+            active_frames    = active_count
 
-            # P4 activity
-            activity_score = _clip100((active_count / max(total_frames, 1)) * 100.0)
-
-            # P1 speed
             spds    = [v["spd"] for v in by_frame.values() if v["spd"] is not None]
             avg_spd = float(np.mean(spds)) if spds else 0.0
-            speed_score = _clip100(_pct_rank(avg_spd, spd_arrs[team_id]) * 100.0)
 
-            # P2 pressing contribution
-            contrib     = data["pressing_frames"] / max(data["opp_has_ball_frames"], 1)
-            press_score = _clip100(_pct_rank(contrib, all_press_arr) * 100.0)
+            contrib = data["pressing_frames"] / max(data["opp_has_ball_frames"], 1)
 
-            # P3 defensive positioning (deviation from team def-line depth)
             line = player_line.get(tid, "MID")
+            def_line_std_m: float | None = None
             if line == "DEF":
                 def_x_ref  = team_def_x[team_id]
                 deviations = [
-                    v["pos"][0] - def_x_ref[fi]  # depth direction
+                    v["pos"][0] - def_x_ref[fi]
                     for fi, v in by_frame.items()
                     if v["pos"] is not None
                     and fi < len(def_x_ref)
                     and not np.isnan(def_x_ref[fi])
                 ]
                 if deviations:
-                    consistency   = 1.0 - float(np.std(deviations)) / 10.0
-                    def_pos_score = _clip100(consistency * 100.0)
-                else:
-                    def_pos_score = 50.0
-            else:
-                def_pos_score = 50.0
+                    def_line_std_m = round(float(np.std(deviations)), 2)
 
-            # P6 width contribution — fraction of frames player occupies a flank
-            # Uses pos[1] (y = across pitch width, 0-68 m)
+            flank_frames = 0
             if line in ("MID", "FWD") and active_count > 0:
-                flank_count       = sum(
+                flank_frames = sum(
                     1 for x, y in active_positions
                     if y <= _FLANK_LEFT or y >= _FLANK_RIGHT
                 )
-                width_contrib_score = _clip100((flank_count / active_count) * 100.0)
-            else:
-                width_contrib_score = 50.0
-
-            # Overall weighted mean (for internal ranked reference)
-            overall_score = _clip100(
-                speed_score           * 0.20
-                + press_score         * 0.25
-                + activity_score      * 0.15
-                + def_pos_score       * 0.15
-                + width_contrib_score * 0.25
-            )
 
             result[str(team_id)][str(tid)] = {
-                "speed_score":           round(speed_score,          2),
-                "avg_speed_kmh":         round(avg_spd,              2),
-                "pressing_score":        round(press_score,          2),
-                "activity_score":        round(activity_score,       2),
-                "def_positioning_score": round(def_pos_score,        2),
-                "width_contrib_score":   round(width_contrib_score,  2),
-                "overall_score":         round(overall_score,        2),
+                "avg_speed_kmh":         round(avg_spd, 2),
+                "pressing_frames":       data["pressing_frames"],
+                "opp_has_ball_frames":   data["opp_has_ball_frames"],
+                "pressing_contrib":      round(contrib, 4),
+                "active_frames":         active_frames,
+                "def_line_std_m":        def_line_std_m,
+                "flank_frames":          flank_frames,
+                # Legacy keys for ranked lists in ReportBuilder
+                "pressing_score":        round(contrib * 100.0, 2),
+                "width_contrib_score":   round(
+                    (flank_frames / active_count * 100.0) if active_count else 0.0, 2
+                ),
+                "def_positioning_score": round(
+                    max(0.0, 100.0 - (def_line_std_m or 0.0) * 10.0), 2
+                ) if line == "DEF" else None,
+                "activity_score":        round(active_frames / max(total_frames, 1) * 100.0, 2),
             }
 
         return result
@@ -567,13 +538,12 @@ class ThresholdEngine:
         t1_pct = float(poss.get("team_1", 50.0))
         t2_pct = float(poss.get("team_2", 50.0))
 
-        # Dominant team: based on compact + pressing + recoveries composite
+        # Dominant team: pressing + recoveries (compact is raw m², not scored)
         def _composite(tk: str) -> float:
             ts = team_scores.get(tk, {})
             return (
-                ts.get("compact_score",     50.0) * 0.35
-                + ts.get("pressing_score",  50.0) * 0.35
-                + ts.get("recoveries_score",50.0) * 0.30
+                ts.get("pressing_score",  50.0) * 0.50
+                + ts.get("recoveries_score", 50.0) * 0.50
             )
         t1_comp = _composite("team_1")
         t2_comp = _composite("team_2")

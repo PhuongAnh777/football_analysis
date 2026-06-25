@@ -335,16 +335,24 @@ async def analyze(
     job.input_size_bytes = len(contents)
     job.input_filename = video.filename or os.path.basename(_INPUT_VIDEO_PATH)
 
-    # Build team name dict from optional form fields
+    # Build team name dict from required form fields
     _team_names: dict[int, str] = {}
-    if team1_name and team1_name.strip():
-        _team_names[1] = team1_name.strip()
-    if team2_name and team2_name.strip():
-        _team_names[2] = team2_name.strip()
+    if not team1_name or not team1_name.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Vui lòng nhập tên đội 1.",
+        )
+    if not team2_name or not team2_name.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Vui lòng nhập tên đội 2.",
+        )
+    _team_names[1] = team1_name.strip()
+    _team_names[2] = team2_name.strip()
 
     print(
         f"[analyze] job={job_id} file={job.input_filename!r} "
-        f"({len(contents):,} bytes, md5={input_md5}) team_names={_team_names or 'auto'} → {_INPUT_VIDEO_PATH}",
+        f"({len(contents):,} bytes, md5={input_md5}) team_names={_team_names} → {_INPUT_VIDEO_PATH}",
         flush=True,
     )
 
@@ -354,7 +362,7 @@ async def analyze(
         _run_job_with_optional_colab,
         _INPUT_VIDEO_PATH,
         job_id,
-        _team_names or None,
+        _team_names,
     )
 
     return {"job_id": job_id, "status": "processing"}

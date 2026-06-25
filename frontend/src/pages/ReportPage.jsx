@@ -120,10 +120,6 @@ export default function ReportPage() {
   const notable = results?.notable_players || evaluation?.notable_players || {}
 
   const t1Name = doi1?.ten || 'Đội 1', t2Name = doi2?.ten || 'Đội 2'
-  const t1Grade = doi1?.xep_loai || doi1?.grade || 'B'
-  const t2Grade = doi2?.xep_loai || doi2?.grade || 'C'
-  const t1Score = doi1?.diem_so_tong ?? doi1?.diem_tong ?? doi1?.score ?? '—'
-  const t2Score = doi2?.diem_so_tong ?? doi2?.diem_tong ?? doi2?.score ?? '—'
 
   if (!results && !jobId) return (
     <div className="p-8 flex flex-col items-center justify-center min-h-screen gap-6">
@@ -184,9 +180,9 @@ export default function ReportPage() {
         {/* Section 2: Đánh giá từng đội */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[
-            { evalObj: doi1, name: t1Name, grade: t1Grade, score: t1Score, side: 'team1',
+            { evalObj: doi1, name: t1Name, side: 'team1',
               strengths: safeList(doi1, 'diem_manh', 'strengths'), weaknesses: safeList(doi1, 'diem_yeu', 'weaknesses') },
-            { evalObj: doi2, name: t2Name, grade: t2Grade, score: t2Score, side: 'team2',
+            { evalObj: doi2, name: t2Name, side: 'team2',
               strengths: safeList(doi2, 'diem_manh', 'strengths'), weaknesses: safeList(doi2, 'diem_yeu', 'weaknesses') },
           ].map((team, i) => (
             <Card key={i} animate delay={i * 0.08}>
@@ -196,10 +192,6 @@ export default function ReportPage() {
                   <Badge variant={team.side === 'team1' ? 'team1' : 'team2'} size="md" className="mt-1">
                     {safeText(team.evalObj, 'phong_cach', 'tactical_profile') || 'Chiến thuật'}
                   </Badge>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <GradeChip grade={team.grade} size="md" />
-                  <span className="font-mono text-lg font-bold text-text-primary">{team.score}</span>
                 </div>
               </div>
               {safeText(team.evalObj, 'nhan_xet_chien_thuat', 'tactical_comment', 'comment') && (

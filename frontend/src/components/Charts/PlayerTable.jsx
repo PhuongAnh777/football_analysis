@@ -1,22 +1,19 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import GradeChip from '../UI/GradeChip'
 
 const COLUMNS = [
   { key: 'position',            label: 'Vị trí',   sortable: false },
-  { key: 'total_score',         label: 'Điểm',     sortable: true  },
-  { key: 'grade',               label: 'Xếp loại', sortable: false },
-  { key: 'avg_speed',           label: 'Tốc độ',   sortable: true  },
-  { key: 'pressing',            label: 'Pressing', sortable: true  },
-  { key: 'discipline',          label: 'Kỷ luật',  sortable: true  },
-  { key: 'coverage',            label: 'Phủ sóng', sortable: true  },
+  { key: 'avg_speed',           label: 'Tốc độ (km/h)', sortable: true  },
+  { key: 'pressing',            label: 'Pressing %', sortable: true  },
+  { key: 'discipline',          label: 'Lệch hàng thủ (m)', sortable: true  },
+  { key: 'coverage',            label: 'Frames hoạt động', sortable: true  },
   { key: 'high_intensity_runs', label: 'HI Runs',  sortable: true  },
 ]
 
 const MEDAL = { 0: '🥇', 1: '🥈', 2: '🥉' }
 
 function TeamPlayerTable({ players, teamLabel, accentClass }) {
-  const [sortKey, setSortKey] = useState('total_score')
+  const [sortKey, setSortKey] = useState('avg_speed')
   const [sortDir, setSortDir] = useState('desc')
 
   const sorted = useMemo(() => {
@@ -71,10 +68,9 @@ function TeamPlayerTable({ players, teamLabel, accentClass }) {
                   </td>
                   {COLUMNS.map(col => (
                     <td key={col.key}>
-                      {col.key === 'grade' ? <GradeChip grade={player.grade} size="sm" />
-                      : col.key === 'total_score' ? <span className="font-mono font-bold text-sm">{Number(player.total_score ?? 0).toFixed(1)}</span>
-                      : col.key === 'avg_speed' ? <span className="font-mono text-xs text-text-secondary">{Number(player[col.key] ?? 0).toFixed(1)} km/h</span>
+                      {col.key === 'avg_speed' ? <span className="font-mono text-xs text-text-secondary">{Number(player[col.key] ?? 0).toFixed(1)} km/h</span>
                       : col.key === 'position' ? <span className="text-xs text-text-primary">{player.position || '—'}</span>
+                      : col.key === 'pressing' ? <span className="font-mono text-xs text-text-secondary">{Number(player[col.key] ?? 0).toFixed(1)}%</span>
                       : <span className="font-mono text-xs text-text-secondary">
                           {typeof player[col.key] === 'number' ? Number(player[col.key]).toFixed(1) : player[col.key] ?? '—'}
                         </span>}

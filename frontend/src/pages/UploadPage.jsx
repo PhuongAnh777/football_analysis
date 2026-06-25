@@ -127,6 +127,10 @@ export default function UploadPage() {
 
   async function handleAnalyze() {
     if (!file) return
+    if (!team1Name.trim() || !team2Name.trim()) {
+      showToast('Vui lòng nhập tên cả hai đội trước khi phân tích.')
+      return
+    }
     try {
       reset()
       setUploading(0)
@@ -235,7 +239,7 @@ export default function UploadPage() {
 
         {/* Team names */}
         <div className="card space-y-3">
-          <p className="text-sm font-semibold text-text-primary">Tên đội <span className="font-normal text-text-secondary">(tuỳ chọn)</span></p>
+          <p className="text-sm font-semibold text-text-primary">Tên đội <span className="text-red-400">*</span></p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-blue-400 font-medium">Đội 1 (trái)</label>
@@ -262,7 +266,7 @@ export default function UploadPage() {
               />
             </div>
           </div>
-          <p className="text-xs text-text-secondary">Nhập tên đội theo bảng tỉ số trong video để hiển thị đúng trong báo cáo.</p>
+          <p className="text-xs text-text-secondary">Nhập tên đội theo bảng tỉ số trong video (bắt buộc).</p>
         </div>
 
         {/* Upload progress */}
@@ -286,10 +290,10 @@ export default function UploadPage() {
           whileHover={file && !isUploading ? { scale: 1.02 } : {}}
           whileTap={file && !isUploading ? { scale: 0.98 } : {}}
           onClick={handleAnalyze}
-          disabled={!file || isUploading}
+          disabled={!file || isUploading || !team1Name.trim() || !team2Name.trim()}
           className={`w-full py-4 rounded-xl font-semibold text-base transition-all duration-200 ${
-            file && !isUploading ? 'text-white cursor-pointer' : 'opacity-40 cursor-not-allowed text-text-secondary'}`}
-          style={{ background: file && !isUploading
+            file && !isUploading && team1Name.trim() && team2Name.trim() ? 'text-white cursor-pointer' : 'opacity-40 cursor-not-allowed text-text-secondary'}`}
+          style={{ background: file && !isUploading && team1Name.trim() && team2Name.trim()
             ? 'linear-gradient(135deg, var(--color-team-1), var(--color-accent))'
             : 'var(--color-surface-2)' }}>
           {isUploading

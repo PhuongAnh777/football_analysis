@@ -67,3 +67,62 @@ def extract_passing_events(tracks: dict) -> list[dict]:
             prev_carrier[team] = track_id
 
     return events
+
+
+# Midfield line along pos[0] when ViewTransformer uses full 105 m pitch offsets.
+_PITCH_MID_M = 105.0 / 2.0
+_MIN_CTRL_FRAMES = 3
+
+
+def extract_defensive_events(
+    tracks: dict,
+    team_ball_control: list[int],
+    *,
+    pitch_mid: float = _PITCH_MID_M,
+) -> list[dict]:
+    """Infer defensive actions from ball-recovery events for PPDA.
+
+    Each sustained possession change where *team* gains the ball in the
+    opponent's half (x >= *pitch_mid*) is recorded as an ``interception``.
+    """
+    events: list[dict] = []
+    ctrl = team_ball_control
+    n_pframes = len(tracks.get("players", []))
+
+    for team_idx in (1, 2):
+        i = 1
+        while i < len(ctrl):
+            if ctrl[i] == team_idx and ctrl[i - 1] != team_idx:
+                j = i
+                while j < len(ctrl) and ctrl[j] == team_idx:
+                    j += 1
+                if j - i < _MIN_CTRL_FRAMES:
+                    i = j
+                    continue
+
+                pos = None
+                for fi in range(i, min(i + 5, n_pframes)):
+                    for info in tracks["players"][fi].values():
+                        if (
+                            info.get("team") == team_idx
+                            and info.get("has_ball")
+                            and info.get("position_transformed") is not None
+                        ):
+                            pos = info["position_transformed"]
+                            break
+                    if pos is not None:
+                        break
+
+                if pos is not None and float(pos[0]) >= pitch_mid:
+                    events.append({
+                        "frame": i,
+                        "team":  team_idx,
+                        "type":  "interception",
+                        "x":     float(pos[0]),
+                        "y":     float(pos[1]),
+                    })
+                i = j
+            else:
+                i += 1
+
+    return events

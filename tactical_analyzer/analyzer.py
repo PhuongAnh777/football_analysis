@@ -653,9 +653,10 @@ class TacticalAnalyzer:
 
         # Output skeleton — team lists stay top-level for ReportBuilder compat.
         result: dict[str, Any] = {
-            "team_1":      [],
-            "team_2":      [],
-            "transitions": {"team_1": [], "team_2": []},
+            "team_1":        [],
+            "team_2":        [],
+            "transitions":   {"team_1": [], "team_2": []},
+            "phase_summary": {},
         }
         # Accumulator payload (hull areas → data/hull_area_observations.json).
         raw_for_accum: dict[str, list[dict]] = {"team_1": [], "team_2": []}
@@ -821,6 +822,28 @@ class TacticalAnalyzer:
                 last_pos = i
 
             result["transitions"][team_key] = transitions
+
+            # Phase-split hull areas (attacking = team has ball, defending = opponent).
+            attacking_areas: list[float] = []
+            defending_areas: list[float] = []
+            if team_ball_control is not None:
+                for fi, a in enumerate(full_frame_areas):
+                    if a is None or fi >= len(team_ball_control):
+                        continue
+                    ball = team_ball_control[fi]
+                    if ball == team_idx:
+                        attacking_areas.append(a)
+                    elif ball in (1, 2):
+                        defending_areas.append(a)
+
+            result["phase_summary"][team_key] = {
+                "attacking_avg_m2": round(float(np.mean(attacking_areas)), 2)
+                if attacking_areas else None,
+                "defending_avg_m2": round(float(np.mean(defending_areas)), 2)
+                if defending_areas else None,
+                "attacking_frames": len(attacking_areas),
+                "defending_frames": len(defending_areas),
+            }
 
         # Persist hull areas to data/hull_area_observations.json for
         # offline reference calibration via scripts/build_hull_reference.py.

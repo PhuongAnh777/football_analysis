@@ -175,7 +175,7 @@ class ReportBuilder:
         h2_int   = _r2(half_sum.get("half_2", {}).get("mean_intensity", 0.0))
         drop_pct = _r2((h2_int - h1_int) / max(h1_int, 1e-6) * 100) if h1_int else 0.0
 
-        ppda_data = press.get("ppda", {})
+        ppda_data = press.get("ppda") or {}
 
         result: dict[str, Any] = {}
         for team_idx in (1, 2):
@@ -187,13 +187,17 @@ class ReportBuilder:
             opp_pct   = _r2(opp_rec / total_rec * 100) if total_rec else 0.0
 
             ppda_team = ppda_data.get(tk, {}).get("overall", {}) if ppda_data else {}
+            ppda_val  = ppda_team.get("ppda") if ppda_team else None
             result[tk] = {
                 "pressing_h1":           h1_int,
                 "pressing_h2":           h2_int,
                 "pressing_drop_pct":     drop_pct,
                 "recoveries_total":      total_rec,
                 "recoveries_opp_pct":    opp_pct,
-                "ppda":                  _r2(ppda_team.get("ppda")) if ppda_team.get("ppda") is not None else None,
+                "ppda":                  _r2(ppda_val) if ppda_val is not None else None,
+                "ppda_label":            ppda_team.get("intensity_label") if ppda_team else None,
+                "ppda_half1":            ppda_data.get(tk, {}).get("half_1_avg_ppda") if ppda_data else None,
+                "ppda_half2":            ppda_data.get(tk, {}).get("half_2_avg_ppda") if ppda_data else None,
             }
         return result
 
@@ -203,6 +207,7 @@ class ReportBuilder:
         self, tactical: dict, scored: dict
     ) -> dict[str, Any]:
         result: dict[str, Any] = {}
+        phase_all = self._compact(tactical).get("phase_summary", {})
         for team_idx in (1, 2):
             tk      = f"team_{team_idx}"
             c_wins  = self._compact_windows(tactical, team_idx)
@@ -210,20 +215,20 @@ class ReportBuilder:
                 sum(w.get("mean_area", 0) for w in c_wins) / len(c_wins)
                 if c_wins else 0.0
             )
-            c_score = _r2(
-                scored.get("team_scores", {}).get(tk, {}).get("compact_score", 0.0)
-            )
+            phase   = phase_all.get(tk, {})
             ww      = self._team_width(tactical).get(tk, {})
             w_ball  = _r2(ww.get("width_with_ball",    0.0))
             w_no    = _r2(ww.get("width_without_ball", 0.0))
 
             result[tk] = {
-                "compact_trend":      self._compact_trend(tactical, team_idx),
-                "compact_score":      c_score,
-                "compact_avg_m2":     _r2(c_avg),
-                "width_with_ball_m":  w_ball,
-                "width_without_ball_m": w_no,
-                "width_delta_m":      _r2(w_ball - w_no),
+                "compact_trend":          self._compact_trend(tactical, team_idx),
+                "compact_avg_m2":         _r2(c_avg),
+                "compact_attacking_m2":   phase.get("attacking_avg_m2"),
+                "compact_defending_m2":   phase.get("defending_avg_m2"),
+                "compact_phase_comment":  self._compact_phase_comment(phase),
+                "width_with_ball_m":      w_ball,
+                "width_without_ball_m":   w_no,
+                "width_delta_m":          _r2(w_ball - w_no),
             }
         return result
 
@@ -336,18 +341,30 @@ class ReportBuilder:
         tk       = f"team_{team_idx}"
         insights: list[str] = []
 
-        # 1. Pressing H1 → H2 drop/rise
-        half_sum = self._pressing(tactical).get("half_summary", {})
-        h1 = float(half_sum.get("half_1", {}).get("mean_intensity", 0.0))
-        h2 = float(half_sum.get("half_2", {}).get("mean_intensity", 0.0))
-        if h1 > 0:
-            drop = (h2 - h1) / h1 * 100
+        # 1. Pressing / PPDA trend across video halves
+        pr = self._build_press_and_recovery(tactical, 0).get(tk, {})
+        ppda_h1 = pr.get("ppda_half1")
+        ppda_h2 = pr.get("ppda_half2")
+        if ppda_h1 is not None and ppda_h2 is not None and ppda_h1 > 0:
+            drop = (ppda_h2 - ppda_h1) / ppda_h1 * 100
             if abs(drop) >= 10:
                 verb = "giảm" if drop < 0 else "tăng"
                 insights.append(
-                    f"Pressing {verb} {abs(drop):.0f}% "
-                    f"từ nửa đầu ({h1:.2f}) → nửa sau ({h2:.2f})"
+                    f"PPDA {verb} {abs(drop):.0f}% "
+                    f"từ nửa đầu video ({ppda_h1:.1f}) → nửa sau ({ppda_h2:.1f})"
                 )
+        else:
+            half_sum = self._pressing(tactical).get("half_summary", {})
+            h1 = float(half_sum.get("half_1", {}).get("mean_intensity", 0.0))
+            h2 = float(half_sum.get("half_2", {}).get("mean_intensity", 0.0))
+            if h1 > 0:
+                drop = (h2 - h1) / h1 * 100
+                if abs(drop) >= 10:
+                    verb = "giảm" if drop < 0 else "tăng"
+                    insights.append(
+                        f"Pressing proximity {verb} {abs(drop):.0f}% "
+                        f"từ nửa đầu video ({h1:.2f}) → nửa sau ({h2:.2f})"
+                    )
 
         # 2. Recovery zone
         rec   = tactical.get("ball_recoveries", {}).get(tk, {})
@@ -408,14 +425,18 @@ class ReportBuilder:
                     f" — ưu tiên giữ bóng an toàn"
                 )
 
-        # 6. Compact trend
+        # 6. Compact trend + phase split
         trend  = self._compact_trend(tactical, team_idx)
         c_wins = self._compact_windows(tactical, team_idx)
-        if c_wins and trend != "stable":
+        phase  = self._compact(tactical).get("phase_summary", {}).get(tk, {})
+        phase_comment = self._compact_phase_comment(phase)
+        if phase_comment:
+            insights.append(phase_comment)
+        elif c_wins and trend != "stable":
             avg_m2 = sum(w.get("mean_area", 0) for w in c_wins) / len(c_wins)
             label  = "ngày càng chặt chẽ" if trend == "improving" else "bị kéo giãn dần"
             insights.append(
-                f"Độ compact {label} qua trận"
+                f"Độ compact {label} qua video"
                 f" (hull area trung bình {avg_m2:.1f} m²)"
             )
 
@@ -451,6 +472,14 @@ class ReportBuilder:
         p2 = _pass("team_2")
 
         return {
+            "compact_attacking_m2_team_1":     self._compact(tactical).get("phase_summary", {}).get("team_1", {}).get("attacking_avg_m2"),
+            "compact_defending_m2_team_1":     self._compact(tactical).get("phase_summary", {}).get("team_1", {}).get("defending_avg_m2"),
+            "compact_attacking_m2_team_2":     self._compact(tactical).get("phase_summary", {}).get("team_2", {}).get("attacking_avg_m2"),
+            "compact_defending_m2_team_2":     self._compact(tactical).get("phase_summary", {}).get("team_2", {}).get("defending_avg_m2"),
+            "ppda_team_1":                     _r2(self._pressing(tactical).get("ppda", {}).get("team_1", {}).get("overall", {}).get("ppda"))
+            if self._pressing(tactical).get("ppda") else None,
+            "ppda_team_2":                     _r2(self._pressing(tactical).get("ppda", {}).get("team_2", {}).get("overall", {}).get("ppda"))
+            if self._pressing(tactical).get("ppda") else None,
             "pressing_intensity_half1":        _r2(half_sum.get("half_1", {}).get("mean_intensity", 0.0)),
             "pressing_intensity_half2":        _r2(half_sum.get("half_2", {}).get("mean_intensity", 0.0)),
             "compact_trend_team_1":            self._compact_trend(tactical, 1),
@@ -492,6 +521,28 @@ class ReportBuilder:
         }
 
     # ── helpers ──────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _compact_phase_comment(phase: dict) -> str | None:
+        att = phase.get("attacking_avg_m2")
+        def_ = phase.get("defending_avg_m2")
+        if att is None or def_ is None:
+            return None
+        delta = float(att) - float(def_)
+        if abs(delta) < 20:
+            return (
+                f"Hull area tấn công {att:.0f} m² vs phòng ngự {def_:.0f} m² "
+                f"— đội hình ổn định giữa hai phase"
+            )
+        if delta > 0:
+            return (
+                f"Khi tấn công hull area {att:.0f} m² (rộng hơn {delta:.0f} m² "
+                f"so với phase phòng ngự {def_:.0f} m²)"
+            )
+        return (
+            f"Khi phòng ngự hull area {def_:.0f} m² (chặt hơn {abs(delta):.0f} m² "
+            f"so với phase tấn công {att:.0f} m²)"
+        )
 
     def _compact_trend(self, tactical: dict, team_idx: int) -> str:
         windows = self._compact_windows(tactical, team_idx)
