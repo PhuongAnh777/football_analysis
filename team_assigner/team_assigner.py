@@ -28,6 +28,7 @@ class TeamAssigner:
         self.player_team_dict: dict = {}   # locked: player_id -> team_id
         self._pending_votes: dict = {}     # player_id -> [team_id, ...]
         self._kmeans: KMeans | None = None  # fitted on LAB jersey colours
+        self._team_swapped: bool = False   # True when scoreboard alignment flipped 1↔2
 
     # ── Crop helpers ──────────────────────────────────────────────────────────
 
@@ -120,6 +121,56 @@ class TeamAssigner:
             mean_bgr = bgr_arr[mask].mean(axis=0) if mask.any() else np.array([128.0, 128.0, 128.0])
             self.team_colors[team_id + 1] = mean_bgr.astype(np.float32)
 
+    @staticmethod
+    def _lab_dist(bgr_a: np.ndarray, bgr_b: np.ndarray) -> float:
+        a = cv2.cvtColor(
+            np.uint8([[np.clip(bgr_a, 0, 255).astype(np.uint8)]]),
+            cv2.COLOR_BGR2LAB,
+        )[0, 0].astype(np.float32)
+        b = cv2.cvtColor(
+            np.uint8([[np.clip(bgr_b, 0, 255).astype(np.uint8)]]),
+            cv2.COLOR_BGR2LAB,
+        )[0, 0].astype(np.float32)
+        return float(np.linalg.norm(a - b))
+
+    def align_to_scoreboard(
+        self,
+        left_stripe_bgr: np.ndarray,
+        right_stripe_bgr: np.ndarray,
+    ) -> bool:
+        """Match jersey clusters to scoreboard stripes (left = team 1).
+
+        Returns True if team 1 and team 2 were swapped to match the board.
+        """
+        if self._kmeans is None or not self.team_colors:
+            return False
+
+        c1 = self.team_colors.get(1)
+        c2 = self.team_colors.get(2)
+        if c1 is None or c2 is None:
+            return False
+
+        direct = self._lab_dist(c1, left_stripe_bgr) + self._lab_dist(c2, right_stripe_bgr)
+        cross  = self._lab_dist(c1, right_stripe_bgr) + self._lab_dist(c2, left_stripe_bgr)
+
+        if cross + 1.0 < direct:
+            self.team_colors[1] = c2.copy()
+            self.team_colors[2] = c1.copy()
+            self._team_swapped = True
+            print(
+                "[TeamAssigner] Swapped team 1↔2 to match scoreboard stripes "
+                f"(direct={direct:.1f}, cross={cross:.1f})",
+                flush=True,
+            )
+            return True
+
+        print(
+            "[TeamAssigner] Jersey clusters already match scoreboard stripes "
+            f"(direct={direct:.1f}, cross={cross:.1f})",
+            flush=True,
+        )
+        return False
+
     # ── Per-frame player assignment ────────────────────────────────────────
 
     def get_player_team(
@@ -137,6 +188,8 @@ class TeamAssigner:
             return 1
 
         team_id = int(self._kmeans.predict(lab.reshape(1, -1))[0]) + 1
+        if self._team_swapped:
+            team_id = 3 - team_id
 
         # Accumulate votes
         if player_id not in self._pending_votes:

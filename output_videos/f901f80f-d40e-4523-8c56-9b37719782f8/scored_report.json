@@ -1,0 +1,356 @@
+{
+  "thresholds": {
+    "compact": {
+      "p25": 514.637,
+      "p50": 693.5854,
+      "p75": 758.2037
+    },
+    "pressing": {
+      "p33": 0.4985,
+      "p67": 0.7698
+    },
+    "def_line": {
+      "p33": 0.0,
+      "p67": 14.0377
+    },
+    "width": {
+      "p33": 33.9016,
+      "p67": 37.8252
+    },
+    "recoveries": {
+      "p33": 41.64,
+      "p67": 44.36
+    },
+    "turnovers": {
+      "p33": 6.62,
+      "p67": 11.38
+    }
+  },
+  "team_scores": {
+    "team_1": {
+      "possession_score": 58.01,
+      "compact_avg_m2": 674.55,
+      "pressing_score": 100.0,
+      "def_line_score": 50.0,
+      "width_score": 58.59,
+      "recoveries_score": 100.0,
+      "turnovers_score": 77.45,
+      "passing_score": 22.16
+    },
+    "team_2": {
+      "possession_score": 41.99,
+      "compact_avg_m2": 633.3,
+      "pressing_score": 46.18,
+      "def_line_score": 50.0,
+      "width_score": 62.77,
+      "recoveries_score": 41.21,
+      "turnovers_score": 15.82,
+      "passing_score": 28.92
+    }
+  },
+  "player_scores": {
+    "1": {
+      "1": {
+        "avg_speed_kmh": 26.31,
+        "pressing_frames": 24,
+        "opp_has_ball_frames": 749,
+        "pressing_contrib": 0.032,
+        "active_frames": 2377,
+        "def_line_std_m": 11.6,
+        "flank_frames": 0,
+        "pressing_score": 3.2,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 0.0,
+        "activity_score": 65.54
+      },
+      "5": {
+        "avg_speed_kmh": 23.16,
+        "pressing_frames": 16,
+        "opp_has_ball_frames": 682,
+        "pressing_contrib": 0.0235,
+        "active_frames": 2075,
+        "def_line_std_m": null,
+        "flank_frames": 878,
+        "pressing_score": 2.35,
+        "width_contrib_score": 42.31,
+        "def_positioning_score": null,
+        "activity_score": 57.21
+      },
+      "2": {
+        "avg_speed_kmh": 27.74,
+        "pressing_frames": 43,
+        "opp_has_ball_frames": 754,
+        "pressing_contrib": 0.057,
+        "active_frames": 1791,
+        "def_line_std_m": null,
+        "flank_frames": 771,
+        "pressing_score": 5.7,
+        "width_contrib_score": 43.05,
+        "def_positioning_score": null,
+        "activity_score": 49.38
+      },
+      "10": {
+        "avg_speed_kmh": 22.78,
+        "pressing_frames": 13,
+        "opp_has_ball_frames": 249,
+        "pressing_contrib": 0.0522,
+        "active_frames": 1400,
+        "def_line_std_m": 6.89,
+        "flank_frames": 0,
+        "pressing_score": 5.22,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 31.1,
+        "activity_score": 38.6
+      },
+      "8": {
+        "avg_speed_kmh": 19.18,
+        "pressing_frames": 4,
+        "opp_has_ball_frames": 468,
+        "pressing_contrib": 0.0085,
+        "active_frames": 824,
+        "def_line_std_m": null,
+        "flank_frames": 658,
+        "pressing_score": 0.85,
+        "width_contrib_score": 79.85,
+        "def_positioning_score": null,
+        "activity_score": 22.72
+      },
+      "7": {
+        "avg_speed_kmh": 23.82,
+        "pressing_frames": 52,
+        "opp_has_ball_frames": 502,
+        "pressing_contrib": 0.1036,
+        "active_frames": 1223,
+        "def_line_std_m": null,
+        "flank_frames": 807,
+        "pressing_score": 10.36,
+        "width_contrib_score": 65.99,
+        "def_positioning_score": null,
+        "activity_score": 33.72
+      },
+      "3": {
+        "avg_speed_kmh": 28.66,
+        "pressing_frames": 22,
+        "opp_has_ball_frames": 614,
+        "pressing_contrib": 0.0358,
+        "active_frames": 2589,
+        "def_line_std_m": 12.16,
+        "flank_frames": 0,
+        "pressing_score": 3.58,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 0.0,
+        "activity_score": 71.38
+      },
+      "4": {
+        "avg_speed_kmh": 23.67,
+        "pressing_frames": 14,
+        "opp_has_ball_frames": 737,
+        "pressing_contrib": 0.019,
+        "active_frames": 2480,
+        "def_line_std_m": null,
+        "flank_frames": 751,
+        "pressing_score": 1.9,
+        "width_contrib_score": 30.28,
+        "def_positioning_score": null,
+        "activity_score": 68.38
+      },
+      "9": {
+        "avg_speed_kmh": 20.92,
+        "pressing_frames": 15,
+        "opp_has_ball_frames": 302,
+        "pressing_contrib": 0.0497,
+        "active_frames": 1517,
+        "def_line_std_m": null,
+        "flank_frames": 194,
+        "pressing_score": 4.97,
+        "width_contrib_score": 12.79,
+        "def_positioning_score": null,
+        "activity_score": 41.83
+      },
+      "11": {
+        "avg_speed_kmh": 26.38,
+        "pressing_frames": 34,
+        "opp_has_ball_frames": 404,
+        "pressing_contrib": 0.0842,
+        "active_frames": 1168,
+        "def_line_std_m": null,
+        "flank_frames": 220,
+        "pressing_score": 8.42,
+        "width_contrib_score": 18.84,
+        "def_positioning_score": null,
+        "activity_score": 32.2
+      },
+      "6": {
+        "avg_speed_kmh": 22.9,
+        "pressing_frames": 2,
+        "opp_has_ball_frames": 644,
+        "pressing_contrib": 0.0031,
+        "active_frames": 1927,
+        "def_line_std_m": 20.79,
+        "flank_frames": 0,
+        "pressing_score": 0.31,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 0.0,
+        "activity_score": 53.13
+      }
+    },
+    "2": {
+      "106": {
+        "avg_speed_kmh": 21.83,
+        "pressing_frames": 175,
+        "opp_has_ball_frames": 841,
+        "pressing_contrib": 0.2081,
+        "active_frames": 2005,
+        "def_line_std_m": 9.38,
+        "flank_frames": 0,
+        "pressing_score": 20.81,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 6.2,
+        "activity_score": 55.28
+      },
+      "101": {
+        "avg_speed_kmh": 23.63,
+        "pressing_frames": 69,
+        "opp_has_ball_frames": 1123,
+        "pressing_contrib": 0.0614,
+        "active_frames": 2970,
+        "def_line_std_m": null,
+        "flank_frames": 1211,
+        "pressing_score": 6.14,
+        "width_contrib_score": 40.77,
+        "def_positioning_score": null,
+        "activity_score": 81.89
+      },
+      "103": {
+        "avg_speed_kmh": 20.47,
+        "pressing_frames": 88,
+        "opp_has_ball_frames": 870,
+        "pressing_contrib": 0.1011,
+        "active_frames": 2464,
+        "def_line_std_m": null,
+        "flank_frames": 1470,
+        "pressing_score": 10.11,
+        "width_contrib_score": 59.66,
+        "def_positioning_score": null,
+        "activity_score": 67.93
+      },
+      "109": {
+        "avg_speed_kmh": 26.78,
+        "pressing_frames": 269,
+        "opp_has_ball_frames": 842,
+        "pressing_contrib": 0.3195,
+        "active_frames": 1888,
+        "def_line_std_m": 17.03,
+        "flank_frames": 0,
+        "pressing_score": 31.95,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 0.0,
+        "activity_score": 52.05
+      },
+      "105": {
+        "avg_speed_kmh": 20.42,
+        "pressing_frames": 21,
+        "opp_has_ball_frames": 825,
+        "pressing_contrib": 0.0255,
+        "active_frames": 1764,
+        "def_line_std_m": 12.88,
+        "flank_frames": 0,
+        "pressing_score": 2.55,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 0.0,
+        "activity_score": 48.64
+      },
+      "102": {
+        "avg_speed_kmh": 23.21,
+        "pressing_frames": 10,
+        "opp_has_ball_frames": 998,
+        "pressing_contrib": 0.01,
+        "active_frames": 2710,
+        "def_line_std_m": null,
+        "flank_frames": 745,
+        "pressing_score": 1.0,
+        "width_contrib_score": 27.49,
+        "def_positioning_score": null,
+        "activity_score": 74.72
+      },
+      "111": {
+        "avg_speed_kmh": 27.34,
+        "pressing_frames": 5,
+        "opp_has_ball_frames": 819,
+        "pressing_contrib": 0.0061,
+        "active_frames": 1398,
+        "def_line_std_m": null,
+        "flank_frames": 1082,
+        "pressing_score": 0.61,
+        "width_contrib_score": 77.4,
+        "def_positioning_score": null,
+        "activity_score": 38.54
+      },
+      "104": {
+        "avg_speed_kmh": 26.58,
+        "pressing_frames": 0,
+        "opp_has_ball_frames": 1076,
+        "pressing_contrib": 0.0,
+        "active_frames": 1177,
+        "def_line_std_m": null,
+        "flank_frames": 1172,
+        "pressing_score": 0.0,
+        "width_contrib_score": 99.58,
+        "def_positioning_score": null,
+        "activity_score": 32.45
+      },
+      "110": {
+        "avg_speed_kmh": 16.41,
+        "pressing_frames": 20,
+        "opp_has_ball_frames": 800,
+        "pressing_contrib": 0.025,
+        "active_frames": 1279,
+        "def_line_std_m": 12.91,
+        "flank_frames": 0,
+        "pressing_score": 2.5,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 0.0,
+        "activity_score": 35.26
+      },
+      "107": {
+        "avg_speed_kmh": 20.56,
+        "pressing_frames": 0,
+        "opp_has_ball_frames": 676,
+        "pressing_contrib": 0.0,
+        "active_frames": 1660,
+        "def_line_std_m": null,
+        "flank_frames": 1619,
+        "pressing_score": 0.0,
+        "width_contrib_score": 97.53,
+        "def_positioning_score": null,
+        "activity_score": 45.77
+      },
+      "108": {
+        "avg_speed_kmh": 20.86,
+        "pressing_frames": 22,
+        "opp_has_ball_frames": 918,
+        "pressing_contrib": 0.024,
+        "active_frames": 1750,
+        "def_line_std_m": 17.55,
+        "flank_frames": 0,
+        "pressing_score": 2.4,
+        "width_contrib_score": 0.0,
+        "def_positioning_score": 0.0,
+        "activity_score": 48.25
+      }
+    }
+  },
+  "match_summary": {
+    "dominant_team": 1,
+    "possession_balance": "balanced",
+    "avg_press_level": "low",
+    "formation_team_1": "4-1-4-1",
+    "formation_team_2": "5-2-3",
+    "def_style_team_1": "low_block",
+    "def_style_team_2": "low_block",
+    "width_style_team_1": "medium",
+    "width_style_team_2": "medium",
+    "press_recovery_team": 1,
+    "risky_team": 2
+  }
+}

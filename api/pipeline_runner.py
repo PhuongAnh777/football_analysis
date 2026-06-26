@@ -28,6 +28,7 @@ from utils.pipeline_helpers import (
     extract_defensive_events,
     extract_passing_events,
 )
+from utils.scoreboard_reader import detect_scoreboard_stripe_colors
 from utils.stub_io import (
     load_track_stub,
     stub_matches_video,
@@ -266,6 +267,21 @@ def execute_pipeline(
         _fb = next((i for i, p in enumerate(tracks["players"]) if len(p) >= 2), 0)
         calib_data = [(video_frames[_fb], tracks["players"][_fb])]
     team_assigner.assign_team_color(calib_data)
+
+    stripe_left, stripe_right = detect_scoreboard_stripe_colors(
+        video_frames,
+        api_key=os.getenv("OPENAI_API_KEY") or None,
+        model=os.getenv("LLM_MODEL", "gpt-4o"),
+        base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
+    )
+    if stripe_left is not None and stripe_right is not None:
+        team_assigner.align_to_scoreboard(stripe_left, stripe_right)
+    else:
+        print(
+            "[pipeline] Scoreboard stripes not found — team order may not match "
+            "left/right on the scoreboard",
+            flush=True,
+        )
 
     for frame_num, player_track in enumerate(tracks["players"]):
         for player_id, track in player_track.items():
