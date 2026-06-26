@@ -62,9 +62,12 @@ function StepIndicator({ steps, currentStepKey }) {
 export default function UploadPage() {
   const navigate = useNavigate()
   const { jobId, status, uploadProgress, processingProgress, currentStep, message,
-          setUploading, setJob, setProcessing, setDone, setError, reset } = useAnalysis()
+          error, errorLogPath, setUploading, setJob, setProcessing, setDone, setError, reset } = useAnalysis()
   const [file, setFile] = useState(null)
   const [toast, setToast] = useState(null)
+  const [copied, setCopied] = useState(false)
+  const [team1Name, setTeam1Name] = useState('')
+  const [team2Name, setTeam2Name] = useState('')
 
   const isUploading  = status === 'uploading'
   const isProcessing = status === 'processing'
@@ -85,11 +88,15 @@ export default function UploadPage() {
       })
       if (data.status === 'done' || data.status === 'completed') {
         const results = await getResults(jobId)
+        if (results.input_md5) {
+          console.info('[analyze] input', results.input_filename, results.input_md5)
+        }
         setDone(results)
         navigate('/dashboard')
       } else if (data.status === 'error' || data.status === 'failed') {
-        setError(data.error || data.message || 'Xử lý thất bại')
-        showToast(data.error || data.message || 'Xử lý thất bại')
+        const errText = data.error || data.message || 'Xử lý thất bại'
+        setError(errText, data.error_log_path || null)
+        showToast('Xử lý thất bại — xem log bên dưới')
       }
     } catch { /* ignore */ }
   }, 2000, isProcessing)
@@ -107,11 +114,27 @@ export default function UploadPage() {
     disabled: isUploading || isProcessing,
   })
 
+  async function copyError() {
+    if (!error) return
+    try {
+      await navigator.clipboard.writeText(error)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      showToast('Không copy được — mở file log trên máy')
+    }
+  }
+
   async function handleAnalyze() {
     if (!file) return
+    if (!team1Name.trim() || !team2Name.trim()) {
+      showToast('Vui lòng nhập tên cả hai đội trước khi phân tích.')
+      return
+    }
     try {
+      reset()
       setUploading(0)
-      const { job_id } = await uploadVideo(file, pct => setUploading(pct))
+      const { job_id } = await uploadVideo(file, pct => setUploading(pct), { team1Name, team2Name })
       setJob(job_id)
     } catch (err) {
       setError(err.message)
@@ -119,7 +142,7 @@ export default function UploadPage() {
     }
   }
 
-  if (isProcessing || status === 'done') {
+  if (isProcessing) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -161,6 +184,11 @@ export default function UploadPage() {
         <div>
           <h1 className="text-3xl font-bold text-text-primary">Tải lên video</h1>
           <p className="text-text-secondary mt-1">Tải lên video trận đấu để bắt đầu phân tích chiến thuật AI</p>
+          {status === 'done' && (
+            <p className="text-emerald-400/90 text-sm mt-2">
+              Đã có kết quả phân tích trước đó — chọn video mới bên dưới để phân tích lại.
+            </p>
+          )}
         </div>
 
         {/* Drop zone */}
@@ -209,6 +237,38 @@ export default function UploadPage() {
           )}
         </AnimatePresence>
 
+        {/* Team names */}
+        <div className="card space-y-3">
+          <p className="text-sm font-semibold text-text-primary">Tên đội <span className="text-red-400">*</span></p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs text-blue-400 font-medium">Đội 1 (trái)</label>
+              <input
+                type="text"
+                value={team1Name}
+                onChange={e => setTeam1Name(e.target.value)}
+                placeholder="Tên đội 1..."
+                maxLength={40}
+                disabled={isUploading || isProcessing}
+                className="w-full px-3 py-2 rounded-lg text-sm bg-surface-2 border border-border text-text-primary placeholder-text-secondary focus:outline-none focus:border-blue-500/60 transition-colors disabled:opacity-40"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-red-400 font-medium">Đội 2 (phải)</label>
+              <input
+                type="text"
+                value={team2Name}
+                onChange={e => setTeam2Name(e.target.value)}
+                placeholder="Tên đội 2..."
+                maxLength={40}
+                disabled={isUploading || isProcessing}
+                className="w-full px-3 py-2 rounded-lg text-sm bg-surface-2 border border-border text-text-primary placeholder-text-secondary focus:outline-none focus:border-red-500/60 transition-colors disabled:opacity-40"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-text-secondary">Nhập tên đội theo bảng tỉ số trong video (bắt buộc).</p>
+        </div>
+
         {/* Upload progress */}
         <AnimatePresence>
           {isUploading && (
@@ -230,10 +290,10 @@ export default function UploadPage() {
           whileHover={file && !isUploading ? { scale: 1.02 } : {}}
           whileTap={file && !isUploading ? { scale: 0.98 } : {}}
           onClick={handleAnalyze}
-          disabled={!file || isUploading}
+          disabled={!file || isUploading || !team1Name.trim() || !team2Name.trim()}
           className={`w-full py-4 rounded-xl font-semibold text-base transition-all duration-200 ${
-            file && !isUploading ? 'text-white cursor-pointer' : 'opacity-40 cursor-not-allowed text-text-secondary'}`}
-          style={{ background: file && !isUploading
+            file && !isUploading && team1Name.trim() && team2Name.trim() ? 'text-white cursor-pointer' : 'opacity-40 cursor-not-allowed text-text-secondary'}`}
+          style={{ background: file && !isUploading && team1Name.trim() && team2Name.trim()
             ? 'linear-gradient(135deg, var(--color-team-1), var(--color-accent))'
             : 'var(--color-surface-2)' }}>
           {isUploading
@@ -248,14 +308,31 @@ export default function UploadPage() {
         </motion.button>
 
         {status === 'error' && (
-          <div className="card border-red-500/40 bg-red-500/5 flex items-start gap-3">
-            <span className="text-red-400 text-lg mt-0.5">⚠</span>
-            <div className="flex-1">
-              <p className="text-red-400 font-medium text-sm">Đã xảy ra lỗi</p>
-              <p className="text-text-secondary text-xs mt-0.5">{message}</p>
+          <div className="card border-red-500/40 bg-red-500/5 flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <span className="text-red-400 text-lg mt-0.5">⚠</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-red-400 font-medium text-sm">Đã xảy ra lỗi</p>
+                {errorLogPath && (
+                  <p className="text-text-secondary text-xs mt-1 break-all">
+                    Log: <code className="text-red-300/90">{errorLogPath}</code>
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={copyError}
+                  className="text-xs px-2 py-1 rounded border border-border hover:border-red-400/50 text-text-secondary hover:text-text-primary transition-colors">
+                  {copied ? 'Đã copy' : 'Copy log'}
+                </button>
+                <button onClick={() => { reset(); setFile(null); setCopied(false) }}
+                  className="text-xs text-text-secondary hover:text-text-primary transition-colors">Thử lại</button>
+              </div>
             </div>
-            <button onClick={() => { reset(); setFile(null) }}
-              className="text-xs text-text-secondary hover:text-text-primary transition-colors">Thử lại</button>
+            {error && (
+              <pre className="text-xs text-red-300/90 bg-black/30 rounded-lg p-3 overflow-auto max-h-64 whitespace-pre-wrap break-words border border-red-500/20">
+                {error}
+              </pre>
+            )}
           </div>
         )}
       </motion.div>

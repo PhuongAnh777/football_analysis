@@ -73,19 +73,20 @@ function CategoryBlock({ cat, evalObj }) {
   )
 }
 
-function PlayerCard({ player, type = 'best', side = 'team1' }) {
+function PlayerCard({ player, type = 'best', side = 'team1', teamName }) {
   if (!player) return null
   const isBest = type === 'best'
+  const roleLabel = player.position || player.highlights || (isBest ? 'Cầu thủ nổi bật' : 'Cần cải thiện')
   return (
     <div className={`rounded-xl border p-5 space-y-3 ${isBest ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
       <div className="flex items-center gap-3">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
-          side === 'team1' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>
-          #{player.track_id || '?'}
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${
+          side === 'team1' ? 'bg-blue-500/20' : 'bg-red-500/20'}`}>
+          {isBest ? '⭐' : '📈'}
         </div>
         <div>
-          <p className="font-semibold text-text-primary text-sm">{isBest ? '⭐ Xuất sắc nhất' : '📈 Cần cải thiện'}</p>
-          <p className="text-xs text-text-secondary">{side === 'team1' ? 'Đội 1' : 'Đội 2'} · {player.position || '—'}</p>
+          <p className="font-semibold text-text-primary text-sm">{isBest ? 'Xuất sắc nhất' : 'Cần cải thiện'}</p>
+          <p className="text-xs text-text-secondary">{teamName || (side === 'team1' ? 'Đội 1' : 'Đội 2')} · {roleLabel}</p>
         </div>
         {player.grade && <GradeChip grade={player.grade} size="sm" className="ml-auto" />}
       </div>
@@ -119,10 +120,6 @@ export default function ReportPage() {
   const notable = results?.notable_players || evaluation?.notable_players || {}
 
   const t1Name = doi1?.ten || 'Đội 1', t2Name = doi2?.ten || 'Đội 2'
-  const t1Grade = doi1?.xep_loai || doi1?.grade || 'B'
-  const t2Grade = doi2?.xep_loai || doi2?.grade || 'C'
-  const t1Score = doi1?.diem_tong || doi1?.score || '—'
-  const t2Score = doi2?.diem_tong || doi2?.score || '—'
 
   if (!results && !jobId) return (
     <div className="p-8 flex flex-col items-center justify-center min-h-screen gap-6">
@@ -183,9 +180,9 @@ export default function ReportPage() {
         {/* Section 2: Đánh giá từng đội */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[
-            { evalObj: doi1, name: t1Name, grade: t1Grade, score: t1Score, side: 'team1',
+            { evalObj: doi1, name: t1Name, side: 'team1',
               strengths: safeList(doi1, 'diem_manh', 'strengths'), weaknesses: safeList(doi1, 'diem_yeu', 'weaknesses') },
-            { evalObj: doi2, name: t2Name, grade: t2Grade, score: t2Score, side: 'team2',
+            { evalObj: doi2, name: t2Name, side: 'team2',
               strengths: safeList(doi2, 'diem_manh', 'strengths'), weaknesses: safeList(doi2, 'diem_yeu', 'weaknesses') },
           ].map((team, i) => (
             <Card key={i} animate delay={i * 0.08}>
@@ -195,10 +192,6 @@ export default function ReportPage() {
                   <Badge variant={team.side === 'team1' ? 'team1' : 'team2'} size="md" className="mt-1">
                     {safeText(team.evalObj, 'phong_cach', 'tactical_profile') || 'Chiến thuật'}
                   </Badge>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <GradeChip grade={team.grade} size="md" />
-                  <span className="font-mono text-lg font-bold text-text-primary">{team.score}</span>
                 </div>
               </div>
               {safeText(team.evalObj, 'nhan_xet_chien_thuat', 'tactical_comment', 'comment') && (
@@ -238,14 +231,14 @@ export default function ReportPage() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Đội 1</p>
-                <PlayerCard player={notable.team1_best || notable.best_team1} type="best" side="team1" />
-                <PlayerCard player={notable.team1_improve || notable.improve_team1} type="improve" side="team1" />
+                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">{t1Name}</p>
+                <PlayerCard player={notable.team1_best || notable.best_team1} type="best" side="team1" teamName={t1Name} />
+                <PlayerCard player={notable.team1_improve || notable.improve_team1} type="improve" side="team1" teamName={t1Name} />
               </div>
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Đội 2</p>
-                <PlayerCard player={notable.team2_best || notable.best_team2} type="best" side="team2" />
-                <PlayerCard player={notable.team2_improve || notable.improve_team2} type="improve" side="team2" />
+                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">{t2Name}</p>
+                <PlayerCard player={notable.team2_best || notable.best_team2} type="best" side="team2" teamName={t2Name} />
+                <PlayerCard player={notable.team2_improve || notable.improve_team2} type="improve" side="team2" teamName={t2Name} />
               </div>
             </div>
           </Card>

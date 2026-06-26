@@ -11,7 +11,6 @@ from __future__ import annotations
 import base64
 import json
 import os
-import subprocess
 import sys
 import traceback as tb
 from typing import Callable, Optional
@@ -23,7 +22,18 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from utils import read_video, save_video
-from utils.pipeline_helpers import assign_ball_to_tracks, extract_passing_events
+from utils.video_utils import ensure_browser_playable, transcode_to_browser_mp4
+from utils.pipeline_helpers import (
+    assign_ball_to_tracks,
+    extract_defensive_events,
+    extract_passing_events,
+)
+from utils.stub_io import (
+    load_track_stub,
+    stub_matches_video,
+    track_frame_count,
+    video_fingerprint,
+)
 from trackers import Tracker, merge_player_tracks
 from team_assigner import TeamAssigner
 from camera_movement_estimator import CameraMovementEstimator
@@ -39,10 +49,22 @@ from tactical_analyzer import (
 
 from api.job_store import JobState
 from api.result_adapter import adapt_api_result, build_streamlit_analysis_result
-
-_TOTAL_STEPS = 8
+from api.error_log import save_job_error
+_TOTAL_STEPS = 9
 _OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output_videos")
 _MODELS_DIR = os.path.join(_PROJECT_ROOT, "models")
+_DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
+
+def _resolve_model_path() -> str:
+    """Return model path: env YOLO_MODEL_PATH → best.pt → last.pt."""
+    env = os.getenv("YOLO_MODEL_PATH", "").strip()
+    if env:
+        return env if os.path.isabs(env) else os.path.join(_PROJECT_ROOT, env)
+    for name in ("best.pt", "last.pt"):
+        p = os.path.join(_MODELS_DIR, name)
+        if os.path.exists(p):
+            return p
+    return os.path.join(_MODELS_DIR, "best.pt")
 
 _PIPELINE_STEPS = [
     (1, "reading",  "Đang đọc video..."),
@@ -103,32 +125,43 @@ def _dump_json(obj, path: str) -> None:
 
 def _convert_to_mp4(avi_path: str) -> str:
     mp4_path = avi_path.replace(".avi", ".mp4")
-    try:
-        subprocess.run(
-            [
-                "ffmpeg", "-y",
-                "-i", avi_path,
-                "-c:v", "libx264",
-                "-preset", "fast",
-                "-crf", "23",
-                "-movflags", "+faststart",
-                "-an",
-                mp4_path,
-            ],
-            check=True,
-            capture_output=True,
-            timeout=600,
+    converted = transcode_to_browser_mp4(avi_path, mp4_path)
+    return converted or avi_path
+
+
+def _resolve_track_stub(
+    video_path: str,
+    track_stub_path: str | None,
+    *,
+    use_track_stub: bool,
+) -> str | None:
+    """Chỉ dùng stub khi job vừa tạo stub cho đúng video (không tái dùng file cũ)."""
+    if not use_track_stub:
+        return None
+    force = os.getenv("FORCE_TRACKING", "").lower() in ("1", "true", "yes")
+    if force:
+        return None
+    path = track_stub_path or os.getenv("TRACK_STUB_PATH", _DEFAULT_TRACK_STUB)
+    if not path or not os.path.exists(path):
+        return None
+    if not stub_matches_video(path, video_path):
+        print(
+            f"[pipeline] Bỏ qua stub không khớp video: {path}",
+            flush=True,
         )
-        return mp4_path
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-        return avi_path
+        return None
+    return path
 
 
 def execute_pipeline(
     video_path: str,
     *,
     read_from_stub: bool = False,
+    track_stub_path: str | None = None,
+    use_track_stub: bool = False,
+    output_dir: str | None = None,
     on_step: Optional[Callable[[int, str, str], None]] = None,
+    manual_team_names: dict[int, str] | None = None,
 ) -> dict:
     """Run the full CV + tactical pipeline and return raw + adapted outputs."""
 
@@ -136,7 +169,14 @@ def execute_pipeline(
         if on_step:
             on_step(step_n, step_key, label)
 
-    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    out_dir = output_dir or _OUTPUT_DIR
+    os.makedirs(out_dir, exist_ok=True)
+
+    video_md5 = video_fingerprint(video_path)
+    print(
+        f"[pipeline] Input: {video_path} ({os.path.getsize(video_path):,} bytes, md5={video_md5})",
+        flush=True,
+    )
 
     _notify(1, "reading", _PIPELINE_STEPS[0][2])
     video_frames, fps = read_video(video_path)
@@ -144,12 +184,33 @@ def execute_pipeline(
 
     _notify(2, "tracking", _PIPELINE_STEPS[1][2])
     tracker = Tracker(os.path.join(_MODELS_DIR, "best.pt"))
-    tracks = tracker.get_object_tracks(
-        video_frames,
-        read_from_stub=read_from_stub,
+
+    colab_stub = _resolve_track_stub(
+        video_path, track_stub_path, use_track_stub=use_track_stub
     )
-    tracker.add_appearance_to_tracks(tracks, video_frames)
-    tracker.add_position_to_tracks(tracks)
+    if colab_stub:
+        print(f"[pipeline] Loading Colab tracking stub: {colab_stub}", flush=True)
+        tracks, stub_fps, enriched = load_track_stub(colab_stub)
+        stub_frames = track_frame_count(tracks)
+        if stub_frames != len(video_frames):
+            raise ValueError(
+                f"Stub có {stub_frames} frame nhưng video mới có {len(video_frames)} frame — "
+                "tracking Colab không khớp video (upload lại hoặc chạy tracking lại)."
+            )
+        if stub_fps is not None:
+            fps = stub_fps
+            fps_int = max(1, round(fps))
+        if not enriched:
+            tracker.add_appearance_to_tracks(tracks, video_frames)
+            tracker.add_position_to_tracks(tracks)
+    else:
+        tracks = tracker.get_object_tracks(
+            video_frames,
+            read_from_stub=read_from_stub,
+            stub_path=_DEFAULT_TRACK_STUB if read_from_stub else None,
+        )
+        tracker.add_appearance_to_tracks(tracks, video_frames)
+        tracker.add_position_to_tracks(tracks)
 
     _notify(3, "camera", _PIPELINE_STEPS[2][2])
     cam_estimator = CameraMovementEstimator(video_frames[0])
@@ -158,19 +219,53 @@ def execute_pipeline(
     )
     cam_estimator.add_adjust_positions_to_tracks(tracks, camera_movement_per_frame)
 
-    view_transformer = ViewTransformer()
-    view_transformer.add_transformed_position_to_tracks(tracks)
+    frame_w = video_frames[0].shape[1]
+    frame_h = video_frames[0].shape[0]
+    view_transformer = ViewTransformer(frame_size=(frame_w, frame_h))
+    cumulative_cam = CameraMovementEstimator.cumulative(camera_movement_per_frame)
+    pitch_offsets  = view_transformer.compute_pitch_offsets(
+        cumulative_cam, pitch_x_start=0.0
+    )
+    view_transformer.add_transformed_position_to_tracks(tracks, pitch_offsets=pitch_offsets)
+
+    # ── In kích thước sân đo được ra console ─────────────────────────────────
+    _all_x, _all_y = [], []
+    for _frame in tracks["players"]:
+        for _info in _frame.values():
+            _pos = _info.get("position_transformed")
+            if _pos is not None:
+                _all_x.append(_pos[0])
+                _all_y.append(_pos[1])
+    if _all_x:
+        _x_span = max(_all_x) - min(_all_x)
+        _y_span = max(_all_y) - min(_all_y)
+        print(
+            f"[Pitch] Kích thước sân đo được: "
+            f"dài = {_x_span:.1f} m  ({min(_all_x):.1f}→{max(_all_x):.1f} m)  |  "
+            f"rộng = {_y_span:.1f} m  ({min(_all_y):.1f}→{max(_all_y):.1f} m)",
+            flush=True,
+        )
+        print(
+            f"[Pitch] m_per_px = {view_transformer.pan_scale_mpp():.4f}  |  "
+            f"offset span = {max(pitch_offsets)-min(pitch_offsets):.1f} m",
+            flush=True,
+        )
+    # ─────────────────────────────────────────────────────────────────────────
 
     _notify(4, "teams", _PIPELINE_STEPS[3][2])
     tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"])
 
-    first_frame = next(
-        (i for i, p in enumerate(tracks["players"]) if len(p) >= 2), 0
-    )
     team_assigner = TeamAssigner()
-    team_assigner.assign_team_color(
-        video_frames[first_frame], tracks["players"][first_frame]
-    )
+    calib_data: list = []
+    for _fi, _pt in enumerate(tracks["players"]):
+        if len(_pt) >= TeamAssigner._MIN_PLAYERS:
+            calib_data.append((video_frames[_fi], _pt))
+        if len(calib_data) >= TeamAssigner._CALIB_FRAMES:
+            break
+    if not calib_data:
+        _fb = next((i for i, p in enumerate(tracks["players"]) if len(p) >= 2), 0)
+        calib_data = [(video_frames[_fb], tracks["players"][_fb])]
+    team_assigner.assign_team_color(calib_data)
 
     for frame_num, player_track in enumerate(tracks["players"]):
         for player_id, track in player_track.items():
@@ -182,25 +277,42 @@ def execute_pipeline(
                 team_assigner.team_colors[team]
             )
 
+    # Lock any player_ids that appeared fewer than _N_VOTE_SAMPLES frames,
+    # then rewrite their team values using the finalised majority vote.
+    team_assigner.finalize_pending()
+    for frame_num, player_track in enumerate(tracks["players"]):
+        for player_id, track in player_track.items():
+            locked = team_assigner.player_team_dict.get(player_id)
+            if locked is not None and track.get("team") != locked:
+                tracks["players"][frame_num][player_id]["team"] = locked
+                tracks["players"][frame_num][player_id]["team_color"] = (
+                    team_assigner.team_colors[locked]
+                )
+
     tracks = merge_player_tracks(tracks)
     team_ball_control = assign_ball_to_tracks(tracks)
 
     _notify(5, "speed", _PIPELINE_STEPS[4][2])
-    speed_estimator = SpeedAndDistance_Estimator()
+    speed_estimator = SpeedAndDistance_Estimator(fps=fps_int)
     speed_estimator.add_speed_and_distance_to_tracks(tracks)
     passing_events = extract_passing_events(tracks)
+    defensive_events = extract_defensive_events(tracks, team_ball_control)
 
     _notify(6, "tactical", _PIPELINE_STEPS[5][2])
-    analyzer = TacticalAnalyzer(fps=fps_int, window_sec=30, R_pressing=8.0)
+    analyzer = TacticalAnalyzer(fps=fps_int, window_sec=30, R_pressing=8.0,
+                                pitch_length=105.0)
     tactical_report = analyzer.analyze(
-        tracks, team_ball_control, passing_events=passing_events
+        tracks,
+        team_ball_control,
+        passing_events=passing_events,
+        defensive_events=defensive_events,
     )
 
-    engine = ThresholdEngine(fps=fps_int, R_pressing=8.0)
+    engine = ThresholdEngine(fps=fps_int, R_pressing=8.0, pitch_length=105.0)
     scored_report = engine.compute(tactical_report, tracks)
 
-    _dump_json(tactical_report, os.path.join(_OUTPUT_DIR, "tactical_report.json"))
-    _dump_json(scored_report, os.path.join(_OUTPUT_DIR, "scored_report.json"))
+    _dump_json(tactical_report, os.path.join(out_dir, "tactical_report.json"))
+    _dump_json(scored_report, os.path.join(out_dir, "scored_report.json"))
 
     _notify(7, "report", _PIPELINE_STEPS[6][2])
     builder = ReportBuilder(window_frames=int(30 * fps_int))
@@ -209,57 +321,91 @@ def execute_pipeline(
         tactical_report=tactical_report,
         total_frames=len(tracks["players"]),
     )
-    _dump_json(match_report, os.path.join(_OUTPUT_DIR, "match_report.json"))
+    _dump_json(match_report, os.path.join(out_dir, "match_report.json"))
+
+    # ── Team names (required) ───────────────────────────────────────────────
+    team_names: dict[int, str] = {}
+    if manual_team_names:
+        team_names.update({k: v.strip() for k, v in manual_team_names.items() if v and v.strip()})
+    missing = [k for k in (1, 2) if not team_names.get(k)]
+    if missing:
+        raise ValueError(
+            f"Thiếu tên đội: cần nhập tên cho đội {', '.join(str(k) for k in missing)}."
+        )
+    print(f"[pipeline] Team names: {team_names}", flush=True)
+
+    llm_api_key = os.getenv("OPENAI_API_KEY", "")
 
     llm_eval: dict = {}
-    llm_api_key = os.getenv("OPENAI_API_KEY", "")
     if llm_api_key:
         try:
+            print("[pipeline] Running TacticalNarrator (LLM)...", flush=True)
             narrator = TacticalNarrator(
                 api_key=llm_api_key,
                 model=os.getenv("LLM_MODEL", "gpt-4o"),
                 base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
+                max_tokens=int(os.getenv("LLM_MAX_TOKENS", "8192")),
+                timeout=int(os.getenv("LLM_TIMEOUT", "180")),
             )
-            llm_eval = narrator.analyze(match_report)
-            _dump_json(llm_eval, os.path.join(_OUTPUT_DIR, "llm_analysis.json"))
+            # Inject detected team names into the report so the LLM uses them
+            report_for_llm = dict(match_report)
+            if team_names:
+                report_for_llm["team_names"] = {
+                    f"doi_{k}": v for k, v in team_names.items()
+                }
+            llm_eval = narrator.analyze(report_for_llm)
+            _dump_json(llm_eval, os.path.join(out_dir, "llm_analysis.json"))
+            print(f"[pipeline] LLM analysis saved → {os.path.join(out_dir, 'llm_analysis.json')}", flush=True)
         except Exception as exc:
             llm_eval = {"warning": f"LLM analysis failed: {exc}"}
+            print(f"[pipeline] LLM analysis failed: {exc}", flush=True)
+    else:
+        print(
+            "[pipeline] Skipping LLM (OPENAI_API_KEY not set) — "
+            "dashboard will use template fallback; no llm_analysis.json",
+            flush=True,
+        )
 
     _notify(8, "render", _PIPELINE_STEPS[7][2])
     team_ball_control_arr = np.array(team_ball_control)
     tracker.draw_annotations(video_frames, tracks, team_ball_control_arr)
-    cam_estimator.draw_camera_movement(video_frames, camera_movement_per_frame)
     speed_estimator.draw_speed_and_distance(video_frames, tracks)
 
-    avi_path = os.path.join(_OUTPUT_DIR, "output_video.avi")
-    save_video(video_frames, avi_path, fps=fps)
+    for stale in ("output_video.avi", "output_video.mp4"):
+        stale_path = os.path.join(out_dir, stale)
+        if os.path.exists(stale_path):
+            os.remove(stale_path)
 
-    video_output_path = _convert_to_mp4(avi_path)
+    mp4_path = os.path.join(out_dir, "output_video.mp4")
+    video_output_path = save_video(video_frames, mp4_path, fps=fps)
+    if not video_output_path.lower().endswith(".mp4"):
+        video_output_path = _convert_to_mp4(video_output_path)
+    print(f"[pipeline] Output video: {video_output_path}", flush=True)
 
     generate_heatmap(
         tracks,
         team_assigner.team_colors,
-        output_path=os.path.join(_OUTPUT_DIR, "heatmap.png"),
+        output_path=os.path.join(out_dir, "heatmap.png"),
     )
     generate_passing_network(
         tracks,
         team_assigner.team_colors,
-        output_path=os.path.join(_OUTPUT_DIR, "passing_network.png"),
+        output_path=os.path.join(out_dir, "passing_network.png"),
     )
 
     tracks_t1 = _filter_tracks_by_team(tracks, 1)
     tracks_t2 = _filter_tracks_by_team(tracks, 2)
 
     chart_paths = {
-        "heatmap_team1": os.path.join(_OUTPUT_DIR, "heatmap_team1.png"),
-        "heatmap_team2": os.path.join(_OUTPUT_DIR, "heatmap_team2.png"),
-        "passing_network_team1": os.path.join(_OUTPUT_DIR, "passing_network_team1.png"),
-        "passing_network_team2": os.path.join(_OUTPUT_DIR, "passing_network_team2.png"),
+        "heatmap_team1": os.path.join(out_dir, "heatmap_team1.png"),
+        "heatmap_team2": os.path.join(out_dir, "heatmap_team2.png"),
+        "passing_network_team1": os.path.join(out_dir, "passing_network_team1.png"),
+        "passing_network_team2": os.path.join(out_dir, "passing_network_team2.png"),
     }
-    generate_heatmap(tracks_t1, team_assigner.team_colors, output_path=chart_paths["heatmap_team1"])
-    generate_heatmap(tracks_t2, team_assigner.team_colors, output_path=chart_paths["heatmap_team2"])
-    generate_passing_network(tracks_t1, team_assigner.team_colors, output_path=chart_paths["passing_network_team1"])
-    generate_passing_network(tracks_t2, team_assigner.team_colors, output_path=chart_paths["passing_network_team2"])
+    generate_heatmap(tracks_t1, team_assigner.team_colors, output_path=chart_paths["heatmap_team1"], team_id=1)
+    generate_heatmap(tracks_t2, team_assigner.team_colors, output_path=chart_paths["heatmap_team2"], team_id=2)
+    generate_passing_network(tracks_t1, team_assigner.team_colors, output_path=chart_paths["passing_network_team1"], team_id=1)
+    generate_passing_network(tracks_t2, team_assigner.team_colors, output_path=chart_paths["passing_network_team2"], team_id=2)
 
     charts = {key: _encode_image(path) for key, path in chart_paths.items()}
 
@@ -271,6 +417,7 @@ def execute_pipeline(
         passing_events=passing_events,
         llm_eval=llm_eval or None,
         fps=fps,
+        team_names=team_names or None,
     )
 
     meta = match_report.get("meta", {})
@@ -294,13 +441,29 @@ def execute_pipeline(
                 2: float(dist.get("team_2", 0)),
             },
             "output_video_path": video_output_path,
-            "heatmap_path": os.path.join(_OUTPUT_DIR, "heatmap.png"),
-            "passing_network_path": os.path.join(_OUTPUT_DIR, "passing_network.png"),
+            "heatmap_path": os.path.join(out_dir, "heatmap.png"),
+            "passing_network_path": os.path.join(out_dir, "passing_network.png"),
         },
     }
 
 
-def run_pipeline(video_path: str, job_id: str, jobs_store: dict) -> None:
+def _job_output_dir(job_id: str) -> str:
+    return os.path.join(_OUTPUT_DIR, job_id)
+
+
+def _job_stub_path(job_id: str) -> str:
+    return os.path.join(_PROJECT_ROOT, "stubs", f"{job_id}_track_stubs.pkl")
+
+
+def run_pipeline(
+    video_path: str,
+    job_id: str,
+    jobs_store: dict,
+    *,
+    track_stub_path: str | None = None,
+    use_track_stub: bool = False,
+    team_names: dict[int, str] | None = None,
+) -> None:
     """Execute pipeline for a background API job."""
 
     def _step(step_n: int, step_key: str, label: str) -> None:
@@ -309,11 +472,18 @@ def run_pipeline(video_path: str, job_id: str, jobs_store: dict) -> None:
         job.current_step = label
         job.step_key = step_key
 
+    stub_path = track_stub_path or _job_stub_path(job_id)
+    output_dir = _job_output_dir(job_id)
+
     try:
         outputs = execute_pipeline(
             video_path,
             read_from_stub=False,
+            track_stub_path=stub_path,
+            use_track_stub=use_track_stub,
+            output_dir=output_dir,
             on_step=_step,
+            manual_team_names=team_names,
         )
         job: JobState = jobs_store[job_id]
         job.result = _sanitize(outputs["adapted"])
@@ -323,6 +493,22 @@ def run_pipeline(video_path: str, job_id: str, jobs_store: dict) -> None:
         job.current_step = "Hoàn thành"
         job.step_key = "done"
 
+        from api.job_persistence import save_job_meta, save_job_result
+
+        save_job_meta(
+            output_dir,
+            {
+                "job_id": job_id,
+                "status": "done",
+                "video_path": job.video_path,
+                "input_path": job.input_path,
+                "input_md5": job.input_md5,
+                "input_filename": job.input_filename,
+                "input_size_bytes": job.input_size_bytes,
+            },
+        )
+        save_job_result(output_dir, job.result)
+
     except Exception as exc:
         error_detail = f"{type(exc).__name__}: {exc}\n{tb.format_exc()}"
         job = jobs_store[job_id]
@@ -330,3 +516,26 @@ def run_pipeline(video_path: str, job_id: str, jobs_store: dict) -> None:
         job.error = error_detail
         job.current_step = "Lỗi"
         job.step_key = "error"
+        job.error_log_path = save_job_error(
+            job_id,
+            error_detail,
+            output_dir=output_dir,
+            step_key=job.step_key,
+            source="pipeline",
+        )
+
+        from api.job_persistence import save_job_meta
+
+        save_job_meta(
+            output_dir,
+            {
+                "job_id": job_id,
+                "status": "error",
+                "error": error_detail,
+                "error_log_path": job.error_log_path,
+                "input_path": job.input_path,
+                "input_md5": job.input_md5,
+                "input_filename": job.input_filename,
+                "input_size_bytes": job.input_size_bytes,
+            },
+        )

@@ -1,43 +1,28 @@
 """
 ReportBuilder
 =============
-Assembles a structured ``match_report`` dict from a ``ThresholdEngine``
-scored report and a ``TacticalAnalyzer`` tactical report.
+Assembles a structured ``match_report`` from a ``ThresholdEngine`` scored
+report and a ``TacticalAnalyzer`` tactical report.
 
-The output is JSON-serialisable and formatted for direct LLM consumption.
+Output structure (6 sections + meta):
+  meta                — formation, possession, dominant_team, styles
+  mo_hinh_tran        — shape model: formation, block, width, possession
+  press_and_recovery  — pressing H1/H2, recoveries by zone, PPDA
+  cau_truc_doi_hinh   — compact trend, width delta with/without ball
+  buildup_and_risk    — progressive pass %, turnovers final third
+  cau_thu_then_chot   — top pressers, top width users, poor positioning
+  insights            — 3–5 auto-generated actionable sentences per team
+  match_narrative_data — flat key-value data for backward compat (LLM/adapter)
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-# ── constants ───────────────────────────────────────────────────────────────
-
-_GRADE_MAP = ((80, "A"), (65, "B"), (50, "C"), (35, "D"))
-
-_METRIC_LABELS: dict[str, str] = {
-    "speed_score":               "Tốc độ di chuyển",
-    "pressing_score":            "Cường độ pressing",
-    "discipline_score":          "Kỷ luật chiến thuật",
-    "activity_score":            "Độ phủ sóng sân",
-    "def_positioning_score":     "Kỷ luật hàng thủ",
-    "width_contrib_score":       "Khai thác biên dọc",
-    "high_run_score":            "Cường độ chạy nước rút",
-    "passing_involvement_score": "Tham gia xây dựng lối chơi",
-}
-
 _LINE_MAP: dict[str, str] = {
     "DEF": "DEF", "MID": "MID", "FWD": "FWD",
     "DM":  "MID", "AM":  "MID", "SS":  "MID",
 }
-
-# ── helpers ─────────────────────────────────────────────────────────────────
-
-def _grade(score: float) -> str:
-    for threshold, letter in _GRADE_MAP:
-        if score >= threshold:
-            return letter
-    return "F"
 
 
 def _r2(v: Any) -> float:
@@ -46,8 +31,6 @@ def _r2(v: Any) -> float:
     except (TypeError, ValueError):
         return 0.0
 
-
-# ── main class ───────────────────────────────────────────────────────────────
 
 class ReportBuilder:
     """Build a structured match report from scored and tactical reports.
@@ -74,7 +57,9 @@ class ReportBuilder:
         Returns
         -------
         JSON-serialisable dict with keys:
-        ``"meta"``, ``"team_report"``, ``"player_report"``,
+        ``"meta"``, ``"mo_hinh_tran"``, ``"press_and_recovery"``,
+        ``"cau_truc_doi_hinh"``, ``"buildup_and_risk"``,
+        ``"cau_thu_then_chot"``, ``"insights"``,
         ``"match_narrative_data"``.
         """
         if total_frames is None:
@@ -82,8 +67,12 @@ class ReportBuilder:
 
         return {
             "meta":                 self._build_meta(scored_report, tactical_report, total_frames),
-            "team_report":          self._build_team_report(scored_report, tactical_report, total_frames),
-            "player_report":        self._build_player_report(scored_report, tactical_report),
+            "mo_hinh_tran":         self._build_mo_hinh_tran(tactical_report),
+            "press_and_recovery":   self._build_press_and_recovery(tactical_report, total_frames),
+            "cau_truc_doi_hinh":    self._build_cau_truc_doi_hinh(tactical_report, scored_report),
+            "buildup_and_risk":     self._build_buildup_and_risk(tactical_report),
+            "cau_thu_then_chot":    self._build_cau_thu_then_chot(scored_report, tactical_report),
+            "insights":             self._build_insights(tactical_report),
             "match_narrative_data": self._build_narrative(tactical_report),
         }
 
@@ -152,199 +141,134 @@ class ReportBuilder:
             "total_frames":       int(total_frames),
         }
 
-    # ── team_report ──────────────────────────────────────────────────────────
+    # ── 1. MÔ HÌNH TRẬN ─────────────────────────────────────────────────────
 
-    def _build_team_report(
-        self, scored: dict, tactical: dict, total_frames: int
+    def _build_mo_hinh_tran(self, tactical: dict) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        poss = self._possession(tactical).get("possession", {})
+
+        for team_idx in (1, 2):
+            tk         = f"team_{team_idx}"
+            form       = self._formation_team(tactical, team_idx)
+            dl         = self._def_line(tactical).get(tk, {})
+            ww         = self._team_width(tactical).get(tk, {})
+            result[tk] = {
+                "formation":      form.get("detected_formation", "unknown"),
+                "formation_conf": _r2(form.get("confidence", 0.0)),
+                "lines":          form.get("lines", {}),
+                "possession_pct": _r2(poss.get(tk, 0.0)),
+                "block_type":     dl.get("dominant_block", "mid_block"),
+                "block_height_m": _r2(dl.get("overall_avg_m", 0.0)),
+                "block_height_pct": _r2(dl.get("overall_avg_pct", 0.0)),
+                "width_style":    ww.get("dominant_style", "medium"),
+                "width_avg_m":    _r2(ww.get("overall_avg_m", 0.0)),
+            }
+        return result
+
+    # ── 2. PRESS & RECOVERY ──────────────────────────────────────────────────
+
+    def _build_press_and_recovery(
+        self, tactical: dict, total_frames: int
     ) -> dict[str, Any]:
-        return {
-            f"team_{i}": self._build_one_team(scored, tactical, i, total_frames)
-            for i in (1, 2)
-        }
+        press    = self._pressing(tactical)
+        half_sum = press.get("half_summary", {})
+        h1_int   = _r2(half_sum.get("half_1", {}).get("mean_intensity", 0.0))
+        h2_int   = _r2(half_sum.get("half_2", {}).get("mean_intensity", 0.0))
+        drop_pct = _r2((h2_int - h1_int) / max(h1_int, 1e-6) * 100) if h1_int else 0.0
 
-    def _build_one_team(
-        self,
-        scored: dict,
-        tactical: dict,
-        team_idx: int,
-        total_frames: int,
+        ppda_data = press.get("ppda") or {}
+
+        result: dict[str, Any] = {}
+        for team_idx in (1, 2):
+            tk  = f"team_{team_idx}"
+            rec = tactical.get("ball_recoveries", {}).get(tk, {})
+            total_rec = int(rec.get("total_recoveries", 0))
+            zones     = rec.get("recoveries_by_zone", {})
+            opp_rec   = int(zones.get("opp_half", 0)) + int(zones.get("final_third", 0))
+            opp_pct   = _r2(opp_rec / total_rec * 100) if total_rec else 0.0
+
+            ppda_team = ppda_data.get(tk, {}).get("overall", {}) if ppda_data else {}
+            ppda_val  = ppda_team.get("ppda") if ppda_team else None
+            result[tk] = {
+                "pressing_h1":           h1_int,
+                "pressing_h2":           h2_int,
+                "pressing_drop_pct":     drop_pct,
+                "recoveries_total":      total_rec,
+                "recoveries_opp_pct":    opp_pct,
+                "ppda":                  _r2(ppda_val) if ppda_val is not None else None,
+                "ppda_label":            ppda_team.get("intensity_label") if ppda_team else None,
+                "ppda_half1":            ppda_data.get(tk, {}).get("half_1_avg_ppda") if ppda_data else None,
+                "ppda_half2":            ppda_data.get(tk, {}).get("half_2_avg_ppda") if ppda_data else None,
+            }
+        return result
+
+    # ── 3. CẤU TRÚC ĐỘI HÌNH ────────────────────────────────────────────────
+
+    def _build_cau_truc_doi_hinh(
+        self, tactical: dict, scored: dict
     ) -> dict[str, Any]:
-        tk  = f"team_{team_idx}"
-        ts  = scored.get("team_scores", {}).get(tk, {})
-        passing_raw = ts.get("passing_score")
+        result: dict[str, Any] = {}
+        phase_all = self._compact(tactical).get("phase_summary", {})
+        for team_idx in (1, 2):
+            tk      = f"team_{team_idx}"
+            c_wins  = self._compact_windows(tactical, team_idx)
+            c_avg   = (
+                sum(w.get("mean_area", 0) for w in c_wins) / len(c_wins)
+                if c_wins else 0.0
+            )
+            phase   = phase_all.get(tk, {})
+            ww      = self._team_width(tactical).get(tk, {})
+            w_ball  = _r2(ww.get("width_with_ball",    0.0))
+            w_no    = _r2(ww.get("width_without_ball", 0.0))
 
-        scores = {
-            "overall":    _r2(ts.get("overall_score",   50.0)),
-            "possession": _r2(ts.get("possession_score",50.0)),
-            "compact":    _r2(ts.get("compact_score",   50.0)),
-            "pressing":   _r2(ts.get("pressing_score",  50.0)),
-            "adherence":  _r2(ts.get("adherence_score", 50.0)),
-            "speed":      _r2(ts.get("speed_score",     50.0)),
-            "stability":  _r2(ts.get("stability_score", 50.0)),
-            "def_line":   _r2(ts.get("def_line_score",  50.0)),
-            "width":      _r2(ts.get("width_score",     50.0)),
-            "high_runs":  _r2(ts.get("high_runs_score", 50.0)),
-            "recoveries": _r2(ts.get("recoveries_score",50.0)),
-            "turnovers":  _r2(ts.get("turnovers_score", 50.0)),
-            "passing":    _r2(passing_raw) if passing_raw is not None else None,
-        }
-        grades = {
-            k: (_grade(v) if v is not None else None)
-            for k, v in scores.items()
-        }
-        flags   = self._build_flags(scored, tactical, team_idx, total_frames)
-        profile = self._build_tactical_profile(flags)
-        top, weak = self._rank_players(
-            scored.get("player_scores", {}).get(str(team_idx), {})
-        )
-        return {
-            "scores":           scores,
-            "grades":           grades,
-            "flags":            flags,
-            "tactical_profile": profile,
-            "top_players":      top,
-            "weak_players":     weak,
-        }
+            result[tk] = {
+                "compact_trend":          self._compact_trend(tactical, team_idx),
+                "compact_avg_m2":         _r2(c_avg),
+                "compact_attacking_m2":   phase.get("attacking_avg_m2"),
+                "compact_defending_m2":   phase.get("defending_avg_m2"),
+                "compact_phase_comment":  self._compact_phase_comment(phase),
+                "width_with_ball_m":      w_ball,
+                "width_without_ball_m":   w_no,
+                "width_delta_m":          _r2(w_ball - w_no),
+            }
+        return result
 
-    def _build_flags(
-        self,
-        scored: dict,
-        tactical: dict,
-        team_idx: int,
-        total_frames: int,
-    ) -> dict[str, Any]:
-        tk     = f"team_{team_idx}"
-        opp_tk = "team_2" if team_idx == 1 else "team_1"
-        ts     = scored.get("team_scores", {}).get(tk,     {})
-        opp_ts = scored.get("team_scores", {}).get(opp_tk, {})
+    # ── 4. BUILD-UP & RỦI RO ────────────────────────────────────────────────
 
-        # high_press_half
-        press_windows = self._pressing(tactical).get("windows", [])
-        half_split    = total_frames // 2
-        h1 = sum(
-            1 for w in press_windows
-            if w.get("pressing_team") == team_idx and w.get("window_start_frame", 0) <  half_split
-        )
-        h2 = sum(
-            1 for w in press_windows
-            if w.get("pressing_team") == team_idx and w.get("window_start_frame", 0) >= half_split
-        )
-        high_press_half: int | None = None
-        if h1 > 0 or h2 > 0:
-            high_press_half = 1 if h1 >= h2 else 2
+    def _build_buildup_and_risk(self, tactical: dict) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for team_idx in (1, 2):
+            tk       = f"team_{team_idx}"
+            to_data  = tactical.get("turnovers", {}).get(tk, {})
+            p_data   = (tactical.get("passing") or {}).get(tk)
+            pass_info: dict[str, Any] = {}
+            if isinstance(p_data, dict):
+                pass_info = {
+                    "total_passes":          int(p_data.get("total_passes", 0)),
+                    "progressive_pass_pct":  _r2(p_data.get("progressive_pass_pct", 0.0)),
+                    "network_density":       _r2(p_data.get("network_density", 0.0)),
+                    "top_passer_id":         p_data.get("top_passer_id"),
+                    "top_receiver_id":       p_data.get("top_receiver_id"),
+                }
+            result[tk] = {
+                **pass_info,
+                "turnovers_final_third":    int(to_data.get("total_turnovers_in_final_third", 0)),
+                "high_risk_count":          int(to_data.get("high_risk_count",           0)),
+                "low_risk_count":           int(to_data.get("low_risk_count",            0)),
+                "high_risk_rate_pct":       _r2(to_data.get("high_risk_rate_pct",        0.0)),
+                "avg_distance_to_goal_m":   _r2(to_data.get("avg_distance_to_goal_m",    0.0)),
+                "avg_transition_potential": _r2(to_data.get("avg_transition_potential",  0.0)),
+            }
+        return result
 
-        # formation_collapsed
-        c_windows   = self._compact_windows(tactical, team_idx)
-        broken_rate = (
-            sum(1 for w in c_windows if w.get("formation_broken")) / len(c_windows)
-            if c_windows else 0.0
-        )
+    # ── 5. CẦU THỦ THEN CHỐT ────────────────────────────────────────────────
 
-        # possession_dominant
-        poss_pct = float(
-            self._possession(tactical).get("possession", {}).get(f"team_{team_idx}", 0.0)
-        )
-
-        # def_line flags
-        dl_data = self._def_line(tactical).get(tk, {})
-        dl_avg  = float(dl_data.get("overall_avg_m") or 0.0)
-
-        # width flags
-        ww_data = self._team_width(tactical).get(tk, {})
-        w_avg   = float(ww_data.get("overall_avg_m")       or 0.0)
-        wball   = float(ww_data.get("width_with_ball")      or 0.0)
-        wnoball = float(ww_data.get("width_without_ball")   or 0.0)
-
-        # press_recovery
-        rec_data     = tactical.get("ball_recoveries", {}).get(tk, {})
-        rec_total    = int(rec_data.get("total_recoveries", 0))
-        rec_zones    = rec_data.get("recoveries_by_zone", {})
-        opp_half_rec = int(rec_zones.get("opp_half", 0)) + int(rec_zones.get("final_third", 0))
-        press_recovery = rec_total > 0 and (opp_half_rec / rec_total) > 0.4
-
-        # risky_buildup
-        to_data       = tactical.get("turnovers", {}).get(tk, {})
-        risky_buildup = float(to_data.get("dangerous_rate_pct", 0.0)) > 40.0
-
-        # progressive_team
-        pass_data        = (tactical.get("passing") or {}).get(tk, {})
-        prog_pct         = float(pass_data.get("progressive_pass_pct", 0.0)) if isinstance(pass_data, dict) else 0.0
-        progressive_team = prog_pct > 35.0
-
-        # high_runner_team
-        hr_data          = tactical.get("high_intensity_runs", {})
-        my_runs          = int(hr_data.get(tk, {}).get("total_runs", 0))
-        opp_runs         = int(hr_data.get(opp_tk, {}).get("total_runs", 0))
-        high_runner_team = my_runs > opp_runs
-
-        return {
-            "high_press_half":           high_press_half,
-            "formation_collapsed":       broken_rate > 0.20,
-            "speed_dominant":            ts.get("speed_score", 50.0) > opp_ts.get("speed_score", 50.0),
-            "possession_dominant":       poss_pct > 55.0,
-            "deep_defending":            bool(dl_avg > 0 and dl_avg < 8.0),
-            "high_pressing_block":       bool(dl_avg > 14.0),
-            "wide_play_style":           bool(w_avg > 45.0),
-            "width_expands_with_ball":   (wball - wnoball) > 5.0,
-            "press_recovery":            press_recovery,
-            "risky_buildup":             risky_buildup,
-            "progressive_team":          progressive_team,
-            "high_runner_team":          high_runner_team,
-        }
-
-    @staticmethod
-    def _build_tactical_profile(flags: dict) -> str:
-        high        = flags.get("high_pressing_block", False)
-        deep        = flags.get("deep_defending",       False)
-        wide        = flags.get("wide_play_style",       False)
-        runner      = flags.get("high_runner_team",      False)
-        progressive = flags.get("progressive_team",      False)
-        risky       = flags.get("risky_buildup",         False)
-        pressing_rec = flags.get("press_recovery",       False)
-
-        if high and wide:
-            base = "High-press, wide attacking style"
-        elif high:
-            base = "High-press, narrow compact style"
-        elif deep and wide:
-            base = "Deep block, wide defensive shape"
-        elif deep:
-            base = "Deep block, narrow defensive shape"
-        else:
-            base = "Balanced mid-block style"
-
-        suffixes: list[str] = []
-        if runner and progressive:
-            suffixes.append("direct attacking")
-        if risky:
-            suffixes.append("risky in possession")
-        if pressing_rec:
-            suffixes.append("aggressive recovery")
-
-        return base + (", " + ", ".join(suffixes) if suffixes else "")
-
-    @staticmethod
-    def _rank_players(player_scores: dict) -> tuple[list[int], list[int]]:
-        if not player_scores:
-            return [], []
-        ranked = sorted(
-            player_scores.items(),
-            key=lambda kv: kv[1].get("overall_score", 0.0),
-            reverse=True,
-        )
-        n       = len(ranked)
-        top_n   = min(3, n)
-        weak_n  = min(3, n)
-        top_ids  = [int(k) for k, _ in ranked[:top_n]]
-        weak_ids = [int(k) for k, _ in ranked[n - weak_n:]]
-        weak_ids = [pid for pid in weak_ids if pid not in top_ids] if n > top_n else weak_ids
-        return top_ids, weak_ids
-
-    # ── player_report ────────────────────────────────────────────────────────
-
-    def _build_player_report(
+    def _build_cau_thu_then_chot(
         self, scored: dict, tactical: dict
-    ) -> dict[str, dict[str, Any]]:
+    ) -> dict[str, Any]:
+        """Top pressers, top width users, poor positioning (DEF) per team."""
+        result: dict[str, Any] = {}
+
         role_lookup: dict[int, str] = {}
         for team_idx in (1, 2):
             for raw_label, ids in self._formation_team(tactical, team_idx).get("lines", {}).items():
@@ -352,27 +276,174 @@ class ReportBuilder:
                 for pid in ids:
                     role_lookup[int(pid)] = mapped
 
-        result: dict[str, dict[str, Any]] = {}
         for team_str, players in scored.get("player_scores", {}).items():
             if not players:
-                result[team_str] = {}
-                continue
-            team_out: dict[str, Any] = {}
-            for tid_str, pscores in players.items():
-                overall    = _r2(pscores.get("overall_score", 0.0))
-                strengths  = [lbl for key, lbl in _METRIC_LABELS.items() if pscores.get(key, 0.0) >= 70.0]
-                weaknesses = [lbl for key, lbl in _METRIC_LABELS.items() if pscores.get(key, 0.0) <  40.0]
-                team_out[tid_str] = {
-                    "overall_score": overall,
-                    "grade":         _grade(overall),
-                    "role_in_line":  role_lookup.get(int(tid_str), "MID"),
-                    "strengths":     strengths,
-                    "weaknesses":    weaknesses,
+                result[f"team_{team_str}"] = {
+                    "top_pressers":    [],
+                    "top_width_users": [],
+                    "poor_positioning": [],
                 }
-            result[team_str] = team_out
+                continue
+
+            def _entry(tid_str: str, pscores: dict, key: str) -> dict:
+                return {
+                    "track_id": int(tid_str),
+                    "score":    _r2(pscores.get(key, 0.0)),
+                    "role":     role_lookup.get(int(tid_str), "MID"),
+                }
+
+            sorted_pressing = sorted(
+                players.items(),
+                key=lambda kv: kv[1].get("pressing_score", 0.0),
+                reverse=True,
+            )
+            sorted_width = sorted(
+                [
+                    (tid, p) for tid, p in players.items()
+                    if role_lookup.get(int(tid), "MID") in ("MID", "FWD")
+                ],
+                key=lambda kv: kv[1].get("width_contrib_score", 0.0),
+                reverse=True,
+            )
+            def_players = [
+                (tid, p) for tid, p in players.items()
+                if role_lookup.get(int(tid), "MID") == "DEF"
+            ]
+            sorted_def_poor = sorted(
+                def_players,
+                key=lambda kv: kv[1].get("def_positioning_score", 0.0),
+            )
+
+            result[f"team_{team_str}"] = {
+                "top_pressers": [
+                    _entry(tid, p, "pressing_score")
+                    for tid, p in sorted_pressing[:3]
+                ],
+                "top_width_users": [
+                    _entry(tid, p, "width_contrib_score")
+                    for tid, p in sorted_width[:3]
+                ],
+                "poor_positioning": [
+                    _entry(tid, p, "def_positioning_score")
+                    for tid, p in sorted_def_poor[:3]
+                ],
+            }
         return result
 
-    # ── match_narrative_data ──────────────────────────────────────────────────
+    # ── 6. INSIGHTS (auto-generated actionable sentences) ────────────────────
+
+    def _build_insights(self, tactical: dict) -> dict[str, list[str]]:
+        return {
+            "team_1": self._gen_team_insights(tactical, 1),
+            "team_2": self._gen_team_insights(tactical, 2),
+        }
+
+    def _gen_team_insights(self, tactical: dict, team_idx: int) -> list[str]:
+        tk       = f"team_{team_idx}"
+        insights: list[str] = []
+
+        # 1. Pressing / PPDA trend across video halves
+        pr = self._build_press_and_recovery(tactical, 0).get(tk, {})
+        ppda_h1 = pr.get("ppda_half1")
+        ppda_h2 = pr.get("ppda_half2")
+        if ppda_h1 is not None and ppda_h2 is not None and ppda_h1 > 0:
+            drop = (ppda_h2 - ppda_h1) / ppda_h1 * 100
+            if abs(drop) >= 10:
+                verb = "giảm" if drop < 0 else "tăng"
+                insights.append(
+                    f"PPDA {verb} {abs(drop):.0f}% "
+                    f"từ nửa đầu video ({ppda_h1:.1f}) → nửa sau ({ppda_h2:.1f})"
+                )
+        else:
+            half_sum = self._pressing(tactical).get("half_summary", {})
+            h1 = float(half_sum.get("half_1", {}).get("mean_intensity", 0.0))
+            h2 = float(half_sum.get("half_2", {}).get("mean_intensity", 0.0))
+            if h1 > 0:
+                drop = (h2 - h1) / h1 * 100
+                if abs(drop) >= 10:
+                    verb = "giảm" if drop < 0 else "tăng"
+                    insights.append(
+                        f"Pressing proximity {verb} {abs(drop):.0f}% "
+                        f"từ nửa đầu video ({h1:.2f}) → nửa sau ({h2:.2f})"
+                    )
+
+        # 2. Recovery zone
+        rec   = tactical.get("ball_recoveries", {}).get(tk, {})
+        total = int(rec.get("total_recoveries", 0))
+        if total > 0:
+            z   = rec.get("recoveries_by_zone", {})
+            opp = int(z.get("opp_half", 0)) + int(z.get("final_third", 0))
+            pct = opp / total * 100
+            label = "counter-press hiệu quả" if pct > 50 else "cướp bóng chủ yếu ở sân nhà"
+            insights.append(
+                f"{pct:.0f}% ({opp}/{total}) lần thu hồi bóng ở phần sân đối phương"
+                f" → {label}"
+            )
+
+        # 3. Turnovers final third — contextual risk classification
+        to_data  = tactical.get("turnovers", {}).get(tk, {})
+        total_to = int(to_data.get("total_turnovers_in_final_third", 0))
+        high_risk  = int(to_data.get("high_risk_count",      0))
+        low_risk   = int(to_data.get("low_risk_count",       0))
+        hr_rate    = float(to_data.get("high_risk_rate_pct", 0.0))
+        avg_dist   = float(to_data.get("avg_distance_to_goal_m",   0.0))
+        if total_to > 0:
+            insights.append(
+                f"{total_to} lần mất bóng ở 1/3 cuối: "
+                f"{high_risk} High-Risk / {low_risk} Low-Risk "
+                f"({hr_rate:.0f}% chuyển đổi nguy hiểm, "
+                f"cách khung thành TB {avg_dist:.1f} m)"
+            )
+        else:
+            insights.append(
+                "Không mất bóng ở 1/3 cuối sân — xây dựng bóng thận trọng"
+            )
+
+        # 4. Width delta with/without ball
+        ww    = self._team_width(tactical).get(tk, {})
+        w_b   = float(ww.get("width_with_ball",    0.0))
+        w_nb  = float(ww.get("width_without_ball", 0.0))
+        delta = w_b - w_nb
+        if abs(delta) >= 3:
+            verb = "mở rộng" if delta > 0 else "thu hẹp"
+            insights.append(
+                f"Đội hình {verb} {abs(delta):.1f} m khi có bóng"
+                f" ({w_b:.1f} m) so với không bóng ({w_nb:.1f} m)"
+            )
+
+        # 5. Progressive passing
+        p = (tactical.get("passing") or {}).get(tk)
+        if isinstance(p, dict):
+            prog = float(p.get("progressive_pass_pct", 0.0))
+            if prog > 35:
+                insights.append(
+                    f"{prog:.1f}% đường chuyền tiến bộ"
+                    f" → lối chơi tấn công trực tiếp"
+                )
+            else:
+                insights.append(
+                    f"{prog:.1f}% đường chuyền tiến bộ"
+                    f" — ưu tiên giữ bóng an toàn"
+                )
+
+        # 6. Compact trend + phase split
+        trend  = self._compact_trend(tactical, team_idx)
+        c_wins = self._compact_windows(tactical, team_idx)
+        phase  = self._compact(tactical).get("phase_summary", {}).get(tk, {})
+        phase_comment = self._compact_phase_comment(phase)
+        if phase_comment:
+            insights.append(phase_comment)
+        elif c_wins and trend != "stable":
+            avg_m2 = sum(w.get("mean_area", 0) for w in c_wins) / len(c_wins)
+            label  = "ngày càng chặt chẽ" if trend == "improving" else "bị kéo giãn dần"
+            insights.append(
+                f"Độ compact {label} qua video"
+                f" (hull area trung bình {avg_m2:.1f} m²)"
+            )
+
+        return insights[:5]
+
+    # ── narrative data (flat key-value for LLM / result_adapter) ────────────
 
     def _build_narrative(self, tactical: dict) -> dict[str, Any]:
         press    = self._pressing(tactical)
@@ -380,9 +451,6 @@ class ReportBuilder:
         poss     = self._possession(tactical)
         spd      = poss.get("avg_speed", {})
         zones    = poss.get("speed_zones", {})
-
-        def _hr(tk: str) -> dict:
-            return tactical.get("high_intensity_runs", {}).get(tk, {})
 
         def _rec(tk: str) -> dict:
             return tactical.get("ball_recoveries", {}).get(tk, {})
@@ -405,6 +473,14 @@ class ReportBuilder:
         p2 = _pass("team_2")
 
         return {
+            "compact_attacking_m2_team_1":     self._compact(tactical).get("phase_summary", {}).get("team_1", {}).get("attacking_avg_m2"),
+            "compact_defending_m2_team_1":     self._compact(tactical).get("phase_summary", {}).get("team_1", {}).get("defending_avg_m2"),
+            "compact_attacking_m2_team_2":     self._compact(tactical).get("phase_summary", {}).get("team_2", {}).get("attacking_avg_m2"),
+            "compact_defending_m2_team_2":     self._compact(tactical).get("phase_summary", {}).get("team_2", {}).get("defending_avg_m2"),
+            "ppda_team_1":                     _r2(self._pressing(tactical).get("ppda", {}).get("team_1", {}).get("overall", {}).get("ppda"))
+            if self._pressing(tactical).get("ppda") else None,
+            "ppda_team_2":                     _r2(self._pressing(tactical).get("ppda", {}).get("team_2", {}).get("overall", {}).get("ppda"))
+            if self._pressing(tactical).get("ppda") else None,
             "pressing_intensity_half1":        _r2(half_sum.get("half_1", {}).get("mean_intensity", 0.0)),
             "pressing_intensity_half2":        _r2(half_sum.get("half_2", {}).get("mean_intensity", 0.0)),
             "compact_trend_team_1":            self._compact_trend(tactical, 1),
@@ -415,8 +491,6 @@ class ReportBuilder:
             "sprint_pct_team_2":               _r2(zones.get("team_2", {}).get("sprinting", 0.0)),
             "formation_team_1":                self._formation_team(tactical, 1).get("detected_formation", "unknown"),
             "formation_team_2":                self._formation_team(tactical, 2).get("detected_formation", "unknown"),
-            "adherence_team_1":                _r2(self._formation_team(tactical, 1).get("adherence_score", 0.0)),
-            "adherence_team_2":                _r2(self._formation_team(tactical, 2).get("adherence_score", 0.0)),
             "def_line_avg_team_1":             _r2(self._def_line(tactical).get("team_1", {}).get("overall_avg_m", 0.0)),
             "def_line_avg_team_2":             _r2(self._def_line(tactical).get("team_2", {}).get("overall_avg_m", 0.0)),
             "def_line_trend_team_1":           self._def_line(tactical).get("team_1", {}).get("trend", "stable"),
@@ -427,23 +501,49 @@ class ReportBuilder:
             "width_with_ball_team_2":          _r2(self._team_width(tactical).get("team_2", {}).get("width_with_ball", 0.0)),
             "width_without_ball_team_1":       _r2(self._team_width(tactical).get("team_1", {}).get("width_without_ball", 0.0)),
             "width_without_ball_team_2":       _r2(self._team_width(tactical).get("team_2", {}).get("width_without_ball", 0.0)),
-            "high_runs_team_1":                int(_hr("team_1").get("total_runs", 0)),
-            "high_runs_team_2":                int(_hr("team_2").get("total_runs", 0)),
-            "high_runs_fwd_team_1":            int(_hr("team_1").get("runs_per_role", {}).get("FWD", 0)),
-            "high_runs_fwd_team_2":            int(_hr("team_2").get("runs_per_role", {}).get("FWD", 0)),
             "recoveries_team_1":               int(_rec("team_1").get("total_recoveries", 0)),
             "recoveries_team_2":               int(_rec("team_2").get("total_recoveries", 0)),
             "opp_half_recovery_pct_team_1":    _opp_half_pct("team_1"),
             "opp_half_recovery_pct_team_2":    _opp_half_pct("team_2"),
             "turnovers_final_third_team_1":    int(_to("team_1").get("total_turnovers_in_final_third", 0)),
             "turnovers_final_third_team_2":    int(_to("team_2").get("total_turnovers_in_final_third", 0)),
-            "dangerous_rate_team_1":           _r2(_to("team_1").get("dangerous_rate_pct", 0.0)),
-            "dangerous_rate_team_2":           _r2(_to("team_2").get("dangerous_rate_pct", 0.0)),
+            "high_risk_count_team_1":          int(_to("team_1").get("high_risk_count",      0)),
+            "high_risk_count_team_2":          int(_to("team_2").get("high_risk_count",      0)),
+            "high_risk_rate_pct_team_1":       _r2(_to("team_1").get("high_risk_rate_pct",   0.0)),
+            "high_risk_rate_pct_team_2":       _r2(_to("team_2").get("high_risk_rate_pct",   0.0)),
+            "avg_distance_to_goal_team_1":     _r2(_to("team_1").get("avg_distance_to_goal_m", 0.0)),
+            "avg_distance_to_goal_team_2":     _r2(_to("team_2").get("avg_distance_to_goal_m", 0.0)),
+            "avg_transition_potential_team_1": _r2(_to("team_1").get("avg_transition_potential", 0.0)),
+            "avg_transition_potential_team_2": _r2(_to("team_2").get("avg_transition_potential", 0.0)),
             "total_passes_team_1":             int(p1.get("total_passes", 0)) if isinstance(p1, dict) else None,
             "total_passes_team_2":             int(p2.get("total_passes", 0)) if isinstance(p2, dict) else None,
             "progressive_pct_team_1":          _r2(p1.get("progressive_pass_pct", 0.0)) if isinstance(p1, dict) else None,
             "progressive_pct_team_2":          _r2(p2.get("progressive_pass_pct", 0.0)) if isinstance(p2, dict) else None,
         }
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _compact_phase_comment(phase: dict) -> str | None:
+        att = phase.get("attacking_avg_m2")
+        def_ = phase.get("defending_avg_m2")
+        if att is None or def_ is None:
+            return None
+        delta = float(att) - float(def_)
+        if abs(delta) < 20:
+            return (
+                f"Hull area tấn công {att:.0f} m² vs phòng ngự {def_:.0f} m² "
+                f"— đội hình ổn định giữa hai phase"
+            )
+        if delta > 0:
+            return (
+                f"Khi tấn công hull area {att:.0f} m² (rộng hơn {delta:.0f} m² "
+                f"so với phase phòng ngự {def_:.0f} m²)"
+            )
+        return (
+            f"Khi phòng ngự hull area {def_:.0f} m² (chặt hơn {abs(delta):.0f} m² "
+            f"so với phase tấn công {att:.0f} m²)"
+        )
 
     def _compact_trend(self, tactical: dict, team_idx: int) -> str:
         windows = self._compact_windows(tactical, team_idx)
@@ -451,8 +551,8 @@ class ReportBuilder:
         if n < 2:
             return "stable"
         half  = max(n // 2, 1)
-        avg1  = sum(w["compact_score"] for w in windows[:half]) / half
-        avg2  = sum(w["compact_score"] for w in windows[half:]) / max(n - half, 1)
+        avg1  = sum(w.get("mean_area", 0.0) for w in windows[:half]) / half
+        avg2  = sum(w.get("mean_area", 0.0) for w in windows[half:]) / max(n - half, 1)
         diff  = avg2 - avg1
         if diff < -1.0:
             return "improving"

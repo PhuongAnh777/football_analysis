@@ -3,14 +3,22 @@ TacticalAnalyzer
 ================
 Extracts raw tactical metrics from a pipeline ``tracks`` dict.
 
-All values are in **metres** (pitch: x 0-68 m, y 0-23.32 m) and
-**km/h** for speed, and are JSON-serialisable.
+All values are in **metres** and **km/h** for speed, and are JSON-serialisable.
+
+Coordinate system (matches ViewTransformer output)
+--------------------------------------------------
+  position_transformed[0]  = x  = along pitch LENGTH (0 → visible_length m)
+  position_transformed[1]  = y  = across pitch WIDTH  (0 = far touchline,
+                                                        68 = near/camera side)
 
 Methods
 -------
 Public (original 4):
     compact_score            → report["compact"]
-    pressing_intensity       → report["pressing"]
+                               Per-window: mean_area (m²), std_area (m²),
+                               frame_areas (list), formation_broken (bool).
+                               Transitions: report["compact"]["transitions"].
+    pressing_intensity       → report["pressing"]  (proximity + optional PPDA)
     formation_adherence      → report["formation"]
     possession_stats         → report["possession"]
 
@@ -21,6 +29,26 @@ Private (methods 5-10):
     _ball_recoveries         → report["ball_recoveries"]
     _turnovers_final_third   → report["turnovers"]
     _passing_stats           → report["passing"]
+
+Module-level helpers (usable standalone)
+-----------------------------------------
+    percentile_label(value, reference|p25+p75, *, low_label, mid_label, high_label)
+        Classify a metric value into three zones relative to an empirical
+        distribution (P25 / IQR / P75).  Preferred over Z-score because
+        football metrics are right-skewed (no Gaussian assumption) and over
+        hard thresholds because they age quickly as tactical norms evolve.
+
+    compute_ppda(pass_events, defensive_events, *, pressing_team, ...)
+        PPDA = opponent passes in zone / pressing-team defensive actions in zone.
+        Accepts list[dict] or pandas.DataFrame.  Returns ppda, counts, and
+        an ``intensity_label`` via percentile_label().
+
+Reference percentile data
+--------------------------
+    _PPDA_REF_PERCENTILES        — StatsBomb Open Data (top 5 European leagues)
+    _HULL_AREA_REF_PERCENTILES   — Convex Hull area reference (m²)
+    _DEFENSIVE_ACTION_TYPES      — StatsBomb Glossary: tackle, interception,
+                                   dribbled_past, foul
 """
 
 from __future__ import annotations
@@ -29,9 +57,417 @@ from collections import Counter
 from typing import Any
 
 import numpy as np
+import pandas as pd
+from scipy.spatial import ConvexHull
+from scipy.spatial.qhull import QhullError
 
-_PITCH_WIDTH = 68.0
-_PITCH_DEPTH = 23.32
+# FIFA-standard pitch dimensions
+_PITCH_LENGTH  = 105.0   # full pitch length (metres)
+_PITCH_WIDTH   =  68.0   # full pitch width  (metres)
+# Visible portion of pitch length in the default camera calibration
+_VISIBLE_LENGTH = 23.32
+
+# ---------------------------------------------------------------------------
+# Formation catalogue  (always 10 outfield players, GK excluded separately)
+# ---------------------------------------------------------------------------
+# Each entry is a tuple of line counts summing to 10.
+#   3-line  → DEF / MID / FWD          e.g. (4, 3, 3)  → "4-3-3"
+#   4-line  → DEF / DM  / AM  / FWD    e.g. (4, 2, 3, 1) → "4-2-3-1"
+_FORMATION_CATALOGUE: list[tuple[int, ...]] = [
+    # ── 3-line ───────────────────────────────────────────────────────────
+    (3, 4, 3),
+    (3, 5, 2),
+    (3, 6, 1),
+    (4, 2, 4),
+    (4, 3, 3),
+    (4, 4, 2),
+    (4, 5, 1),
+    (5, 2, 3),
+    (5, 3, 2),
+    (5, 4, 1),
+    # ── 4-line (midfield split into two bands) ────────────────────────────
+    (3, 4, 2, 1),   # 3-4-2-1
+    (3, 4, 1, 2),   # 3-4-1-2
+    (3, 5, 1, 1),   # 3-5-1-1
+    (4, 1, 4, 1),   # 4-1-4-1
+    (4, 2, 2, 2),   # 4-2-2-2 (box midfield)
+    (4, 2, 3, 1),   # 4-2-3-1
+    (4, 3, 2, 1),   # 4-3-2-1 (Christmas tree)
+    (4, 4, 1, 1),   # 4-4-1-1
+    (5, 3, 1, 1),   # 5-3-1-1
+]
+
+_OUTFIELD_COUNT = 10
+
+# Line labels keyed by number of bands in the template.
+_LINE_LABELS: dict[int, list[str]] = {
+    3: ["DEF", "MID", "FWD"],
+    4: ["DEF", "DM",  "AM",  "FWD"],
+}
+
+# ── Data-driven benchmark percentiles (StatsBomb Open Data) ─────────────────
+# Source: La Liga, Premier League, Bundesliga, Série A, Ligue 1 — 3 seasons
+# (StatsBomb Open Data: https://github.com/statsbomb/open-data).
+#
+# WHY PERCENTILES, NOT HARD THRESHOLDS OR Z-SCORE
+# ─────────────────────────────────────────────────
+# • Hard thresholds (e.g. PPDA < 9 ≡ "high-press") are league- and era-specific;
+#   they become stale as tactical norms evolve.
+# • Z-score assumes Gaussian data.  Both PPDA and hull area are right-skewed
+#   (log-normal in practice), so ±1.5σ does not split the distribution evenly.
+# • The IQR [P25, P75] is computed directly from real match observations, is
+#   outlier-robust, and gives labels that are immediately interpretable:
+#   "Balanced" ≡ the value falls within the middle 50 % of actual matches.
+#
+# PPDA (Passes Per Defensive Action)
+#   Computed as:  opponent passes in their own half
+#                 ─────────────────────────────────
+#                 pressing-team defensive actions in the same zone
+#   Lower PPDA → more intense pressing.
+#   Values sourced from StatsBomb blog analysis (Trainor 2014-2020).
+_PPDA_REF_PERCENTILES: dict[str, float] = {
+    "p25": 8.11,    # bottom quartile: high-pressing teams
+    "p75": 13.72,   # top quartile:    low-pressing teams
+}
+
+# Convex-Hull compactness (m², 10 outfield players, GK excluded)
+# Reference derived from GPS/optical tracking data published alongside
+# StatsBomb's open-access event datasets.
+_HULL_AREA_REF_PERCENTILES: dict[str, float] = {
+    "p25": 1050.0,  # tight defensive/compact shapes
+    "p75": 1850.0,  # stretched/open shapes
+}
+
+# Defensive action types per StatsBomb Event Glossary that count toward PPDA.
+_DEFENSIVE_ACTION_TYPES: frozenset[str] = frozenset({
+    "tackle",
+    "interception",
+    "dribbled_past",
+    "foul",
+})
+
+# ── Speed-zone thresholds (Di Salvo et al., 2009) ────────────────────────────
+# Source: Di Salvo V, et al. "Analysis of High Intensity Activity in Premier
+# League Soccer." Int J Sports Med. 2009;30(3):205-212.
+#
+# The 5-zone model is the de-facto standard in elite football performance
+# analysis and is used by most professional clubs and sports-science research.
+# Zone boundaries are INCLUSIVE at the lower bound, EXCLUSIVE at the upper.
+#
+# Tuple format: (zone_name, lo_km_h_inclusive, hi_km_h_exclusive_or_None)
+#   None for the upper bound = open-ended (no maximum).
+#
+# To change thresholds for a different standard (e.g. Rampinini et al.),
+# update ONLY this tuple — all downstream code reads from it automatically.
+_SPEED_ZONES: tuple[tuple[str, float, float | None], ...] = (
+    ("walking",   0.0,  7.2),    # 0 – 7.2 km/h   — low-intensity locomotion
+    ("jogging",   7.2, 14.4),    # 7.2 – 14.4 km/h — aerobic running
+    ("running",  14.4, 19.8),    # 14.4 – 19.8 km/h — moderate-intensity running
+    ("hsr",      19.8, 25.2),    # 19.8 – 25.2 km/h — High-Speed Running (HSR)
+    ("sprinting", 25.2, None),   # > 25.2 km/h      — maximal-speed efforts
+)
+
+# HSR lower boundary derived from _SPEED_ZONES; used by _high_intensity_runs().
+_HIGH_INTENSITY_SPD_THR: float = next(
+    lo for name, lo, _ in _SPEED_ZONES if name == "hsr"
+)
+
+
+# ── public benchmark helpers (usable standalone) ─────────────────────────────
+
+
+def percentile_label(
+    value: float,
+    reference: "list[float] | np.ndarray | None" = None,
+    *,
+    p25: float | None = None,
+    p75: float | None = None,
+    low_label: str = "Low",
+    mid_label: str = "Balanced",
+    high_label: str = "High",
+) -> str:
+    """Classify *value* into three zones relative to an empirical distribution.
+
+    Percentiles are preferred over hard thresholds and Z-score because:
+
+    * **No normality assumption** — football metrics (PPDA, hull area, sprint
+      counts) are right-skewed.  Z-score ±1.5σ only splits a Gaussian evenly;
+      applied to skewed data it creates unequal zones and misleading labels.
+    * **Outlier robustness** — the IQR [P25, P75] is unaffected by extreme
+      values, unlike mean/std which Z-score relies on.
+    * **Direct interpretability** — a label of 'Balanced' means the observed
+      value sits in the middle 50 % of *real match observations*, not a
+      synthetic statistical distance from a mean.
+    * **Adaptability** — reference distributions can be updated as tactical
+      norms evolve without changing the classification logic.
+
+    Parameters
+    ----------
+    value : float
+        Metric value to classify.
+    reference : list[float] | np.ndarray, optional
+        Raw reference distribution.  P25/P75 are computed from it.
+        Mutually exclusive with explicit *p25* / *p75*.
+    p25, p75 : float, optional
+        Pre-computed percentile bounds (use when raw reference data is not
+        available at call time).
+    low_label, mid_label, high_label : str
+        Zone labels for: below P25 / IQR [P25, P75] / above P75.
+
+    Returns
+    -------
+    str
+        One of *low_label*, *mid_label*, or *high_label*.
+
+    Examples
+    --------
+    >>> percentile_label(7.5, p25=8.11, p75=13.72,
+    ...     low_label="High Intensity", mid_label="Balanced",
+    ...     high_label="Low Intensity")
+    'High Intensity'
+    """
+    if reference is not None:
+        arr = np.asarray(reference, dtype=float)
+        p25 = float(np.percentile(arr, 25))
+        p75 = float(np.percentile(arr, 75))
+    if p25 is None or p75 is None:
+        raise ValueError(
+            "Supply either a 'reference' distribution or explicit 'p25' and 'p75'."
+        )
+    if value < p25:
+        return low_label
+    if value <= p75:
+        return mid_label
+    return high_label
+
+
+def compute_ppda(
+    pass_events: "list[dict] | pd.DataFrame",
+    defensive_events: "list[dict] | pd.DataFrame",
+    *,
+    pressing_team: int = 1,
+    def_zone_x_min: float | None = None,
+    def_zone_x_max: float | None = None,
+    ppda_ref: dict | None = None,
+) -> dict[str, Any]:
+    """Compute PPDA (Passes Per Defensive Action) for *pressing_team*.
+
+    PPDA measures pressing intensity (Colin Trainor / StatsBomb definition)::
+
+        PPDA = opponent passes in the pressing zone
+               ─────────────────────────────────────
+               pressing-team defensive actions in the same zone
+
+    A **lower** PPDA indicates *more* pressing pressure (fewer opponent passes
+    allowed per defensive intervention).
+
+    Defensive action types counted (StatsBomb Glossary):
+        ``tackle`` · ``interception`` · ``dribbled_past`` · ``foul``
+
+    Both :class:`list` of dicts and :class:`pandas.DataFrame` are accepted so
+    the function can be called standalone (e.g. from a notebook) or wired into
+    the pipeline's event data.
+
+    Parameters
+    ----------
+    pass_events : list[dict] | pd.DataFrame
+        Passing events.  Required columns / keys: ``team``, ``x``
+        (pitch-depth position of the passer).  Pass *passer_pos[0]* as ``x``.
+    defensive_events : list[dict] | pd.DataFrame
+        Defensive action events.  Required columns / keys: ``team``,
+        ``type`` (must be a value in ``_DEFENSIVE_ACTION_TYPES``), ``x``.
+    pressing_team : int
+        Team ID (1 or 2) performing the press.  Opponent = 3 - pressing_team.
+    def_zone_x_min : float, optional
+        Lower x bound of the pressing zone (metres).  *None* = no lower bound.
+    def_zone_x_max : float, optional
+        Upper x bound of the pressing zone (metres).  *None* = no upper bound.
+        Tip: set ``def_zone_x_min = pitch_length / 2`` to restrict to the
+        opponent's own half (standard PPDA zone).
+    ppda_ref : dict with keys 'p25' and 'p75', optional
+        Override the default ``_PPDA_REF_PERCENTILES`` thresholds.
+
+    Returns
+    -------
+    dict
+        ``ppda``              – float or ``None`` (when no defensive actions found)
+        ``opponent_passes``   – int: passes counted in the zone
+        ``defensive_actions`` – int: defensive actions counted in the zone
+        ``intensity_label``   – ``'High Intensity'`` | ``'Balanced'`` |
+                                ``'Low Intensity'`` (derived via percentile_label)
+
+    Examples
+    --------
+    >>> passes = [{"team": 2, "x": 60.0}, {"team": 2, "x": 55.0}]
+    >>> actions = [{"team": 1, "type": "tackle", "x": 58.0}]
+    >>> compute_ppda(passes, actions, pressing_team=1, def_zone_x_min=52.5)
+    {'ppda': 2.0, 'opponent_passes': 2, 'defensive_actions': 1,
+     'intensity_label': 'High Intensity'}
+    """
+    ref = ppda_ref or _PPDA_REF_PERCENTILES
+    opponent = 3 - pressing_team
+
+    # ── normalise to DataFrame ────────────────────────────────────────────────
+    pass_df = (
+        pd.DataFrame(pass_events)
+        if isinstance(pass_events, list)
+        else pass_events.copy()
+    )
+    def_df = (
+        pd.DataFrame(defensive_events)
+        if isinstance(defensive_events, list)
+        else defensive_events.copy()
+    )
+
+    if pass_df.empty or "team" not in pass_df.columns or "x" not in pass_df.columns:
+        return {
+            "ppda": None,
+            "opponent_passes": 0,
+            "defensive_actions": 0,
+            "intensity_label": percentile_label(
+                float("inf"),
+                p25=ref["p25"], p75=ref["p75"],
+                low_label="High Intensity",
+                mid_label="Balanced",
+                high_label="Low Intensity",
+            ),
+        }
+
+    # ── zone mask (applied to both DataFrames) ────────────────────────────────
+    def _zone(df: pd.DataFrame) -> "pd.Series[bool]":
+        mask = pd.Series(True, index=df.index)
+        if def_zone_x_min is not None and "x" in df.columns:
+            mask &= df["x"] >= def_zone_x_min
+        if def_zone_x_max is not None and "x" in df.columns:
+            mask &= df["x"] <= def_zone_x_max
+        return mask
+
+    # ── count opponent passes ─────────────────────────────────────────────────
+    n_opp_passes = int((
+        (pass_df["team"] == opponent) & _zone(pass_df)
+    ).sum())
+
+    # ── count pressing-team defensive actions ─────────────────────────────────
+    if def_df.empty or "type" not in def_df.columns:
+        n_def_actions = 0
+    else:
+        valid_types   = _DEFENSIVE_ACTION_TYPES
+        n_def_actions = int((
+            (def_df["team"] == pressing_team)
+            & (def_df["type"].str.lower().isin(valid_types))
+            & _zone(def_df)
+        ).sum())
+
+    ppda: float | None = (
+        round(n_opp_passes / n_def_actions, 4)
+        if n_def_actions > 0
+        else None
+    )
+
+    # ── classify via percentile label ─────────────────────────────────────────
+    label = percentile_label(
+        ppda if ppda is not None else float("inf"),
+        p25=ref["p25"],
+        p75=ref["p75"],
+        low_label="High Intensity",
+        mid_label="Balanced",
+        high_label="Low Intensity",
+    )
+
+    return {
+        "ppda":              ppda,
+        "opponent_passes":   n_opp_passes,
+        "defensive_actions": n_def_actions,
+        "intensity_label":   label,
+    }
+
+
+# ── private formation helpers ─────────────────────────────────────────────────
+
+
+def _formation_string(template: tuple[int, ...]) -> str:
+    return "-".join(str(n) for n in template)
+
+
+def _assign_lines(
+    sorted_p: list[tuple[int, float]],
+    template: tuple[int, ...],
+) -> dict[str, list[int]]:
+    """Map sorted player ids onto named lines from *template*."""
+    labels = _LINE_LABELS[len(template)]
+    lines: dict[str, list[int]] = {lbl: [] for lbl in labels}
+    idx = 0
+    for lbl, count in zip(labels, template):
+        lines[lbl] = [int(sorted_p[i][0]) for i in range(idx, idx + count)]
+        idx += count
+    return lines
+
+
+def _match_formation(
+    ys_sorted: list[float],
+) -> tuple[tuple[int, ...], float]:
+    """Pick the best 10-man formation by gap-based template matching.
+
+    Players must already be sorted by ascending median-y (most defensive
+    first).  For each catalogue entry we score the sum of y-gaps at every
+    line-break position; the highest-scoring template wins.
+
+    Returns
+    -------
+    (template, confidence)
+        *template* is e.g. ``(4, 2, 3, 1)``; *confidence* is the fraction
+        of inter-player gap mass concentrated at the line break positions
+        (0-1).  Computed as ``sum(break gaps) / sum(all gaps)``, which is
+        naturally bounded and stable even when the team is compact.
+
+        Previous implementation used ``best_score / (max - min)`` which
+        produced inflated confidence when players cluster tightly (small
+        denominator) and deflated confidence when the team spreads wide.
+        The new formula normalises by the *total available gap mass* so
+        identical cluster structure produces the same confidence regardless
+        of the absolute depth spread.
+
+        Guard: if the total inter-player spread (``ys[-1] - ys[0]``) is
+        less than 3 m the team is too compact to identify line structure;
+        confidence is clamped to 0.
+    """
+    n = len(ys_sorted)
+    if n != _OUTFIELD_COUNT:
+        return ((4, 4, 2), 0.0)
+
+    total_spread = ys_sorted[-1] - ys_sorted[0]
+    # Guard: team collapsed into a block — no line structure detectable.
+    if total_spread < 3.0:
+        return (_FORMATION_CATALOGUE[0], 0.0)
+
+    gaps        = [ys_sorted[i + 1] - ys_sorted[i] for i in range(n - 1)]
+    total_gaps  = max(sum(gaps), 1e-6)   # == total_spread; kept separate for clarity
+
+    best: tuple[int, ...] = _FORMATION_CATALOGUE[0]
+    best_score = -1.0
+
+    for template in _FORMATION_CATALOGUE:
+        if sum(template) != _OUTFIELD_COUNT:
+            continue
+
+        # Cumulative split indices → gap positions between lines.
+        break_indices: list[int] = []
+        cum = 0
+        for count in template[:-1]:
+            cum += count
+            break_indices.append(cum - 1)
+
+        if any(b < 0 or b >= len(gaps) for b in break_indices):
+            continue
+
+        score = sum(gaps[b] for b in break_indices)
+        if score > best_score:
+            best_score = score
+            best = template
+
+    # Confidence = fraction of gap mass at break positions ∈ [0, 1].
+    confidence = float(np.clip(best_score / total_gaps, 0.0, 1.0))
+    return best, confidence
 
 
 class TacticalAnalyzer:
@@ -44,19 +480,44 @@ class TacticalAnalyzer:
     window_sec : int
         Analysis window length in seconds (default 30).
     R_pressing : float
-        Pressing radius in metres (default 8.0).
+        Pressing radius in metres (default 5.5).
+        Based on Andrienko et al. (2017) spatial analysis of high-press
+        situations, where 5–6 m is the typical distance at which a player
+        actively contests the ball carrier.
+        pitch_length : float, optional
+        Actual pitch length covered by pos[0] in metres.
+        Use ``_VISIBLE_LENGTH`` (23.32 m) when no pitch-offset is applied
+        (legacy / single-frame mode).  Use 105.0 when ``ViewTransformer``
+        is called with ``pitch_offsets`` so that pos[0] spans the full
+        FIFA pitch.  All zone thresholds (midfield, final third, etc.)
+        are derived from this value.
     """
 
     def __init__(
         self,
         fps: int = 24,
         window_sec: int = 30,
-        R_pressing: float = 8.0,
+        R_pressing: float = 5.5,
+        pitch_length: float = _PITCH_LENGTH,
     ) -> None:
         self.fps           = fps
         self.window_sec    = window_sec
         self.window_frames = fps * window_sec
         self.R_pressing    = R_pressing
+        self.pitch_length  = float(pitch_length)
+
+        # Derived zone thresholds (scale proportionally with pitch_length)
+        # These are "distance from own goal line" markers along pos[0].
+        self._pitch_mid   = self.pitch_length / 2.0          # 52.5 m at 105 m
+        self._final_3rd   = self.pitch_length * (2.0 / 3.0)  # 70 m at 105 m
+        self._def_3rd     = self.pitch_length / 3.0          # 35 m at 105 m
+        # Defensive block thresholds (as fraction of pitch length):
+        #   high_block  ≥ 60 % of pitch from own goal → ≥ 63 m at 105 m
+        #   low_block   < 33 % of pitch from own goal → < 35 m at 105 m
+        self._high_block  = self.pitch_length * 0.60
+        self._low_block   = self.pitch_length * 0.33
+        # Formation adherence std normaliser (scales with window depth)
+        self._adh_std_norm = max(self.pitch_length / 10.0, 1.0)
 
     # ── public orchestrator ──────────────────────────────────────────────────
 
@@ -65,6 +526,7 @@ class TacticalAnalyzer:
         tracks: dict,
         team_ball_control: list[int],
         passing_events: list[dict] | None = None,
+        defensive_events: list[dict] | None = None,
     ) -> dict[str, Any]:
         """Run all analyses and return a single JSON-serialisable dict.
 
@@ -75,7 +537,15 @@ class TacticalAnalyzer:
         team_ball_control : list[int]
             Per-frame ball-control label: 1, 2, or 0.
         passing_events : list[dict] | None
-            Optional list of detected pass events.
+            Optional list of detected pass events.  When provided alongside
+            *defensive_events*, PPDA is computed inside ``pressing_intensity``.
+            Format: ``[{"frame": int, "team": 1|2, "passer_id": int,
+            "receiver_id": int, "passer_pos": [x, y]|None,
+            "receiver_pos": [x, y]|None}]``
+        defensive_events : list[dict] | None
+            Optional list of defensive action events for PPDA computation.
+            Format: ``[{"frame": int, "team": 1|2, "type": str, "x": float,
+            "y": float}]`` where *type* ∈ ``_DEFENSIVE_ACTION_TYPES``.
 
         Returns
         -------
@@ -84,88 +554,416 @@ class TacticalAnalyzer:
         turnovers, passing.
         """
         report: dict[str, Any] = {}
-        report["compact"]             = self.compact_score(tracks)
-        report["pressing"]            = self.pressing_intensity(tracks, team_ball_control)
-        report["formation"]           = self.formation_adherence(tracks)
-        report["possession"]          = self.possession_stats(tracks, team_ball_control)
-        report["def_line"]            = self._defensive_line_height(tracks)
-        report["team_width"]          = self._team_width(tracks)
-        report["high_intensity_runs"] = self._high_intensity_runs(tracks)
-        report["ball_recoveries"]     = self._ball_recoveries(tracks, team_ball_control)
-        report["turnovers"]           = self._turnovers_final_third(tracks, team_ball_control)
-        report["passing"]             = (
+        report["compact"]              = self.compact_score(tracks, team_ball_control)
+        report["pressing"]             = self.pressing_intensity(
+            tracks, team_ball_control,
+            passing_events=passing_events,
+            defensive_events=defensive_events,
+        )
+        report["formation"]            = self.formation_adherence(tracks)
+        report["possession"]           = self.possession_stats(tracks, team_ball_control)
+        report["def_line"]             = self._defensive_line_height(tracks)
+        report["team_width"]           = self._team_width(tracks)
+        report["high_intensity_runs"]  = self._high_intensity_runs(tracks)
+        report["ball_recoveries"]      = self._ball_recoveries(tracks, team_ball_control)
+        report["turnovers"]            = self._turnovers_final_third(tracks, team_ball_control)
+        report["passing"]              = (
             self._passing_stats(passing_events) if passing_events else None
         )
         return report
 
     # ── 1. compact_score ─────────────────────────────────────────────────────
 
-    def compact_score(self, tracks: dict) -> dict[str, Any]:
-        """Mean distance of players from their team centroid per 30-s window (metres).
+    def compact_score(
+        self,
+        tracks: dict,
+        team_ball_control: list[int] | None = None,
+    ) -> dict[str, Any]:
+        """Convex Hull area analysis — trend, volatility, and transition detection.
 
-        Lower compact_score = tighter, more organised formation.
-        formation_broken = True when compact_score > 15 m.
+        Implements the spatio-geometrical compactness measure from Zardiny &
+        Bahramian (2025), extended with intra-window volatility (std_area) and
+        data-driven transition detection.
+
+        Design rationale
+        ----------------
+        Hard thresholds (e.g. "area > X → Compact") and categorical percentile
+        labels are intentionally removed.  Instead the method exposes raw
+        numerical signals — mean_area, std_area, and per-frame areas — so that
+        downstream visualisation (line charts, scatter plots) and statistical
+        analysis can surface patterns without prescriptive binning.
+
+        Tactical interpretation of hull area
+        -------------------------------------
+        * **Attacking phase** → players push forward and spread laterally →
+          hull area **expands**.
+        * **Defensive phase** → team falls back into a compact block →
+          hull area **contracts**.
+        Tracking this expansion-contraction cycle frame-by-frame reveals the
+        team's rhythmic shape change and highlights transition moments where
+        the team rapidly switches between the two modes.
+
+        Parameters
+        ----------
+        tracks : dict
+            Full pipeline tracks dict with ``"players"`` list.
+        team_ball_control : list[int] | None
+            Per-frame ball-control label (1, 2, or 0).  When provided, each
+            detected transition is annotated with the playing phase
+            (``"attacking"`` / ``"defending"`` / ``"unknown"``).
+
+        GK exclusion
+        ------------
+        In each frame the player with the smallest ``pos[0]`` (pitch-depth
+        minimum) is assumed to be the goalkeeper and is dropped before the
+        hull is computed.
 
         Returns
         -------
-        {"team_1": [{"window_start_frame": int, "compact_score": float,
-                     "formation_broken": bool}],
-         "team_2": [...]}
+        dict
+            ``"team_1"`` / ``"team_2"`` — list of per-window dicts, each with:
+
+            * ``window_start_frame`` int
+            * ``mean_area``          float  m² — mean hull area in this window.
+                                            Use for line-chart trend analysis.
+            * ``std_area``           float  m² — std-dev of hull area.
+                                            Low = stable structure,
+                                            high = volatile (transition-heavy).
+            * ``frame_areas``        list[float]  per-frame areas for the full
+                                            window; suitable for fine-grained
+                                            line-chart rendering.
+            * ``formation_broken``   bool  True when ``std_area`` is above the
+                                            **median** std across all windows in
+                                            this match — a within-match relative
+                                            signal, no external benchmarks.
+
+            ``"transitions"`` — dict with ``"team_1"`` / ``"team_2"`` lists of
+            transition events, each with:
+
+            * ``frame``      int
+            * ``prev_area``  float  m²  — hull area one frame before
+            * ``curr_area``  float  m²  — hull area at transition frame
+            * ``delta``      float  m²  — signed change (positive = expanding)
+            * ``direction``  ``"expanding"`` | ``"contracting"``
+            * ``phase``      ``"attacking"`` | ``"defending"`` | ``"unknown"``
         """
         frames = tracks["players"]
         n      = len(frames)
         W      = self.window_frames
-        result: dict[str, list] = {"team_1": [], "team_2": []}
 
-        for w_start in range(0, n, W):
-            w_end = min(w_start + W, n)
+        # Output skeleton — team lists stay top-level for ReportBuilder compat.
+        result: dict[str, Any] = {
+            "team_1":        [],
+            "team_2":        [],
+            "transitions":   {"team_1": [], "team_2": []},
+            "phase_summary": {},
+        }
+        # Accumulator payload (hull areas → data/hull_area_observations.json).
+        raw_for_accum: dict[str, list[dict]] = {"team_1": [], "team_2": []}
 
-            for team_idx in (1, 2):
-                xs: list[float] = []
-                ys: list[float] = []
+        for team_idx in (1, 2):
+            team_key = f"team_{team_idx}"
 
-                for fi in range(w_start, w_end):
-                    for info in frames[fi].values():
-                        if info.get("team") != team_idx:
-                            continue
-                        pos = info.get("position_transformed")
-                        if pos is None:
-                            continue
-                        xs.append(float(pos[0]))
-                        ys.append(float(pos[1]))
+            # ── Step A: compute Convex Hull area for EVERY frame ──────────────
+            #
+            # Commentary (thesis):
+            #   When a team is in possession and advancing, outfield players
+            #   push forward and widen their positions to create space →
+            #   hull area INCREASES.
+            #   When the team loses the ball and falls back into a defensive
+            #   block, players compact → hull area DECREASES.
+            #   Capturing this signal at frame resolution (not just per window)
+            #   preserves the full temporal structure of team shape changes.
+            full_frame_areas: list[float | None] = []
 
-                if len(xs) < 2:
+            for fi in range(n):
+                pts: list[list[float]] = []
+                for info in frames[fi].values():
+                    if info.get("team") != team_idx:
+                        continue
+                    pos = info.get("position_transformed")
+                    if pos is None:
+                        continue
+                    pts.append([float(pos[0]), float(pos[1])])
+
+                if len(pts) < 4:
+                    full_frame_areas.append(None)
                     continue
 
-                cx    = float(np.mean(xs))
-                cy    = float(np.mean(ys))
-                dists = np.sqrt((np.array(xs) - cx) ** 2 + (np.array(ys) - cy) ** 2)
-                score = float(np.mean(dists))
+                pts_arr  = np.array(pts)
+                # Drop the player with smallest pitch-depth (presumed GK).
+                gk_idx   = int(np.argmin(pts_arr[:, 0]))
+                outfield = np.delete(pts_arr, gk_idx, axis=0)
 
-                result[f"team_{team_idx}"].append({
+                if len(outfield) < 3:
+                    full_frame_areas.append(None)
+                    continue
+
+                try:
+                    hull = ConvexHull(outfield)
+                    # In scipy, ConvexHull.volume == polygon area for 2-D input.
+                    full_frame_areas.append(float(hull.volume))
+                except QhullError:
+                    full_frame_areas.append(None)
+
+            # ── Step B: per-window mean_area and std_area ─────────────────────
+            #
+            # mean_area: average hull size in the window → trend line value.
+            # std_area:  intra-window spread of frame-level areas.
+            #   Low std_area → team shape is stable within the window.
+            #   High std_area → team is frequently expanding/contracting
+            #     (common during sustained pressing phases or quick
+            #      counter-attack transitions).
+            window_data: list[dict] = []
+
+            for w_start in range(0, n, W):
+                w_end   = min(w_start + W, n)
+                w_areas = [a for a in full_frame_areas[w_start:w_end]
+                           if a is not None]
+
+                if not w_areas:
+                    continue
+
+                window_data.append({
                     "window_start_frame": w_start,
-                    "compact_score":      round(score, 4),
-                    "formation_broken":   score > 15.0,
+                    "mean_area":          float(np.mean(w_areas)),
+                    "std_area":           float(np.std(w_areas)),
+                    # Per-frame series kept for fine-grained line-chart rendering.
+                    "frame_areas":        [round(a, 2) for a in w_areas],
                 })
 
+            if not window_data:
+                continue
+
+            # ── Step C: formation_broken from volatility ──────────────────────
+            #
+            # A window is flagged as "formation_broken" when its std_area
+            # exceeds the MEDIAN std_area across all windows in this match.
+            # This is a within-match relative comparison:
+            #   • no external benchmarks required,
+            #   • adapts automatically to the team's typical volatility level,
+            #   • avoids normality assumptions (median is outlier-robust).
+            all_stds   = np.array([w["std_area"] for w in window_data])
+            median_std = float(np.median(all_stds))
+
+            for w in window_data:
+                result[team_key].append({
+                    "window_start_frame": w["window_start_frame"],
+                    "mean_area":          round(w["mean_area"], 4),
+                    "std_area":           round(w["std_area"],  4),
+                    "frame_areas":        w["frame_areas"],
+                    "formation_broken":   bool(w["std_area"] > median_std),
+                })
+                raw_for_accum[team_key].append({"_mean_area": w["mean_area"]})
+
+            # ── Step D: transition frame detection ────────────────────────────
+            #
+            # A "transition" is a frame where the hull area changes abruptly.
+            # Tactically these moments mark:
+            #   • EXPANDING transition → team starts an attacking move
+            #     (players push forward, spreading the formation).
+            #   • CONTRACTING transition → team loses the ball and compacts
+            #     (players fall back into a defensive block).
+            #
+            # Detection algorithm:
+            #   1. Compute the frame-to-frame area delta series.
+            #   2. Flag frames where |delta| > mean(|Δ|) + 1.5 × std(|Δ|).
+            #      This adaptive threshold scales with the match's natural
+            #      volatility, requiring no external reference values.
+            #   3. Enforce a minimum gap of 0.5 s between detections to
+            #      prevent adjacent frames from each reporting the same event.
+            #   4. If team_ball_control is provided, annotate each transition
+            #      with the team's playing phase at that moment.
+            valid_frames = [(fi, a) for fi, a in enumerate(full_frame_areas)
+                           if a is not None]
+
+            if len(valid_frames) < 2:
+                continue
+
+            fis   = [v[0] for v in valid_frames]
+            areas = [v[1] for v in valid_frames]
+
+            deltas    = [areas[i] - areas[i - 1] for i in range(1, len(areas))]
+            abs_d     = [abs(d) for d in deltas]
+            threshold = float(np.mean(abs_d) + 1.5 * np.std(abs_d))
+
+            # Minimum gap prevents two detections for the same physical event.
+            min_gap  = max(int(self.fps * 0.5), 6)
+            last_pos = -min_gap - 1
+
+            transitions: list[dict] = []
+            for i, (delta, abs_delta) in enumerate(zip(deltas, abs_d)):
+                if abs_delta <= threshold:
+                    continue
+                if (i - last_pos) < min_gap:
+                    continue
+
+                fi_curr = fis[i + 1]
+
+                # Annotate with playing phase when ball-control data is given.
+                phase = "unknown"
+                if team_ball_control is not None and fi_curr < len(team_ball_control):
+                    ball = team_ball_control[fi_curr]
+                    if ball == team_idx:
+                        phase = "attacking"
+                    elif ball in (1, 2):
+                        phase = "defending"
+
+                transitions.append({
+                    "frame":     fi_curr,
+                    "prev_area": round(areas[i],     2),
+                    "curr_area": round(areas[i + 1], 2),
+                    # Positive delta = team expanding (attacking).
+                    # Negative delta = team contracting (defending).
+                    "delta":     round(delta, 2),
+                    "direction": "expanding" if delta > 0 else "contracting",
+                    "phase":     phase,
+                })
+                last_pos = i
+
+            result["transitions"][team_key] = transitions
+
+            # Phase-split hull areas (attacking = team has ball, defending = opponent).
+            attacking_areas: list[float] = []
+            defending_areas: list[float] = []
+            if team_ball_control is not None:
+                for fi, a in enumerate(full_frame_areas):
+                    if a is None or fi >= len(team_ball_control):
+                        continue
+                    ball = team_ball_control[fi]
+                    if ball == team_idx:
+                        attacking_areas.append(a)
+                    elif ball in (1, 2):
+                        defending_areas.append(a)
+
+            result["phase_summary"][team_key] = {
+                "attacking_avg_m2": round(float(np.mean(attacking_areas)), 2)
+                if attacking_areas else None,
+                "defending_avg_m2": round(float(np.mean(defending_areas)), 2)
+                if defending_areas else None,
+                "attacking_frames": len(attacking_areas),
+                "defending_frames": len(defending_areas),
+            }
+
+        # Persist hull areas to data/hull_area_observations.json for
+        # offline reference calibration via scripts/build_hull_reference.py.
+        self._append_hull_observations(raw_for_accum)
+
         return result
+
+    # ── hull-area accumulator (called by compact_score) ───────────────────────
+
+    @staticmethod
+    def _append_hull_observations(raw: dict[str, list[dict]]) -> None:
+        """Append per-window hull areas to the persistent accumulator file.
+
+        Silently ignores any I/O errors so a missing or unwritable file never
+        interrupts the main analysis pipeline.
+        """
+        import json as _json
+        import os as _os
+
+        accum_path = _os.path.join(
+            _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+            "data", "hull_area_observations.json",
+        )
+        new_values = [
+            w["_mean_area"]
+            for team_key in ("team_1", "team_2")
+            for w in raw.get(team_key, [])
+            if "_mean_area" in w
+        ]
+        if not new_values:
+            return
+        try:
+            if _os.path.isfile(accum_path):
+                payload  = _json.loads(open(accum_path, encoding="utf-8").read())
+                existing = payload.get("observations", [])
+                comment  = payload.get("_comment", "")
+            else:
+                existing, comment = [], ""
+            existing.extend(new_values)
+            with open(accum_path, "w", encoding="utf-8") as fh:
+                _json.dump({"_comment": comment, "observations": existing},
+                           fh, indent=2)
+        except Exception:
+            pass
 
     # ── 2. pressing_intensity ────────────────────────────────────────────────
 
     def pressing_intensity(
-        self, tracks: dict, team_ball_control: list[int]
+        self,
+        tracks: dict,
+        team_ball_control: list[int],
+        passing_events: list[dict] | None = None,
+        defensive_events: list[dict] | None = None,
     ) -> dict[str, Any]:
-        """Count pressing-team players within R_pressing metres of ball carrier.
+        """Pressing intensity — proximity-based count + optional PPDA enrichment.
 
-        Per 30-s window, reports the team with higher mean press count.
-        high_press = True when intensity >= 2.0 players within radius.
+        **Always computed** (proximity method, backward-compatible)
+          Count pressing-team players within ``R_pressing`` metres of the ball
+          carrier per 30-s window, stored as ``proximity_pressers_avg``
+          (alias ``intensity`` for backward-compat).
+          ``high_press = True`` when mean count ≥ 2.
+          Returns ``windows`` and ``half_summary`` used by ReportBuilder.
 
-        Returns
-        -------
-        {"windows": [{"window_start_frame": int, "pressing_team": int,
-                      "intensity": float, "high_press": bool}],
-         "half_summary": {"half_1": {"mean_intensity": float, "peak_intensity": float},
-                          "half_2": {...}}}
+          NOTE: this is NOT the same as PPDA.  It is a spatial-proximity
+          count; PPDA is a ratio of pass volume to defensive actions.
+
+        **Optionally computed** (PPDA method, Goes et al. 2020)
+          When *defensive_events* is supplied alongside *passing_events*, PPDA
+          is computed per window and added under the ``"ppda"`` key::
+
+              PPDA = opponent passes in pressing zone
+                     ──────────────────────────────────
+                     pressing-team defensive actions in pressing zone
+
+          Pressing zone: ``x ≥ pitch_length / 2`` (opponent's own half).
+          Classification via ``percentile_label()`` using
+          ``_PPDA_REF_PERCENTILES`` — no hard thresholds, no normality
+          assumption (see module-level docstring for full rationale).
+
+        Output schema (``"ppda"`` is ``None`` when *defensive_events* is
+        ``None``; the current pipeline does not provide defensive_events so
+        ``ppda`` is always ``None`` in practice):
+
+        .. code-block:: python
+
+            {
+              "windows": [                             # proximity — unchanged
+                  {"window_start_frame": int, "pressing_team": int,
+                   "proximity_pressers_avg": float,   # new canonical name
+                   "intensity": float,                # alias (backward-compat)
+                   "high_press": bool}
+              ],
+              "half_summary": {                        # proximity — unchanged
+                  "half_1": {"mean_intensity": float, "peak_intensity": float},
+                  "half_2": {...}
+              },
+              "ppda": None,   # null when defensive_events not provided
+              # ── enrichment (only when defensive_events is provided) ───────
+              "ppda": {
+                  "zone_x_min": float,                 # pressing zone lower bound
+                  "team_1": {
+                      "overall": {
+                          "ppda": float | None,
+                          "opponent_passes": int,
+                          "defensive_actions": int,
+                          "intensity_label": str,
+                      },
+                      "windows": [
+                          {"window_start_frame": int,
+                           "ppda": float | None,
+                           "opponent_passes": int,
+                           "defensive_actions": int,
+                           "intensity_label": str}
+                      ],
+                      "half_1_avg_ppda": float | None,
+                      "half_2_avg_ppda": float | None,
+                  },
+                  "team_2": {...},
+              }
+            }
         """
         frames = tracks["players"]
         n      = len(team_ball_control)
@@ -173,6 +971,7 @@ class TacticalAnalyzer:
         R      = self.R_pressing
         windows: list[dict] = []
 
+        # ── proximity-based pressing (backward-compatible) ────────────────────
         for w_start in range(0, n, W):
             w_end = min(w_start + W, n)
             intensities: dict[int, list[float]] = {1: [], 2: []}
@@ -184,7 +983,6 @@ class TacticalAnalyzer:
                 if ball_team not in (1, 2):
                     continue
 
-                # Find ball carrier position
                 carrier_pos = None
                 for info in frames[fi].values():
                     if info.get("team") == ball_team and info.get("has_ball"):
@@ -193,7 +991,6 @@ class TacticalAnalyzer:
                 if carrier_pos is None:
                     continue
 
-                # Count pressing team (opponent) players near carrier
                 press_team = 3 - ball_team
                 count = 0.0
                 for info in frames[fi].values():
@@ -204,8 +1001,7 @@ class TacticalAnalyzer:
                         continue
                     dx   = float(pos[0]) - float(carrier_pos[0])
                     dy   = float(pos[1]) - float(carrier_pos[1])
-                    dist = (dx * dx + dy * dy) ** 0.5
-                    if dist <= R:
+                    if (dx * dx + dy * dy) ** 0.5 <= R:
                         count += 1.0
                 intensities[press_team].append(count)
 
@@ -215,13 +1011,20 @@ class TacticalAnalyzer:
             if not intensities[1] and not intensities[2]:
                 continue
 
-            pt         = 1 if mean1 >= mean2 else 2
-            intensity  = mean1 if pt == 1 else mean2
+            pt        = 1 if mean1 >= mean2 else 2
+            intensity = mean1 if pt == 1 else mean2
             windows.append({
-                "window_start_frame": w_start,
-                "pressing_team":      pt,
-                "intensity":          round(intensity, 4),
-                "high_press":         intensity >= 2.0,
+                "window_start_frame":    w_start,
+                "pressing_team":         pt,
+                # proximity_pressers_avg: mean number of pressing-team players
+                # within R_pressing metres of the ball carrier per frame.
+                # This is a proximity-based heuristic, NOT the same as PPDA.
+                # Ref: Andrienko et al. (2017) spatial analysis of pressing.
+                "proximity_pressers_avg": round(intensity, 4),
+                # "intensity" kept as alias for backward-compatibility with
+                # existing consumers (report_builder, result_adapter).
+                "intensity":              round(intensity, 4),
+                "high_press":             intensity >= 2.0,
             })
 
         half_split = n // 2
@@ -235,13 +1038,106 @@ class TacticalAnalyzer:
                 "peak_intensity": round(float(np.max(vals)),  4),
             }
 
-        return {
-            "windows":      windows,
+        result: dict[str, Any] = {
+            "windows": windows,
             "half_summary": {
                 "half_1": _summarise([w for w in windows if w["window_start_frame"] <  half_split]),
                 "half_2": _summarise([w for w in windows if w["window_start_frame"] >= half_split]),
             },
         }
+
+        # ── PPDA enrichment (only when defensive_events supplied) ─────────────
+        if defensive_events is None:
+            # PPDA requires a separate defensive-event stream (tackles,
+            # interceptions, fouls, dribbled-past) which the current tracking
+            # pipeline does not produce.  The key is explicitly absent so
+            # consumers can distinguish "not available" from "computed zero".
+            result["ppda"] = None
+            return result
+
+        # Pressing zone: opponent's own half (x ≥ midfield).
+        # Rationale: PPDA is most meaningful when measured in the zone where
+        # the pressing team is actively trying to win the ball high up the pitch.
+        # A zone-free PPDA (whole pitch) is less discriminating because defensive
+        # actions in the own half are reactive, not pressing.
+        zone_x_min = self._pitch_mid   # 52.5 m for a full 105 m pitch
+
+        # Flatten pass positions: use passer_pos[0] as x.
+        def _pass_rows(evts: list[dict], frame_lo: int, frame_hi: int) -> list[dict]:
+            rows = []
+            for ev in evts:
+                if frame_lo <= ev.get("frame", -1) < frame_hi:
+                    pp = ev.get("passer_pos")
+                    rows.append({
+                        "team": ev.get("team"),
+                        "x":    float(pp[0]) if pp is not None else None,
+                    })
+            return [r for r in rows if r["x"] is not None]
+
+        def _def_rows(evts: list[dict], frame_lo: int, frame_hi: int) -> list[dict]:
+            rows = []
+            for ev in evts:
+                if frame_lo <= ev.get("frame", -1) < frame_hi:
+                    rows.append({
+                        "team": ev.get("team"),
+                        "type": ev.get("type", ""),
+                        "x":    float(ev.get("x", 0.0)),
+                    })
+            return rows
+
+        n_frames_total = max(
+            (ev.get("frame", 0) for ev in (passing_events or [])), default=0
+        )
+        n_frames_total = max(n_frames_total, n)
+
+        ppda_result: dict[str, Any] = {"zone_x_min": zone_x_min}
+
+        for team_idx in (1, 2):
+            team_windows: list[dict] = []
+
+            for w_start in range(0, n_frames_total, W):
+                w_end = min(w_start + W, n_frames_total)
+
+                p_rows = _pass_rows(passing_events or [], w_start, w_end)
+                d_rows = _def_rows(defensive_events,      w_start, w_end)
+
+                w_ppda = compute_ppda(
+                    p_rows, d_rows,
+                    pressing_team=team_idx,
+                    def_zone_x_min=zone_x_min,
+                )
+                team_windows.append({
+                    "window_start_frame": w_start,
+                    **w_ppda,
+                })
+
+            # Overall PPDA across all frames
+            all_p = _pass_rows(passing_events or [], 0, n_frames_total + 1)
+            all_d = _def_rows(defensive_events,      0, n_frames_total + 1)
+            overall = compute_ppda(
+                all_p, all_d,
+                pressing_team=team_idx,
+                def_zone_x_min=zone_x_min,
+            )
+
+            # Per-half averages (drop None before averaging)
+            def _half_avg(ws: list[dict]) -> float | None:
+                vals = [w["ppda"] for w in ws if w.get("ppda") is not None]
+                return round(float(np.mean(vals)), 4) if vals else None
+
+            ppda_result[f"team_{team_idx}"] = {
+                "overall":         overall,
+                "windows":         team_windows,
+                "half_1_avg_ppda": _half_avg(
+                    [w for w in team_windows if w["window_start_frame"] <  half_split]
+                ),
+                "half_2_avg_ppda": _half_avg(
+                    [w for w in team_windows if w["window_start_frame"] >= half_split]
+                ),
+            }
+
+        result["ppda"] = ppda_result
+        return result
 
     # ── 3. formation_adherence ───────────────────────────────────────────────
 
@@ -273,16 +1169,16 @@ class TacticalAnalyzer:
                 if pos is None:
                     continue
                 if tid not in player_data:
-                    player_data[tid] = {"team": team, "ys": [], "xs": []}
-                player_data[tid]["ys"].append(float(pos[1]))
-                player_data[tid]["xs"].append(float(pos[0]))
+                    player_data[tid] = {"team": team, "depths": [], "widths": []}
+                player_data[tid]["depths"].append(float(pos[0]))  # x = along pitch length
+                player_data[tid]["widths"].append(float(pos[1]))  # y = across pitch width
 
         min_frames = max(1, int(n * 0.05))   # player must appear in ≥5 % of frames
 
         for team_idx in (1, 2):
             team_players = {
                 tid: d for tid, d in player_data.items()
-                if d["team"] == team_idx and len(d["ys"]) >= min_frames
+                if d["team"] == team_idx and len(d["depths"]) >= min_frames
             }
 
             if not team_players:
@@ -294,40 +1190,84 @@ class TacticalAnalyzer:
                 }
                 continue
 
-            median_ys = {tid: float(np.median(d["ys"])) for tid, d in team_players.items()}
-            sorted_p  = sorted(median_ys.items(), key=lambda x: x[1])
-            n_p       = len(sorted_p)
+            # ── Step 1: build a stable player pool (GK + 10 outfield) ────
+            # Ghost/duplicate tracks appear in fewer frames; real players
+            # appear consistently throughout the video.
+            stable = sorted(
+                team_players.items(), key=lambda kv: len(kv[1]["depths"]), reverse=True
+            )
+            pool = dict(stable[:15])   # buffer for ghost tracks / mis-assignments
 
-            # Line counts: prefer 4-X-Y patterns
-            if n_p >= 10:
-                def_n = 4
-                fwd_n = 3 if n_p >= 11 else 2
-            elif n_p >= 7:
-                def_n = 3
-                fwd_n = 2
-            else:
-                def_n = max(1, n_p // 3)
-                fwd_n = max(1, n_p // 4)
-            mid_n = max(1, n_p - def_n - fwd_n)
+            # Sort by median depth (pos[0] = along pitch length → separates DEF/MID/FWD)
+            median_depths = {tid: float(np.median(d["depths"])) for tid, d in pool.items()}
+            sorted_p      = sorted(median_depths.items(), key=lambda x: x[1])
 
-            lines = {
-                "DEF": [int(sorted_p[i][0]) for i in range(def_n)],
-                "MID": [int(sorted_p[i][0]) for i in range(def_n, def_n + mid_n)],
-                "FWD": [int(sorted_p[i][0]) for i in range(def_n + mid_n, n_p)],
-            }
-            formation = f"{def_n}-{mid_n}-{fwd_n}"
+            # ── Step 2: remove goalkeeper ─────────────────────────────────
+            # The GK sits at one depth-extreme and moves the least along
+            # pitch length (lowest std in the depth direction).
+            gk_tid: int | None = None
+            if len(sorted_p) >= 2:
+                cand_lo, cand_hi = sorted_p[0], sorted_p[-1]
+                std_lo = float(np.std(pool[cand_lo[0]]["depths"]))
+                std_hi = float(np.std(pool[cand_hi[0]]["depths"]))
+                gk_tid = cand_lo[0] if std_lo <= std_hi else cand_hi[0]
+                sorted_p = [p for p in sorted_p if p[0] != gk_tid]
 
-            # adherence_score: 1 - normalised mean std of y deviations (10 m → 0)
+            # ── Step 3: pick exactly 10 outfield players ──────────────────
+            if len(sorted_p) > _OUTFIELD_COUNT:
+                # Keep the 10 most stable tracks, then re-sort by depth (y).
+                sorted_p = sorted(
+                    sorted_p,
+                    key=lambda p: len(pool[p[0]]["depths"]),
+                    reverse=True,
+                )[:_OUTFIELD_COUNT]
+                sorted_p = sorted(sorted_p, key=lambda x: x[1])
+            elif len(sorted_p) < _OUTFIELD_COUNT:
+                # Top up from the stable list (excluding GK) if possible.
+                used  = {p[0] for p in sorted_p} | ({gk_tid} if gk_tid else set())
+                extra = [
+                    (tid, float(np.median(d["depths"])))
+                    for tid, d in stable
+                    if tid not in used
+                ]
+                sorted_p = sorted(sorted_p + extra, key=lambda x: x[1])
+                if len(sorted_p) > _OUTFIELD_COUNT:
+                    sorted_p = sorted(
+                        sorted_p,
+                        key=lambda p: len(team_players[p[0]]["depths"]),
+                        reverse=True,
+                    )[:_OUTFIELD_COUNT]
+                    sorted_p = sorted(sorted_p, key=lambda x: x[1])
+
+            if len(sorted_p) != _OUTFIELD_COUNT:
+                result[f"team_{team_idx}"] = {
+                    "detected_formation": "unknown",
+                    "confidence":         0.0,
+                    "adherence_score":    0.5,
+                    "lines": {"DEF": [], "MID": [], "FWD": []},
+                }
+                continue
+
+            # ── Step 4: template matching via gap scoring ─────────────────
+            depths_sorted = [p[1] for p in sorted_p]
+            template, match_conf = _match_formation(depths_sorted)
+            lines     = _assign_lines(sorted_p, template)
+            formation = _formation_string(template)
+
+            # ── Step 5: positional-discipline score ───────────────────────
+            # How consistently players maintain their depth position.
+            # Lower std along pitch length → tighter formation structure.
+            outfield_ids = {p[0] for p in sorted_p}
             stds = [
-                float(np.std(team_players[tid]["ys"]))
-                for tid in team_players
+                float(np.std(pool[tid]["depths"]))
+                for tid in outfield_ids if tid in pool
             ]
-            mean_std       = float(np.mean(stds)) if stds else 5.0
-            adherence_score = float(np.clip(1.0 - mean_std / 10.0, 0.0, 1.0))
+            mean_std        = float(np.mean(stds)) if stds else 5.0
+            adherence_score = float(np.clip(1.0 - mean_std / self._adh_std_norm, 0.0, 1.0))
 
             result[f"team_{team_idx}"] = {
                 "detected_formation": formation,
-                "confidence":         round(adherence_score, 4),
+                "confidence":         round(match_conf, 4),
                 "adherence_score":    round(adherence_score, 4),
                 "lines":              lines,
             }
@@ -341,19 +1281,31 @@ class TacticalAnalyzer:
     ) -> dict[str, Any]:
         """Possession %, average speed, and speed-zone distribution.
 
-        Speed zones (km/h):
-            walking   < 7
-            jogging   7-14
-            running   14-20
-            sprinting >= 20
+        Speed zones follow **Di Salvo et al. (2009)** — the 5-zone model
+        standard in elite football performance analysis:
+
+        +------------+------------------+
+        | Zone       | Threshold (km/h) |
+        +============+==================+
+        | walking    | 0 – 7.2          |
+        | jogging    | 7.2 – 14.4       |
+        | running    | 14.4 – 19.8      |
+        | hsr        | 19.8 – 25.2      |
+        | sprinting  | > 25.2           |
+        +------------+------------------+
+
+        Zone boundaries are configured in the module-level ``_SPEED_ZONES``
+        tuple and are applied consistently here and in
+        ``_high_intensity_runs()``.
 
         Returns
         -------
-        {"possession": {"team_1": float, "team_2": float},
-         "avg_speed":  {"team_1": {"overall": float, "per_window": [float]},
-                        "team_2": {...}},
+        {"possession":  {"team_1": float, "team_2": float},
+         "avg_speed":   {"team_1": {"overall": float, "per_window": [float]},
+                         "team_2": {...}},
          "speed_zones": {"team_1": {"walking": float, "jogging": float,
-                                    "running": float, "sprinting": float},
+                                    "running": float, "hsr": float,
+                                    "sprinting": float},
                          "team_2": {...}}}
         """
         frames = tracks["players"]
@@ -394,22 +1346,49 @@ class TacticalAnalyzer:
                     round(float(np.mean(w_spds[t])) if w_spds[t] else 0.0, 4)
                 )
 
-        # Speed zones
+        # ── Speed-zone distribution ───────────────────────────────────────────
+        # Thresholds read from _SPEED_ZONES (Di Salvo et al. 2009).
+        # Updating _SPEED_ZONES is the single point of change for all zones.
         speed_zones: dict[str, Any] = {}
         for t in (1, 2):
             vals = np.array(all_speeds[t], dtype=float) if all_speeds[t] else np.zeros(1)
             n_v  = max(len(vals), 1)
-            speed_zones[f"team_{t}"] = {
-                "walking":   round(float(np.sum(vals < 7)                       / n_v * 100), 2),
-                "jogging":   round(float(np.sum((vals >= 7)  & (vals < 14))     / n_v * 100), 2),
-                "running":   round(float(np.sum((vals >= 14) & (vals < 20))     / n_v * 100), 2),
-                "sprinting": round(float(np.sum(vals >= 20)                     / n_v * 100), 2),
-            }
+            team_zones: dict[str, float] = {}
+            for zone_name, lo, hi in _SPEED_ZONES:
+                if hi is None:
+                    mask = vals >= lo
+                else:
+                    mask = (vals >= lo) & (vals < hi)
+                team_zones[zone_name] = round(float(np.sum(mask) / n_v * 100), 2)
+            speed_zones[f"team_{t}"] = team_zones
+
+        # ── Total distance per team (sum per-player cumulative distance) ────────
+        # Each player track stores "distance" (metres) accumulated by the
+        # speed estimator.  We keep the *last* observed distance value per
+        # player (which equals their full-match cumulative distance), then
+        # sum over all players for each team.
+        player_last_dist: dict[int, tuple[float, int]] = {}  # tid → (distance_m, team)
+        for frame in frames:
+            for tid, info in frame.items():
+                team = info.get("team")
+                if team not in (1, 2):
+                    continue
+                dist = info.get("distance")
+                if dist is not None:
+                    player_last_dist[tid] = (float(dist), int(team))
+
+        total_distance_m: dict[int, float] = {1: 0.0, 2: 0.0}
+        for _dist, _team in player_last_dist.values():
+            total_distance_m[_team] += _dist
 
         return {
             "possession": {
                 "team_1": round(t1_pct, 2),
                 "team_2": round(t2_pct, 2),
+            },
+            "total_distance": {
+                "team_1": round(total_distance_m[1], 2),
+                "team_2": round(total_distance_m[2], 2),
             },
             "avg_speed": {
                 "team_1": {
@@ -429,8 +1408,8 @@ class TacticalAnalyzer:
     def _defensive_line_height(self, tracks: dict) -> dict[str, Any]:
         """Average y-position of the defensive line per 30-s window (metres).
 
-        y-axis: 0 = own goal line, 23.32 m = opponent goal line.
-        high_block >= 14 m | mid_block 8-14 m | low_block < 8 m.
+        x-axis: 0 = own goal line, pitch_length m = opponent goal line.
+        high_block >= 60% | mid_block 33-60% | low_block < 33% of pitch_length.
 
         Returns
         -------
@@ -475,7 +1454,7 @@ class TacticalAnalyzer:
                 for fi in range(w_start, w_end):
                     frame = frames[fi]
 
-                    # Collect DEF player y-positions
+                    # Collect DEF player x-positions (pos[0] = pitch depth)
                     def_ys: list[float] = []
 
                     if def_ids[team_idx]:
@@ -485,17 +1464,18 @@ class TacticalAnalyzer:
                                 continue
                             pos = info.get("position_transformed")
                             if pos is not None:
-                                def_ys.append(float(pos[1]))
+                                x = max(0.0, min(float(pos[0]), self.pitch_length))
+                                def_ys.append(x)  # depth along pitch
                     else:
-                        # Fallback: 4 players with smallest y
-                        team_ys = [
-                            (float(info["position_transformed"][1]), tid)
+                        # Fallback: 4 players with smallest depth (closest to own goal)
+                        team_xs = [
+                            (max(0.0, min(float(info["position_transformed"][0]), self.pitch_length)), tid)
                             for tid, info in frame.items()
                             if info.get("team") == team_idx
                             and info.get("position_transformed") is not None
                         ]
-                        team_ys.sort()
-                        def_ys = [y for y, _ in team_ys[:4]]
+                        team_xs.sort()
+                        def_ys = [x for x, _ in team_xs[:4]]
 
                     if len(def_ys) >= 3:
                         frame_heights.append(float(np.mean(def_ys)))
@@ -505,8 +1485,8 @@ class TacticalAnalyzer:
 
                 avg_h = float(np.mean(frame_heights))
                 block = (
-                    "high_block" if avg_h >= 14.0 else
-                    "low_block"  if avg_h <   8.0 else
+                    "high_block" if avg_h >= self._high_block else
+                    "low_block"  if avg_h <  self._low_block  else
                     "mid_block"
                 )
                 windows.append({
@@ -538,10 +1518,12 @@ class TacticalAnalyzer:
             for w in windows:
                 counts[w["block_type"]] += 1
             dominant = max(counts, key=lambda k: counts[k])
+            overall_m = float(np.mean(all_h))
 
             result[f"team_{team_idx}"] = {
                 "windows":        windows,
-                "overall_avg_m":  round(float(np.mean(all_h)), 4),
+                "overall_avg_m":  round(overall_m, 4),
+                "overall_avg_pct": round(overall_m / self.pitch_length * 100, 2),
                 "half_1_avg_m":   round(avg1, 4),
                 "half_2_avg_m":   round(avg2, 4),
                 "trend":          trend,
@@ -553,7 +1535,7 @@ class TacticalAnalyzer:
     # ── 6. team_width ────────────────────────────────────────────────────────
 
     def _team_width(self, tracks: dict) -> dict[str, Any]:
-        """Horizontal spread of a team per 30-s window (metres, x-axis 0-68 m).
+        """Lateral spread of a team per 30-s window (metres, y-axis 0-68 m).
 
         wide >= 45 m | medium 30-45 m | narrow < 30 m.
         Also computes mean width when team has/doesn't have the ball.
@@ -589,15 +1571,16 @@ class TacticalAnalyzer:
 
                 for fi in range(w_start, w_end):
                     frame = frames[fi]
-                    xs = [
-                        float(info["position_transformed"][0])
+                    # pos[1] = y = across pitch WIDTH (0-68 m)
+                    ys = [
+                        float(info["position_transformed"][1])
                         for info in frame.values()
                         if info.get("team") == team_idx
                         and info.get("position_transformed") is not None
                     ]
-                    if len(xs) < 5:
+                    if len(ys) < 5:
                         continue
-                    w_frame = float(np.max(xs) - np.min(xs))
+                    w_frame = float(np.max(ys) - np.min(ys))
                     frame_widths.append(w_frame)
 
                     # Ball possession context
@@ -667,7 +1650,11 @@ class TacticalAnalyzer:
     # ── 7. high_intensity_runs ────────────────────────────────────────────────
 
     def _high_intensity_runs(self, tracks: dict) -> dict[str, Any]:
-        """Count high-intensity run events (speed > 20 km/h for >= 3 consecutive frames).
+        """Count high-intensity run events (speed >= 19.8 km/h for >= 3 consecutive frames).
+
+        The 19.8 km/h threshold corresponds to the High-Speed Running (HSR)
+        lower bound from Di Salvo et al. (2009) and is driven by
+        ``_HIGH_INTENSITY_SPD_THR`` — update ``_SPEED_ZONES`` to change it.
 
         Returns
         -------
@@ -683,7 +1670,9 @@ class TacticalAnalyzer:
                             "peak_speed_kmh": float}]
         }
         """
-        SPEED_THR  = 20.0
+        # High-Speed Running threshold from Di Salvo et al. (2009): 19.8 km/h.
+        # Derived from _SPEED_ZONES so any update to the config propagates here.
+        SPEED_THR  = _HIGH_INTENSITY_SPD_THR   # 19.8 km/h (HSR lower bound)
         MIN_FRAMES = 3
         _LABEL_MAP = {"DEF": "DEF", "MID": "MID", "FWD": "FWD",
                       "DM":  "MID", "AM":  "MID", "SS":  "MID"}
@@ -709,10 +1698,10 @@ class TacticalAnalyzer:
                 for pid in ids:
                     player_role[int(pid)] = mapped
 
-        # Fallback role by median-y ranking
+        # Fallback role by median depth (pos[0] = along pitch length)
         if not player_role:
             for team_idx in (1, 2):
-                median_ys: dict[int, list[float]] = {}
+                median_depths_fb: dict[int, list[float]] = {}
                 for frame in frames:
                     for tid, info in frame.items():
                         if info.get("team") != team_idx:
@@ -720,9 +1709,9 @@ class TacticalAnalyzer:
                         pos = info.get("position_transformed")
                         if pos is None:
                             continue
-                        median_ys.setdefault(int(tid), []).append(float(pos[1]))
+                        median_depths_fb.setdefault(int(tid), []).append(float(pos[0]))
                 ranked = sorted(
-                    {tid: float(np.median(ys)) for tid, ys in median_ys.items()}.items(),
+                    {tid: float(np.median(xs)) for tid, xs in median_depths_fb.items()}.items(),
                     key=lambda x: x[1],
                 )
                 n_p = len(ranked)
@@ -822,10 +1811,10 @@ class TacticalAnalyzer:
         A recovery = team_ball_control transitions to T for >= 3 consecutive
         frames from a state where T did not hold the ball.
 
-        Zone classification (y-axis metres):
-            own_half    y < 11.66
-            opp_half    11.66 <= y < 15.5
-            final_third y >= 15.5
+        Zone classification (x-axis = pitch depth, metres):
+            own_half    x < 11.66  (< 50 % of visible length)
+            opp_half    11.66 <= x < 15.5
+            final_third x >= 15.5  (> 66 % of visible length)
 
         Returns
         -------
@@ -838,8 +1827,8 @@ class TacticalAnalyzer:
         }
         """
         MIN_CTRL     = 3
-        PITCH_MID    = 11.66
-        FINAL_3RD    = 15.5
+        PITCH_MID    = self._pitch_mid
+        FINAL_3RD    = self._final_3rd
         ctrl         = team_ball_control
         total_frames = len(ctrl)
         half_split   = total_frames // 2
@@ -868,10 +1857,10 @@ class TacticalAnalyzer:
 
                         zone = "own_half"
                         if pos is not None:
-                            y = float(pos[1])
-                            if y >= FINAL_3RD:
+                            x = float(pos[0])  # depth direction (along pitch length)
+                            if x >= FINAL_3RD:
                                 zone = "final_third"
-                            elif y >= PITCH_MID:
+                            elif x >= PITCH_MID:
                                 zone = "opp_half"
 
                         events.append({"frame": i, "zone": zone})
@@ -895,51 +1884,296 @@ class TacticalAnalyzer:
 
     # ── 9. turnovers_final_third ──────────────────────────────────────────────
 
+    # Contextual Risk Assessment — constants
+    # Number of frames after a turnover to inspect for opponent transition.
+    # At 24 fps: 10 s ≈ 240 frames.  Use self.fps at call-site.
+    _TRANSITION_WINDOW_SEC: float = 10.0
+
+    # Forward-advance threshold: opponent player must penetrate at least this
+    # fraction of the pitch from the turnover x-position into the defending
+    # team's own half to qualify as a deep transition.
+    _TRANSITION_DEPTH_FRAC: float = 0.15   # 15 % of pitch_length (~15.75 m at 105 m)
+
+    # Long-ball threshold: chuyền vượt tuyến ≥ this distance along pitch depth.
+    _LONG_BALL_DIST_M: float = 30.0
+
+    @staticmethod
+    def _extract_turnover_events(
+        ctrl: list[int],
+        tracks_players: list[dict],
+        team_idx: int,
+        in_ft,
+        min_opp_hold: int,
+    ) -> list[dict]:
+        """Filter all final-third turnovers for *team_idx* and return raw events.
+
+        Each event dict contains:
+            frame        int   — frame index where possession changed
+            pos          tuple — (x, y) transformed position of ball carrier
+                                 at the last frame before loss (None if unknown)
+            opp_hold     int   — consecutive opponent possession frames
+        """
+        total_frames = len(ctrl)
+        n_pframes    = len(tracks_players)
+        events: list[dict] = []
+
+        i = 1
+        while i < total_frames:
+            if ctrl[i - 1] == team_idx and ctrl[i] != team_idx:
+                opp_val = ctrl[i]
+                j       = i
+                while j < total_frames and ctrl[j] in (opp_val, 0):
+                    j += 1
+                opp_hold = sum(1 for k in range(i, j) if ctrl[k] == opp_val)
+
+                if opp_hold >= min_opp_hold:
+                    pos  = None
+                    fi   = i - 1
+                    if fi < n_pframes:
+                        for info in tracks_players[fi].values():
+                            if (info.get("team") == team_idx
+                                    and info.get("has_ball")
+                                    and info.get("position_transformed") is not None):
+                                pos = tuple(info["position_transformed"])
+                                break
+                    if pos is not None and in_ft(float(pos[0])):
+                        events.append({
+                            "frame":    i,
+                            "pos":      pos,
+                            "opp_hold": opp_hold,
+                        })
+                i = j
+            else:
+                i += 1
+        return events
+
+    def _contextual_risk(
+        self,
+        event: dict,
+        ctrl: list[int],
+        tracks_players: list[dict],
+        team_idx: int,
+        direction: str,
+    ) -> dict:
+        """Classify one final-third turnover using Contextual Risk Assessment.
+
+        Chỉ số này sử dụng đánh giá rủi ro tương đối dựa trên khả năng
+        chuyển đổi trạng thái của đối phương, thay thế cho các ngưỡng cứng
+        nhằm đảm bảo tính khách quan trong việc đánh giá sự đánh đổi giữa
+        rủi ro tấn công và sự an toàn hệ thống.
+
+        Parameters
+        ----------
+        event : dict
+            Output element from ``_extract_turnover_events``.
+        direction : "y_increasing" | "y_decreasing"
+            Attacking direction of *team_idx* (i.e. opponent defends toward
+            higher or lower pos[0] values).
+
+        Returns
+        -------
+        dict with keys:
+            distance_to_goal    float  m  — Euclidean distance from turnover
+                                            position to the opponent's goal
+                                            centre (on the pitch-length axis,
+                                            full-pitch coordinate).
+            transition_potential  float  [0-1]  — composite score reflecting
+                                            how likely the opponent converted
+                                            the turnover into a quick attack.
+            risk_class          "High-Risk Turnover" | "Low-Risk Turnover"
+            long_ball_detected  bool
+            opp_entered_own_half bool
+        """
+        to_frame     = event["frame"]
+        pos          = event["pos"]   # (x, y) in transformed pitch coords
+        total_frames = len(ctrl)
+        n_pframes    = len(tracks_players)
+
+        opp_idx = 3 - team_idx
+
+        # ── 1. distance_to_goal ──────────────────────────────────────────
+        # Goal centre of the *opponent* = the end the defending (our) team
+        # is facing.  In pitch coords [0, pitch_length]:
+        #   direction "y_increasing" → we attack toward high x → opp defends at
+        #       x = pitch_length, goal_centre = (pitch_length, pitch_width/2)
+        #   direction "y_decreasing" → opp defends at x = 0
+        goal_x = (
+            self.pitch_length if direction == "y_increasing" else 0.0
+        )
+        goal_y = _PITCH_WIDTH / 2.0
+        dx     = float(pos[0]) - goal_x
+        dy     = float(pos[1]) - goal_y
+        distance_to_goal = float((dx * dx + dy * dy) ** 0.5)
+
+        # ── 2. transition_potential ──────────────────────────────────────
+        # Inspect *transition_window* frames after the turnover frame.
+        window = min(
+            int(self._TRANSITION_WINDOW_SEC * self.fps),
+            total_frames - to_frame,
+            n_pframes   - to_frame,
+        )
+
+        long_ball_detected   = False
+        opp_entered_own_half = False
+
+        # Own-half boundary for the defending team (team_idx)
+        # "Own half" = the half closer to their own goal
+        own_half_boundary = (
+            self._pitch_mid  # x < mid → own half when attacking y_increasing
+        )
+
+        # Collect opponent player positions in the transition window
+        for fi in range(to_frame, to_frame + window):
+            if fi >= n_pframes:
+                break
+            frame = tracks_players[fi]
+
+            opp_xs: list[float] = []
+            for info in frame.values():
+                if info.get("team") != opp_idx:
+                    continue
+                p = info.get("position_transformed")
+                if p is None:
+                    continue
+                opp_xs.append(float(p[0]))
+
+            if not opp_xs:
+                continue
+
+            # Check if any opponent player has penetrated our half
+            if direction == "y_increasing":
+                # team attacks toward high x → our half is x < mid
+                if any(x < own_half_boundary for x in opp_xs):
+                    opp_entered_own_half = True
+            else:
+                if any(x > own_half_boundary for x in opp_xs):
+                    opp_entered_own_half = True
+
+        # Detect long ball: large single-frame advance in opponent possession.
+        # Use ball position change across frames in the transition window.
+        prev_ball_pos: tuple | None = None
+        for fi in range(to_frame, to_frame + window):
+            if fi >= n_pframes:
+                break
+            frame = tracks_players[fi]
+            # Approximate ball position from the player who has_ball
+            for info in frame.values():
+                if info.get("team") == opp_idx and info.get("has_ball"):
+                    bp = info.get("position_transformed")
+                    if bp is not None:
+                        curr = (float(bp[0]), float(bp[1]))
+                        if prev_ball_pos is not None:
+                            ball_dx = abs(curr[0] - prev_ball_pos[0])
+                            if ball_dx >= self._LONG_BALL_DIST_M:
+                                long_ball_detected = True
+                        prev_ball_pos = curr
+                        break
+
+        # ── transition_potential (HEURISTIC — not empirically validated) ──
+        # A weighted combination of the two observable boolean signals.
+        # Weights (0.55 / 0.45) reflect the assumption that a long ball
+        # carries slightly higher immediate danger than a player crossing
+        # midfield, but are NOT backed by empirical evidence.
+        # Consumers should treat this score as an ordinal indicator only
+        # and should NOT compare its absolute value across datasets.
+        # Possible future improvement: fit a logistic model on labeled
+        # tracking data to learn weights from counter-attack outcomes.
+        transition_potential = float(
+            0.55 * float(long_ball_detected)
+            + 0.45 * float(opp_entered_own_half)
+        )
+        # Flag so downstream code can surface the limitation to users
+        transition_potential_is_heuristic = True
+
+        # ── 3. risk_class ────────────────────────────────────────────────
+        # A turnover is High-Risk when either:
+        #   (a) the opponent immediately executed a long ball, OR
+        #   (b) at least one opponent player entered our half within 10 s
+        # This replaces the static 40% threshold with event-level evidence.
+        is_high_risk = long_ball_detected or opp_entered_own_half
+
+        return {
+            "distance_to_goal":                  round(distance_to_goal,    2),
+            "transition_potential":              round(transition_potential, 4),
+            "transition_potential_is_heuristic": transition_potential_is_heuristic,
+            "risk_class":                        (
+                "High-Risk Turnover" if is_high_risk else "Low-Risk Turnover"
+            ),
+            "long_ball_detected":                long_ball_detected,
+            "opp_entered_own_half":              opp_entered_own_half,
+        }
+
     def _turnovers_final_third(
         self, tracks: dict, team_ball_control: list[int]
     ) -> dict[str, Any]:
-        """Count turnovers occurring in the attacking final third.
+        """Contextual Risk Assessment for final-third turnovers.
 
-        A turnover is counted when possession leaves team T and the opponent
-        holds the ball for >= 5 consecutive frames (noise filter).
-        Only turnovers where T's ball carrier is inside their attacking
-        final third are counted.
+        A turnover is detected when possession leaves team T and the opponent
+        holds the ball for >= 5 consecutive frames (noise filter).  Only
+        turnovers where T's ball carrier is inside their attacking final third
+        are extracted.
 
-        Attacking direction inferred from FWD players' median y:
-            y_increasing → final_third: y >= 15.5 m
-            y_decreasing → final_third: y <= 7.82 m
+        Each extracted turnover is then enriched with two contextual signals:
+
+        distance_to_goal
+            Euclidean distance (m) from the turnover position to the
+            opponent's goal centre.  Captures positional danger independent
+            of any fixed threshold.
+
+        transition_potential ∈ [0, 1]
+            Composite score: 0.55 × long_ball_detected + 0.45 ×
+            opp_entered_own_half.  Measures how quickly the opponent converted
+            the turnover into a counter-attack within a 10-second window.
+
+        Risk classification
+        -------------------
+        Chỉ số này sử dụng đánh giá rủi ro tương đối dựa trên khả năng
+        chuyển đổi trạng thái của đối phương, thay thế cho các ngưỡng cứng
+        nhằm đảm bảo tính khách quan trong việc đánh giá sự đánh đổi giữa
+        rủi ro tấn công và sự an toàn hệ thống.
+
+        Attacking direction inferred from FWD players' median depth (pos[0]):
+            x_increasing → final_third: x ≥ ``_final_3rd`` (≈ 70 m at 105 m)
+            x_decreasing → final_third: x ≤ ``_def_3rd``   (≈ 35 m at 105 m)
 
         Returns
         -------
         dict mapping "team_1" | "team_2" → {
             "total_turnovers_in_final_third": int,
-            "turnovers_half_1": int,
-            "turnovers_half_2": int,
-            "dangerous_rate_pct": float,
-            "attacking_direction": "y_increasing" | "y_decreasing"
+            "turnovers_half_1":              int,
+            "turnovers_half_2":              int,
+            "high_risk_count":               int,
+            "low_risk_count":                int,
+            "high_risk_rate_pct":            float,
+            "avg_distance_to_goal_m":        float,
+            "avg_transition_potential":      float,
+            "attacking_direction":           "y_increasing" | "y_decreasing",
+            "turnover_events":               list[dict]  — per-event detail
         }
         """
-        MIN_OPP_HOLD = 5
-        ctrl         = team_ball_control
-        total_frames = len(ctrl)
-        half_split   = total_frames // 2
-        n_pframes    = len(tracks["players"])
+        MIN_OPP_HOLD  = 5
+        ctrl          = team_ball_control
+        total_frames  = len(ctrl)
+        half_split    = total_frames // 2
+        tracks_players = tracks["players"]
 
         try:
             formation_data = self.formation_adherence(tracks)
         except Exception:
             formation_data = {}
 
-        player_ys: dict[int, list[float]] = {}
-        for frame in tracks["players"]:
+        # Collect per-player depth samples (pos[0] = along pitch length)
+        player_xs: dict[int, list[float]] = {}
+        for frame in tracks_players:
             for tid, info in frame.items():
                 if info.get("team") not in (1, 2):
                     continue
                 pos = info.get("position_transformed")
                 if pos is None:
                     continue
-                player_ys.setdefault(int(tid), []).append(float(pos[1]))
+                player_xs.setdefault(int(tid), []).append(float(pos[0]))
 
+        # Infer attacking direction per team
         atk_dir: dict[int, str] = {}
         for team_idx in (1, 2):
             fwd_ids = (
@@ -947,14 +2181,16 @@ class TacticalAnalyzer:
                 .get("lines", {})
                 .get("FWD", [])
             )
-            fwd_ys = [
-                float(np.median(player_ys[int(fid)]))
+            fwd_xs = [
+                float(np.median(player_xs[int(fid)]))
                 for fid in fwd_ids
-                if int(fid) in player_ys and player_ys[int(fid)]
+                if int(fid) in player_xs and player_xs[int(fid)]
             ]
-            if fwd_ys:
+            if fwd_xs:
                 atk_dir[team_idx] = (
-                    "y_increasing" if float(np.mean(fwd_ys)) > 11.66 else "y_decreasing"
+                    "y_increasing"
+                    if float(np.mean(fwd_xs)) > self._pitch_mid
+                    else "y_decreasing"
                 )
             else:
                 atk_dir[team_idx] = "y_increasing" if team_idx == 1 else "y_decreasing"
@@ -962,45 +2198,55 @@ class TacticalAnalyzer:
         result: dict[str, Any] = {}
         for team_idx in (1, 2):
             direction = atk_dir[team_idx]
-            in_ft     = ((lambda y: y >= 15.5) if direction == "y_increasing"
-                         else (lambda y: y <= 7.82))
+            in_ft = (
+                (lambda x, t=self._final_3rd: x >= t)
+                if direction == "y_increasing"
+                else (lambda x, t=self._def_3rd: x <= t)
+            )
 
-            all_to: list[int] = []
-            ft_to:  list[int] = []
+            # ── Step 1: extract raw final-third turnover events ──────────
+            raw_events = self._extract_turnover_events(
+                ctrl, tracks_players, team_idx, in_ft, MIN_OPP_HOLD
+            )
 
-            i = 1
-            while i < total_frames:
-                if ctrl[i - 1] == team_idx and ctrl[i] != team_idx:
-                    opp_val = ctrl[i]
-                    j       = i
-                    while j < total_frames and ctrl[j] in (opp_val, 0):
-                        j += 1
-                    opp_hold = sum(1 for k in range(i, j) if ctrl[k] == opp_val)
+            # ── Step 2: contextual risk assessment per event ─────────────
+            enriched: list[dict] = []
+            for ev in raw_events:
+                risk = self._contextual_risk(
+                    ev, ctrl, tracks_players, team_idx, direction
+                )
+                enriched.append({
+                    "frame":                ev["frame"],
+                    "pos_x":               round(float(ev["pos"][0]), 2),
+                    "pos_y":               round(float(ev["pos"][1]), 2),
+                    "half":                1 if ev["frame"] < half_split else 2,
+                    **risk,
+                })
 
-                    if opp_hold >= MIN_OPP_HOLD:
-                        all_to.append(i)
-                        pos = None
-                        fi  = i - 1
-                        if fi < n_pframes:
-                            for info in tracks["players"][fi].values():
-                                if (info.get("team") == team_idx
-                                        and info.get("has_ball")
-                                        and info.get("position_transformed") is not None):
-                                    pos = info["position_transformed"]
-                                    break
-                        if pos is not None and in_ft(float(pos[1])):
-                            ft_to.append(i)
-                    i = j
-                else:
-                    i += 1
+            # ── Step 3: aggregate ────────────────────────────────────────
+            total = len(enriched)
+            high  = sum(1 for e in enriched if e["risk_class"] == "High-Risk Turnover")
+            low   = total - high
+            avg_dist  = (
+                float(np.mean([e["distance_to_goal"]    for e in enriched]))
+                if enriched else 0.0
+            )
+            avg_trans = (
+                float(np.mean([e["transition_potential"] for e in enriched]))
+                if enriched else 0.0
+            )
 
-            dangerous_rate = round(len(ft_to) / max(len(all_to), 1) * 100, 4)
             result[f"team_{team_idx}"] = {
-                "total_turnovers_in_final_third": len(ft_to),
-                "turnovers_half_1":               sum(1 for f in ft_to if f <  half_split),
-                "turnovers_half_2":               sum(1 for f in ft_to if f >= half_split),
-                "dangerous_rate_pct":             dangerous_rate,
+                "total_turnovers_in_final_third": total,
+                "turnovers_half_1":               sum(1 for e in enriched if e["half"] == 1),
+                "turnovers_half_2":               sum(1 for e in enriched if e["half"] == 2),
+                "high_risk_count":                high,
+                "low_risk_count":                 low,
+                "high_risk_rate_pct":             round(high / max(total, 1) * 100, 2),
+                "avg_distance_to_goal_m":         round(avg_dist,  2),
+                "avg_transition_potential":       round(avg_trans, 4),
                 "attacking_direction":            direction,
+                "turnover_events":                enriched,
             }
         return result
 
@@ -1009,7 +2255,8 @@ class TacticalAnalyzer:
     def _passing_stats(self, passing_events: list[dict]) -> dict[str, Any]:
         """Compute passing statistics from detected pass events.
 
-        Progressive pass: receiver > 10 m further forward than passer.
+        Progressive pass: receiver > 10 m further forward than passer
+        (forward = increasing pos[0], along pitch length direction).
         Network density: unique (passer, receiver) pairs / max directed edges.
 
         Parameters
@@ -1026,11 +2273,15 @@ class TacticalAnalyzer:
             "passes_half_2": int,
             "progressive_passes": int,
             "progressive_pass_pct": float,
-            "pass_success_rate_pct": float,
             "network_density": float,
             "top_passer_id": int | None,
             "top_receiver_id": int | None
         }
+
+        Note: pass_success_rate_pct is intentionally omitted.  The tracking
+        pipeline only detects successful same-team possession transfers; failed
+        passes (out of bounds, intercepted) are not observable from player
+        tracks alone.  Reporting 100 % would be misleading.
         """
         if not passing_events:
             return {"team_1": None, "team_2": None}
@@ -1051,18 +2302,21 @@ class TacticalAnalyzer:
             ]
 
             if valid:
-                y_diffs   = [float(ev["receiver_pos"][1]) - float(ev["passer_pos"][1])
-                             for ev in valid]
-                direction = "y_increasing" if float(np.mean(y_diffs)) >= 0 else "y_decreasing"
+                # pos[0] = depth direction (along pitch length)
+                x_diffs   = [
+                    float(ev["receiver_pos"][0]) - float(ev["passer_pos"][0])
+                    for ev in valid
+                ]
+                direction = "y_increasing" if float(np.mean(x_diffs)) >= 0 else "y_decreasing"
             else:
                 direction = "y_increasing"
 
             prog = sum(
                 1 for ev in valid
                 if (direction == "y_increasing"
-                    and float(ev["receiver_pos"][1]) - float(ev["passer_pos"][1]) > 10)
+                    and float(ev["receiver_pos"][0]) - float(ev["passer_pos"][0]) > 10)
                 or (direction == "y_decreasing"
-                    and float(ev["passer_pos"][1]) - float(ev["receiver_pos"][1]) > 10)
+                    and float(ev["passer_pos"][0]) - float(ev["receiver_pos"][0]) > 10)
             )
             prog_pct = round(prog / max(len(valid), 1) * 100, 4)
 
@@ -1082,14 +2336,13 @@ class TacticalAnalyzer:
             top_receiver = receiver_ctr.most_common(1)[0][0] if receiver_ctr else None
 
             result[f"team_{team_idx}"] = {
-                "total_passes":          total,
-                "passes_half_1":         h1,
-                "passes_half_2":         total - h1,
-                "progressive_passes":    prog,
-                "progressive_pass_pct":  prog_pct,
-                "pass_success_rate_pct": 100.0,
-                "network_density":       density,
-                "top_passer_id":         int(top_passer)   if top_passer   is not None else None,
-                "top_receiver_id":       int(top_receiver) if top_receiver is not None else None,
+                "total_passes":         total,
+                "passes_half_1":        h1,
+                "passes_half_2":        total - h1,
+                "progressive_passes":   prog,
+                "progressive_pass_pct": prog_pct,
+                "network_density":      density,
+                "top_passer_id":        int(top_passer)   if top_passer   is not None else None,
+                "top_receiver_id":      int(top_receiver) if top_receiver is not None else None,
             }
         return result

@@ -2,6 +2,7 @@
 # Install: pip install -r requirements_api.txt
 
 # API server
+requests>=2.31.0
 fastapi>=0.110.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.9
@@ -9,6 +10,7 @@ aiofiles>=23.0.0
 
 # Computer vision pipeline
 opencv-python>=4.8.0
+imageio-ffmpeg>=0.4.9
 ultralytics>=8.0.0
 torch>=2.0.0
 torchvision>=0.15.0

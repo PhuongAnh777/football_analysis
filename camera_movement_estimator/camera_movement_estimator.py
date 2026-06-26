@@ -2,11 +2,11 @@ import pickle
 import cv2
 import numpy as np
 import os
-from utils import measure_distance, measure_xy_distance, blend_filled_rectangle
+from utils import measure_distance, measure_xy_distance
 
 class CameraMovementEstimator:
     def __init__(self, frame):
-        self.minimum_distance = 5
+        self.minimum_distance = 2
         self.lk_params = dict (
             winSize = (15, 15),
             maxLevel = 2,
@@ -15,7 +15,7 @@ class CameraMovementEstimator:
 
         first_frame_grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         mask_features = np.zeros_like(first_frame_grayscale)
-        mask_features[:, 0:20] =  1
+        mask_features[:, 0:20]    = 1
         mask_features[:, 900:1500] = 1
 
         self.features = dict(
@@ -53,21 +53,24 @@ class CameraMovementEstimator:
             frame_gray = cv2.cvtColor(frames[frame_num], cv2.COLOR_BGR2GRAY)
             new_features, _,_ = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, old_features, None, **self.lk_params)
 
-            max_distance = 0
-            camera_movement_x, camera_movement_y = 0, 0
+            # Collect all valid feature displacements
+            dxs, dys, dists = [], [], []
+            for new_pt, old_pt in zip(new_features, old_features):
+                np_ = new_pt.ravel()
+                op_ = old_pt.ravel()
+                dist = measure_distance(np_, op_)
+                dx, dy = measure_xy_distance(np_, op_)
+                dxs.append(dx); dys.append(dy); dists.append(dist)
 
-            for i, (new, old) in enumerate(zip(new_features, old_features)):
-                new_features_point = new.ravel()
-                old_features_point = old.ravel()
-
-                distance = measure_distance(new_features_point, old_features_point)
-
-                if distance > max_distance:
-                    max_distance = distance
-                    camera_movement_x, camera_movement_y = measure_xy_distance(new_features_point, old_features_point)
-
+            if dists:
+                max_distance = float(np.max(dists))
+            else:
+                max_distance = 0
 
             if max_distance > self.minimum_distance:
+                # Use median to ignore fast-moving players / outliers
+                camera_movement_x = float(np.median(dxs))
+                camera_movement_y = float(np.median(dys))
                 camera_movement[frame_num] = [camera_movement_x, camera_movement_y]
                 old_features = cv2.goodFeaturesToTrack(frame_gray, **self.features)
             
@@ -80,12 +83,25 @@ class CameraMovementEstimator:
         
         return camera_movement
 
-    def draw_camera_movement(self, frames, camera_movement_per_frame):
-        for frame_num, frame in enumerate(frames):
-            blend_filled_rectangle(frame, (0, 0), (500, 100), alpha=0.6)
+    @staticmethod
+    def cumulative(camera_movement_per_frame):
+        """Convert per-frame camera deltas → cumulative offsets from frame 0.
 
-            x_movement, y_movement = camera_movement_per_frame[frame_num]
-            cv2.putText(frame, f"Camera Movement: {x_movement: .2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)
-            cv2.putText(frame, f"Camera Movement: {y_movement: .2f}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 3)
+        camera_movement_per_frame : list of [dx, dy]
+            Per-frame feature displacement (new_feature - old_feature).
+            Negative dx = camera panned right (features moved left).
 
-        return frames
+        Returns
+        -------
+        list of [cum_x, cum_y] – same length as input.
+            cum_x < 0 means camera has panned right (toward higher-x pitch).
+        """
+        result = [[0.0, 0.0]]
+        cum_x, cum_y = 0.0, 0.0
+        for dx, dy in camera_movement_per_frame[1:]:
+            cum_x += dx
+            cum_y += dy
+            result.append([cum_x, cum_y])
+        return result
+
+    # draw_camera_movement removed — camera offset vẫn dùng nội bộ qua add_adjust_positions_to_tracks

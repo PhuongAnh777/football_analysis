@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.local
+frontend/.env.local
 
 # Model / large data
 *.pt
@@ -19,6 +21,9 @@ venv/
 *.jpg
 *.mp4
 
-# IDE
-.idea/
+# Logs
+logs/
 .vscode/
+
+
+.tmp.driveupload/

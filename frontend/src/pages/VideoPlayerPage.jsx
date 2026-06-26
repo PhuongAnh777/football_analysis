@@ -2,12 +2,35 @@ import { useRef, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAnalysis } from '../context/AnalysisContext'
+import { getVideoUrl } from '../api/client'
 import Card from '../components/UI/Card'
 import Badge from '../components/UI/Badge'
 
 function formatTime(s) {
   if (!isFinite(s)) return '0:00'
   return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`
+}
+
+function formatEventDescription(event, players = []) {
+  if (event.description && !/#\d+/.test(event.description)) return event.description
+  const labels = {}
+  for (const teamId of [1, 2]) {
+    const roster = players
+      .filter(p => p.team === teamId || p.team_id === teamId)
+      .sort((a, b) => (a.squad_number ?? a.track_id ?? 0) - (b.squad_number ?? b.track_id ?? 0))
+    roster.forEach((p, i) => {
+      if (p.track_id != null) {
+        const name = p.display_name || `Cầu thủ ${p.squad_number ?? i + 1}`
+        labels[p.track_id] = p.position ? `${name} (${p.position})` : name
+      }
+    })
+  }
+  const passer = labels[event.passer_id] || 'cầu thủ'
+  const receiver = labels[event.receiver_id] || 'cầu thủ'
+  if (event.passer_id != null || event.receiver_id != null) {
+    return `Chuyền bóng ${passer} → ${receiver}`
+  }
+  return event.description || event.type || 'Sự kiện'
 }
 
 function VideoControls({ videoRef, playing, setPlaying, duration, currentTime, volume, setVolume }) {
@@ -83,9 +106,11 @@ export default function VideoPlayerPage() {
   const [volume, setVolume] = useState(0.8)
   const [showControls, setShowControls] = useState(true)
   const [activeEvent, setActiveEvent] = useState(null)
+  const [videoError, setVideoError] = useState(null)
   const timerRef = useRef(null)
 
   const timeline = results?.timeline || results?.events || []
+  const players = results?.players || []
   const fps = results?.fps || 24
   const t1Stats = results?.teams?.[0]?.metrics || results?.teams?.[0] || {}
   const t2Stats = results?.teams?.[1]?.metrics || results?.teams?.[1] || {}
@@ -119,7 +144,12 @@ export default function VideoPlayerPage() {
           <h1 className="text-3xl font-bold text-text-primary">Video Player</h1>
           <p className="text-text-secondary mt-1 text-sm">Xem lại video với phân tích trực quan</p>
         </div>
-        <Badge variant="accent" size="md">Job: {jobId?.slice(0, 8)}…</Badge>
+        {results?.input_filename && (
+          <p className="text-xs text-text-secondary max-w-xs truncate text-right">
+            {results.input_filename}
+            {results.input_size_bytes ? ` · ${(results.input_size_bytes / 1048576).toFixed(1)} MB` : ''}
+          </p>
+        )}
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -127,10 +157,22 @@ export default function VideoPlayerPage() {
         <div className="xl:col-span-2 space-y-4">
           <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}
             onMouseMove={handleMouseMove}>
-            <video ref={videoRef} src={`/api/video/${jobId}`} className="w-full h-full object-contain"
+            {!videoError ? (
+            <video key={jobId} ref={videoRef} src={getVideoUrl(jobId)} className="w-full h-full object-contain"
               onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
-              onLoadedMetadata={e => setDuration(e.target.duration)}
-              onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
+              onLoadedMetadata={e => { setDuration(e.target.duration); setVideoError(null) }}
+              onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
+              onError={() => setVideoError('Không phát được video. Chạy lại phân tích hoặc cài ffmpeg để tạo MP4.')} />
+            ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+              <p className="text-red-400 text-sm">{videoError}</p>
+              <p className="text-text-secondary text-xs">Thử upload lại nếu vừa restart backend.</p>
+              <button type="button" onClick={() => { setVideoError(null); videoRef.current?.load() }}
+                className="px-4 py-2 rounded-lg text-sm text-white" style={{ background: 'var(--color-team-1)' }}>
+                Thử tải lại
+              </button>
+            </div>
+            )}
             <motion.div animate={{ opacity: showControls || !playing ? 1 : 0 }} transition={{ duration: 0.3 }}>
               <VideoControls videoRef={videoRef} playing={playing} setPlaying={setPlaying}
                 duration={duration} currentTime={currentTime} volume={volume} setVolume={setVolume} />
@@ -164,7 +206,7 @@ export default function VideoPlayerPage() {
                         <span className="font-mono text-xs text-blue-400 font-semibold">{formatTime((event.frame || 0) / fps)}</span>
                         <Badge variant={event.team === 0 ? 'team1' : 'team2'} size="sm">Đội {(event.team ?? 0) + 1}</Badge>
                       </div>
-                      <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">{event.description || event.type}</p>
+                      <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">{formatEventDescription(event, players)}</p>
                     </div>
                   </button>
                 ))}

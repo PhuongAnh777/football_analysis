@@ -16,9 +16,12 @@ export default function GradeChip({ grade = 'B', size = 'md', showLabel = false,
         {cfg.label}
       </span>
       {showLabel && (
-        <span className={`text-sm font-medium ${cfg.text}`}>
-          {grade === 'A' ? 'Xuất sắc' : grade === 'B' ? 'Tốt' : grade === 'C' ? 'Trung bình' : grade === 'D' ? 'Yếu' : 'Kém'}
-        </span>
+        <div className="flex flex-col items-start leading-tight">
+          <span className={`text-sm font-semibold ${cfg.text}`}>
+            Hạng {cfg.label} — {grade === 'A' ? 'Xuất sắc' : grade === 'B' ? 'Tốt' : grade === 'C' ? 'Trung bình' : grade === 'D' ? 'Yếu' : 'Kém'}
+          </span>
+          <span className="text-[10px] text-text-secondary">theo thang A → F</span>
+        </div>
       )}
     </div>
   )

@@ -2,9 +2,9 @@ import cv2
 from utils import measure_distance, get_foot_position
 
 class SpeedAndDistance_Estimator:
-    def __init__(self):
-        self.frame_window = 5
-        self.frame_rate = 24
+    def __init__(self, fps: int = 24, frame_window: int = 5):
+        self.frame_window = frame_window
+        self.frame_rate = max(1, int(fps))
     
     def add_speed_and_distance_to_tracks(self, tracks):
         total_distance = {}
@@ -66,7 +66,23 @@ class SpeedAndDistance_Estimator:
                     position[1] += 40
                     position = tuple(map(int, position))
 
-                    cv2.putText(frame, f"Speed: {speed:.2f} km/h", (position[0] + 5, position[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-                    cv2.putText(frame, f"Distance: {distance:.2f} m", (position[0] + 5, position[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                    font_scale = 0.45
+                    thickness = 1
+                    line_gap = 12
+                    x, y = position[0] + 4, position[1]
+                    for text, dy in (
+                        (f"{speed:.0f} km/h", 0),
+                        (f"{distance:.0f} m", line_gap),
+                    ):
+                        cv2.putText(
+                            frame, text, (x, y + dy),
+                            cv2.FONT_HERSHEY_SIMPLEX, font_scale,
+                            (0, 0, 0), thickness + 1, cv2.LINE_AA,
+                        )
+                        cv2.putText(
+                            frame, text, (x, y + dy),
+                            cv2.FONT_HERSHEY_SIMPLEX, font_scale,
+                            (255, 255, 255), thickness, cv2.LINE_AA,
+                        )
 
         return frames
