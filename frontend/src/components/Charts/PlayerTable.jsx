@@ -5,7 +5,6 @@ const COLUMNS = [
   { key: 'position',            label: 'Vị trí',   sortable: false },
   { key: 'avg_speed',           label: 'Tốc độ (km/h)', sortable: true  },
   { key: 'pressing',            label: 'Pressing %', sortable: true  },
-  { key: 'discipline',          label: 'Lệch hàng thủ (m)', sortable: true  },
   { key: 'coverage',            label: 'Frames hoạt động', sortable: true  },
   { key: 'high_intensity_runs', label: 'HI Runs',  sortable: true  },
 ]

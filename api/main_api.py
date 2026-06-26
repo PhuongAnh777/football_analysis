@@ -19,6 +19,7 @@ Run:
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import sys
@@ -59,11 +60,21 @@ _load_dotenv()
 from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
 from api.job_persistence import load_job_meta, load_job_result
 from api.pipeline_runner import _convert_to_mp4, _job_output_dir, _job_stub_path, run_pipeline
+from api.result_adapter import enrich_teams_metrics
 from api.error_log import job_error_log_path, save_job_error
 from utils.stub_io import remove_track_stub, video_fingerprint
 from utils.video_utils import ensure_browser_playable
 
 _OUTPUT_VIDEOS_ROOT = os.path.join(_PROJECT_ROOT, "output_videos")
+
+
+def _load_scored_report(job_id: str) -> dict:
+    path = os.path.join(_OUTPUT_VIDEOS_ROOT, job_id, "scored_report.json")
+    if not os.path.isfile(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
 
 _DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
 _INPUT_VIDEO_PATH = os.path.join(_PROJECT_ROOT, "input_videos", "input_video.mp4")
@@ -407,6 +418,11 @@ async def results(job_id: str):
         if job_or_meta.get("status") != "done":
             raise HTTPException(status_code=404, detail=f"Job '{job_id}' not ready.")
         result = load_job_result(job_id, _OUTPUT_VIDEOS_ROOT) or {}
+        teams = enrich_teams_metrics(
+            result.get("teams", []),
+            result.get("match_report"),
+            _load_scored_report(job_id),
+        )
         return {
             "job_id": job_id,
             "input_filename": job_or_meta.get("input_filename", ""),
@@ -415,7 +431,7 @@ async def results(job_id: str):
             "evaluation": result.get("evaluation", {}),
             "match_report": result.get("match_report", {}),
             "charts": result.get("charts", {}),
-            "teams": result.get("teams", []),
+            "teams": teams,
             "players": result.get("players", []),
             "timeline": result.get("timeline", []),
             "notable_players": result.get("notable_players", {}),
@@ -443,6 +459,11 @@ async def results(job_id: str):
         )
 
     result = job.result or {}
+    teams = enrich_teams_metrics(
+        result.get("teams", []),
+        result.get("match_report"),
+        _load_scored_report(job.job_id),
+    )
     return {
         "job_id":           job.job_id,
         "input_filename":   job.input_filename,
@@ -451,7 +472,7 @@ async def results(job_id: str):
         "evaluation":       result.get("evaluation", {}),
         "match_report":     result.get("match_report", {}),
         "charts":           result.get("charts", {}),
-        "teams":            result.get("teams", []),
+        "teams":            teams,
         "players":          result.get("players", []),
         "timeline":         result.get("timeline", []),
         "notable_players":  result.get("notable_players", {}),

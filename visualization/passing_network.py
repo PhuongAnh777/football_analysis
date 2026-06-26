@@ -13,6 +13,10 @@ PITCH_WIDTH  =  68.0   # touchline → touchline  (metres) — pos[1] axis
 # Maximum frames between two possession events to still count as a pass
 MAX_PASS_GAP_FRAMES = 50
 
+# Ignore transformed positions outside the pitch (bad calibration / camera-offset noise)
+_PITCH_MARGIN_M = 1.0
+_MIN_POSITION_SAMPLES = 10
+
 _PENALTY_SPOT_X = 11.0
 _PENALTY_ARC_R  =  9.15
 _PENALTY_ARC_ANG = math.degrees(math.acos(
@@ -116,6 +120,14 @@ def _draw_pitch(ax, length=PITCH_LENGTH, width=PITCH_WIDTH):
     ax.axis('off')
 
 
+def _is_on_pitch(x, y, length=PITCH_LENGTH, width=PITCH_WIDTH, margin=_PITCH_MARGIN_M):
+    """Return True when (x, y) lies inside the pitch bounds (with small margin)."""
+    return (
+        -margin <= x <= length + margin
+        and -margin <= y <= width + margin
+    )
+
+
 def _detect_passes(tracks):
     """Scan ``has_ball`` flags and return a list of (from_id, to_id, team) tuples.
 
@@ -151,23 +163,37 @@ def _detect_passes(tracks):
     return passes
 
 
-def _player_avg_positions(tracks):
+def _player_avg_positions(
+    tracks,
+    pitch_length: float = PITCH_LENGTH,
+    pitch_width: float = PITCH_WIDTH,
+):
     """Return ``{player_id: (avg_x, avg_y)}`` for pitch plotting.
 
     avg_x = mean pos[0]  (along pitch length, 0–105 m) → x-axis.
     avg_y = mean pos[1]  (across pitch width,  0–68  m) → y-axis.
+
+    Only in-bounds samples are averaged so camera-offset drift does not
+    pull nodes and edge labels off the pitch.
     """
     sums = defaultdict(lambda: [0.0, 0.0, 0])
     for frame_players in tracks['players']:
         for player_id, info in frame_players.items():
             pos = info.get('position_transformed')
-            if pos is not None:
-                sums[player_id][0] += pos[0]   # length
-                sums[player_id][1] += pos[1]   # width
-                sums[player_id][2] += 1
+            if pos is None:
+                continue
+            x, y = float(pos[0]), float(pos[1])
+            if not _is_on_pitch(x, y, pitch_length, pitch_width):
+                continue
+            sums[player_id][0] += x   # length
+            sums[player_id][1] += y   # width
+            sums[player_id][2] += 1
 
-    return {pid: (v[0] / v[2], v[1] / v[2])
-            for pid, v in sums.items() if v[2] > 0}
+    return {
+        pid: (v[0] / v[2], v[1] / v[2])
+        for pid, v in sums.items()
+        if v[2] >= _MIN_POSITION_SAMPLES
+    }
 
 
 def _player_teams(tracks):
@@ -206,7 +232,9 @@ def generate_passing_network(
         Pitch dimensions matching the ViewTransformer calibration.
     """
     passes       = _detect_passes(tracks)
-    avg_positions = _player_avg_positions(tracks)
+    avg_positions = _player_avg_positions(
+        tracks, pitch_length=pitch_length, pitch_width=pitch_width,
+    )
     player_team_map = _player_teams(tracks)
 
     pass_counts: dict  = defaultdict(int)
@@ -271,16 +299,22 @@ def generate_passing_network(
                 continue
             x1, y1 = avg_positions[p1]
             x2, y2 = avg_positions[p2]
+            if not (
+                _is_on_pitch(x1, y1, pitch_length, pitch_width)
+                and _is_on_pitch(x2, y2, pitch_length, pitch_width)
+            ):
+                continue
             lw    = 0.8 + 6.0 * (cnt / max_edge)
             alpha = 0.25 + 0.70 * (cnt / max_edge)
             ax.plot([x1, x2], [y1, y2],
                     color='white', linewidth=lw, alpha=alpha, zorder=2,
                     solid_capstyle='round')
             mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-            ax.text(mx, my, str(cnt), ha='center', va='center',
-                    fontsize=7, color='#111827', fontweight='bold', zorder=6,
-                    bbox=dict(boxstyle='round,pad=0.15', facecolor='white',
-                              alpha=0.75, edgecolor='none'))
+            if _is_on_pitch(mx, my, pitch_length, pitch_width):
+                ax.text(mx, my, str(cnt), ha='center', va='center',
+                        fontsize=7, color='#111827', fontweight='bold', zorder=6,
+                        bbox=dict(boxstyle='round,pad=0.15', facecolor='white',
+                                  alpha=0.75, edgecolor='none'))
 
         # ── nodes ────────────────────────────────────────────────────────
         node_color = (_bgr_to_rgb_float(team_colors[draw_team_id])
@@ -294,6 +328,8 @@ def generate_passing_network(
             if player_id not in avg_positions:
                 continue
             x, y  = avg_positions[player_id]
+            if not _is_on_pitch(x, y, pitch_length, pitch_width):
+                continue
             inv   = involvement.get(player_id, 0)
             size  = 180 + 700 * (inv / max_inv)
             ax.scatter(x, y, s=size, c=[node_color], zorder=4,

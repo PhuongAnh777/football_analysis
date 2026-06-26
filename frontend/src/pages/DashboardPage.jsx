@@ -56,16 +56,18 @@ function extractPlayers(results, idx) {
 function extractCharts(results) { return results?.charts || {} }
 function buildRadarScores(teamData) {
   if (!teamData) return {}
+  const radar = teamData.metrics?.radar_scores
+  if (radar) return { ...radar }
   const m = teamData.metrics || teamData
   return {
-    kiem_soat_bong: m.possession || m.ball_control || 60,
-    doi_hinh:       m.formation_adherence || 65,
-    pressing:       m.pressing_intensity || 70,
-    ky_luat:        m.discipline || 68,
-    toc_do:         m.avg_speed_normalized || (m.avg_speed || 20) / 0.3,
-    on_dinh:        m.stability || 65,
-    phong_thu:      m.defensive_score || 62,
-    do_rong:        m.width_normalized || (m.width || 30) / 0.55,
+    kiem_soat_bong: m.possession ?? 0,
+    doi_hinh:       m.formation_adherence ?? 0,
+    pressing:       m.pressing_intensity ?? 0,
+    ky_luat:        m.turnovers_score ?? 0,
+    toc_do:         50,
+    on_dinh:        m.recoveries_score ?? 0,
+    phong_thu:      m.forward_passes_pct ?? 0,
+    do_rong:        m.width_score ?? 0,
   }
 }
 
@@ -157,7 +159,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-bold text-text-primary mb-2 flex items-center gap-2">
             <span className="w-1 h-5 rounded" style={{ background: 'var(--color-accent)' }} /> So sánh chỉ số chiến thuật
           </h2>
-          <p className="text-text-secondary text-xs mb-4">Điểm theo 8 chiều chiến thuật</p>
+          <p className="text-text-secondary text-xs mb-4">Điểm 0–100 theo dữ liệu phân tích thực tế (cao hơn = tốt hơn)</p>
           <RadarComparison team1Name={t1Name} team2Name={t2Name}
             team1Scores={buildRadarScores(team1)} team2Scores={buildRadarScores(team2)} />
         </Card>

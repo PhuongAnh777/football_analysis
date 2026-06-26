@@ -7,18 +7,18 @@ const AXES = [
   { key: 'kiem_soat_bong', label: 'Kiểm soát bóng' },
   { key: 'doi_hinh',       label: 'Đội hình' },
   { key: 'pressing',       label: 'Pressing' },
-  { key: 'ky_luat',        label: 'Kỷ luật' },
+  { key: 'ky_luat',        label: 'An toàn bóng' },
   { key: 'toc_do',         label: 'Tốc độ' },
-  { key: 'on_dinh',        label: 'Ổn định' },
-  { key: 'phong_thu',      label: 'Phòng thủ' },
+  { key: 'on_dinh',        label: 'Thu hồi bóng' },
+  { key: 'phong_thu',      label: 'Xây dựng' },
   { key: 'do_rong',        label: 'Độ rộng' },
 ]
 
 function buildData(t1, t2) {
   return AXES.map(({ key, label }) => ({
     axis: label,
-    team1: t1?.[key] ?? Math.random() * 40 + 55,
-    team2: t2?.[key] ?? Math.random() * 40 + 50,
+    team1: Number(t1?.[key] ?? 0),
+    team2: Number(t2?.[key] ?? 0),
   }))
 }
 

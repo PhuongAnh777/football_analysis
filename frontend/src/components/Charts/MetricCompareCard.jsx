@@ -7,7 +7,7 @@ const METRICS = [
   { key: 'formation_adherence',   label: 'Tuân thủ đội hình',   unit: '%',     icon: '🧩' },
   { key: 'avg_speed',             label: 'Tốc độ trung bình',    unit: ' km/h', icon: '⚡' },
   { key: 'sprint_pct',            label: 'Tỷ lệ sprint',         unit: '%',     icon: '🏃' },
-  { key: 'defensive_line_height', label: 'Độ cao hàng thủ',      unit: ' m',    icon: '🛡️' },
+  { key: 'defensive_line_pct',    label: 'Hàng thủ (% sân)',     unit: '%',     icon: '🛡️' },
   { key: 'width',                 label: 'Độ rộng đội hình',     unit: ' m',    icon: '↔️' },
   { key: 'high_intensity_runs',   label: 'Chạy cường độ cao',    unit: '',      icon: '💨' },
   { key: 'ball_recoveries',       label: 'Thu hồi bóng',         unit: '',      icon: '🔄' },

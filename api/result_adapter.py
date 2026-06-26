@@ -11,13 +11,86 @@ from __future__ import annotations
 from typing import Any
 
 
+_PITCH_LENGTH_M = 105.0
+
+
 # ── helpers ──────────────────────────────────────────────────────────────────
+
+def _def_line_depth_pct(
+    depth_m: float,
+    pitch_length: float = _PITCH_LENGTH_M,
+) -> float:
+    """Depth from own goal line as % of pitch length (0–100)."""
+    clamped = max(0.0, min(float(depth_m), pitch_length))
+    return round(clamped / pitch_length * 100, 1)
+
 
 def _r2(v: Any) -> float:
     try:
         return round(float(v), 2)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _compute_pressing_intensity(
+    team_idx: int,
+    press_rec: dict,
+    scored_report: dict,
+    metrics: dict | None = None,
+) -> float:
+    """Return a 0–100 pressing score for frontend charts."""
+    tk = f"team_{team_idx}"
+    team_scores = scored_report.get("team_scores", {}).get(tk, {})
+    pressing_score = team_scores.get("pressing_score")
+    if pressing_score is not None:
+        return float(pressing_score)
+
+    metrics = metrics or {}
+    h1 = float(metrics.get("pressing_h1", press_rec.get("pressing_h1", 0)) or 0)
+    h2 = float(metrics.get("pressing_h2", press_rec.get("pressing_h2", 0)) or 0)
+    if h1 or h2:
+        avg = (h1 + h2) / 2 if h1 and h2 else h1 or h2
+        return round(avg * 100, 1)
+    return 0.0
+
+
+def _build_radar_scores(
+    team_idx: int,
+    tactical_report: dict,
+    match_report: dict,
+    scored_report: dict,
+) -> dict[str, float]:
+    """Map scored team metrics to the 8 radar-chart axes (0–100)."""
+    tk = f"team_{team_idx}"
+    ts = scored_report.get("team_scores", {}).get(tk, {})
+    meta = match_report.get("meta", {})
+    formation_conf = (
+        tactical_report.get("formation", {}).get(tk, {}).get("confidence", 0) * 100
+    )
+    passing = ts.get("passing_score")
+
+    return {
+        "kiem_soat_bong": float(ts.get("possession_score", meta.get(f"possession_team_{team_idx}", 0))),
+        "doi_hinh":       _r2(formation_conf),
+        "pressing":       float(ts.get("pressing_score", 0)),
+        "ky_luat":        float(ts.get("turnovers_score", 0)),
+        "toc_do":         50.0,
+        "on_dinh":        float(ts.get("recoveries_score", 0)),
+        "phong_thu":      float(passing) if passing is not None else 0.0,
+        "do_rong":        float(ts.get("width_score", 0)),
+    }
+
+
+def _apply_radar_speed_norm(teams: list[dict]) -> None:
+    """Scale avg_speed into 20–100 on the radar «Tốc độ» axis."""
+    speeds = [float(t.get("metrics", {}).get("avg_speed", 0) or 0) for t in teams]
+    lo, hi = min(speeds), max(speeds)
+    for team, spd in zip(teams, speeds):
+        radar = team.setdefault("metrics", {}).setdefault("radar_scores", {})
+        if hi > lo:
+            radar["toc_do"] = round(20 + (spd - lo) / (hi - lo) * 80, 1)
+        else:
+            radar["toc_do"] = 50.0
 
 
 def _team_metrics(
@@ -46,6 +119,17 @@ def _team_metrics(
     pass_data = (tactical_report.get("passing") or {}).get(tk, {})
 
     ppda = press_rec.get("ppda")
+    pressing_intensity = _compute_pressing_intensity(
+        team_idx, press_rec, scored_report,
+    )
+
+    def_line_m = float(
+        mo_hinh.get("block_height_m")
+        or narrative.get(f"def_line_avg_team_{team_idx}", 0)
+    )
+    def_line_pct = mo_hinh.get("block_height_pct")
+    if def_line_pct is None:
+        def_line_pct = _def_line_depth_pct(def_line_m)
 
     return {
         "possession":           float(meta.get(f"possession_team_{team_idx}", 0)),
@@ -56,11 +140,13 @@ def _team_metrics(
         "pressing_h1":          float(press_rec.get("pressing_h1", 0)),
         "pressing_h2":          float(press_rec.get("pressing_h2", 0)),
         "pressing_drop_pct":    float(press_rec.get("pressing_drop_pct", 0)),
+        "pressing_intensity":   pressing_intensity,
         "ppda":                 float(ppda) if ppda is not None else None,
         "ppda_label":           press_rec.get("ppda_label"),
         "avg_speed":            float(narrative.get(f"speed_team_{team_idx}", 0)),
         "sprint_pct":           float(narrative.get(f"sprint_pct_team_{team_idx}", 0)),
-        "defensive_line_height": float(narrative.get(f"def_line_avg_team_{team_idx}", 0)),
+        "defensive_line_height": def_line_m,
+        "defensive_line_pct":    float(def_line_pct),
         "block_type":           mo_hinh.get("block_type", "mid_block"),
         "width":                float(narrative.get(f"width_avg_team_{team_idx}", 0)),
         "width_with_ball":      float(narrative.get(f"width_with_ball_team_{team_idx}", 0)),
@@ -82,6 +168,9 @@ def _team_metrics(
         ),
         "forward_passes_pct":   float(
             pass_data.get("progressive_pass_pct", 0) if isinstance(pass_data, dict) else 0
+        ),
+        "radar_scores": _build_radar_scores(
+            team_idx, tactical_report, match_report, scored_report,
         ),
     }
 
@@ -118,6 +207,68 @@ def _build_teams(
             "insights":         insights.get(tk, []),
             "metrics":          _team_metrics(team_idx, tactical_report, match_report, scored_report),
         })
+    _apply_def_line_pct_to_teams(teams, match_report)
+    _apply_radar_speed_norm(teams)
+    return teams
+
+
+def _apply_def_line_pct_to_teams(teams: list[dict], match_report: dict | None = None) -> None:
+    """Set ``defensive_line_pct`` on each team (0–100 % from own goal line)."""
+    match_report = match_report or {}
+    raw: list[float] = []
+    for idx, team in enumerate(teams):
+        team_idx = idx + 1
+        m = team.get("metrics", {})
+        raw.append(float(
+            m.get("defensive_line_height")
+            or match_report.get("mo_hinh_tran", {}).get(f"team_{team_idx}", {}).get("block_height_m", 0)
+        ))
+
+    use_shift = any(r < 0 for r in raw)
+    floor = min(raw) if use_shift else 0.0
+
+    for idx, team in enumerate(teams):
+        metrics = team.setdefault("metrics", {})
+        if metrics.get("defensive_line_pct") is not None and not use_shift:
+            continue
+        if use_shift:
+            shifted = max(0.0, raw[idx] - floor)
+            metrics["defensive_line_pct"] = round(shifted / _PITCH_LENGTH_M * 100, 1)
+        else:
+            metrics["defensive_line_pct"] = _def_line_depth_pct(raw[idx])
+
+
+def enrich_teams_metrics(
+    teams: list[dict],
+    match_report: dict | None = None,
+    scored_report: dict | None = None,
+) -> list[dict]:
+    """Back-fill metrics added after older jobs were saved."""
+    match_report = match_report or {}
+    scored_report = scored_report or {}
+    press_rec_all = match_report.get("press_and_recovery", {})
+
+    for idx, team in enumerate(teams):
+        metrics = team.setdefault("metrics", {})
+        if "pressing_intensity" in metrics:
+            continue
+        team_idx = idx + 1
+        metrics["pressing_intensity"] = _compute_pressing_intensity(
+            team_idx,
+            press_rec_all.get(f"team_{team_idx}", {}),
+            scored_report,
+            metrics,
+        )
+        if "radar_scores" not in metrics:
+            metrics["radar_scores"] = _build_radar_scores(
+                team_idx, {}, match_report, scored_report,
+            )
+            if metrics.get("formation_adherence"):
+                metrics["radar_scores"]["doi_hinh"] = float(metrics["formation_adherence"])
+            if metrics.get("pressing_intensity"):
+                metrics["radar_scores"]["pressing"] = float(metrics["pressing_intensity"])
+    _apply_def_line_pct_to_teams(teams, match_report)
+    _apply_radar_speed_norm(teams)
     return teams
 
 

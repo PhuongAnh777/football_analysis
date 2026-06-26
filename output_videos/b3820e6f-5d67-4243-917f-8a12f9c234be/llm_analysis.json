@@ -1,0 +1,92 @@
+{
+  "tong_quan_tran_dau": {
+    "nhan_xet_chung": "Công an Hà Nội áp dụng chiến thuật kiểm soát bóng với 58.01% thời lượng và pressing cường độ cao (PPDA 0.67). Thể Công Viettel chọn lối chơi phòng ngự lùi sâu với đội hình 5-2-3, chấp nhận nhường thế trận (41.99% kiểm soát bóng) và tập trung vào các pha chuyển đổi. Cả hai đội đều cho thấy sự giảm cường độ pressing trong nửa sau video.",
+    "doi_noi_bat": 1,
+    "ly_do": "Công an Hà Nội kiểm soát bóng vượt trội (58.01%) và duy trì cường độ pressing cao hơn đáng kể (PPDA 0.67 so với 5.25 của Thể Công Viettel)."
+  },
+  "danh_gia_doi": {
+    "doi_1": {
+      "chien_thuat": "Công an Hà Nội triển khai đội hình 4-1-4-1, chơi với hàng thủ thấp (low block, trung bình -17.01m) và duy trì độ rộng đội hình trung bình (33.08m) để kiểm soát khu vực giữa sân.",
+      "pressing": "Đội thể hiện cường độ pressing cao (PPDA 0.67), tuy nhiên cường độ pressing (theo proximity) giảm 55.36% từ nửa đầu video (0.56) xuống nửa sau (0.87).",
+      "doi_hinh": "Đội hình có xu hướng cải thiện độ chặt chẽ (compact trend 'improving'). Khi phòng ngự, hull area là 768.91 m² (chặt hơn 85.26 m² so với phase tấn công 683.65 m²), cho thấy sự tập trung vào phòng ngự chặt chẽ.",
+      "hang_thu": "Hàng thủ của Công an Hà Nội duy trì ở mức thấp (trung bình -17.01m, low block) và có xu hướng lùi sâu ('dropping') trong suốt video.",
+      "xay_dung": "Đội có 19.51% đường chuyền tiến bộ. Đội chấp nhận 2 lần mất bóng ở 1/3 cuối sân, tất cả đều là High-Risk (100%), với khoảng cách trung bình đến khung thành là 27.88m, cho thấy sự cẩn trọng trong khu vực nguy hiểm.",
+      "diem_manh": [
+        "Kiểm soát bóng vượt trội với 58.01% thời lượng, giúp đội chủ động triển khai lối chơi.",
+        "Cường độ pressing tổng thể rất cao với PPDA là 0.67, gây áp lực liên tục lên đối thủ.",
+        "Chỉ có 2 lần mất bóng ở 1/3 cuối sân, cho thấy sự an toàn trong khu vực tấn công quyết định."
+      ],
+      "diem_yeu": [
+        "Tỷ lệ chuyền bóng tiến bộ chỉ đạt 19.51%, hạn chế khả năng xuyên phá hàng phòng ngự đối phương.",
+        "Chỉ 25.53% số lần thu hồi bóng diễn ra ở phần sân đối phương (12 trên tổng số 47), cho thấy khả năng cướp bóng cao ở phần sân nhà.",
+        "Cường độ pressing (theo proximity) giảm 55.36% trong nửa sau video, cần duy trì sự ổn định."
+      ],
+      "khuyen_nghi_hlv": [
+        "Tập trung vào các bài tập chuyền bóng tiến bộ và tạo cơ hội dứt điểm để tăng tỷ lệ progressive pass.",
+        "Bổ sung bài tập pressing trap ở khu vực giữa sân để duy trì cường độ và hiệu quả pressing trong suốt trận đấu."
+      ]
+    },
+    "doi_2": {
+      "chien_thuat": "Thể Công Viettel sử dụng đội hình 5-2-3, chơi với hàng thủ rất thấp (low block, trung bình -29.47m) và độ rộng đội hình trung bình (36.28m), tập trung vào phòng ngự chặt chẽ và chờ đợi cơ hội phản công.",
+      "pressing": "Đội có cường độ pressing tổng thể cao (PPDA 5.25), tuy nhiên cường độ pressing (theo proximity) giảm 55.36% từ nửa đầu video (0.56) xuống nửa sau (0.87).",
+      "doi_hinh": "Đội hình có xu hướng cải thiện độ chặt chẽ (compact trend 'improving'). Hull area tấn công là 741.07 m² so với phòng ngự 732.89 m², cho thấy đội hình ổn định giữa hai phase.",
+      "hang_thu": "Hàng thủ của Thể Công Viettel duy trì ở mức rất thấp (trung bình -29.47m, low block) và có xu hướng lùi sâu ('dropping') trong suốt video.",
+      "xay_dung": "Đội có 26.83% đường chuyền tiến bộ. Đội chấp nhận 16 lần mất bóng ở 1/3 cuối sân, trong đó có 11 lần High-Risk (68.75%), với khoảng cách trung bình đến khung thành là 46.99m, thể hiện chủ trương xây dựng tấn công từ sâu chấp nhận rủi ro.",
+      "diem_manh": [
+        "Tỷ lệ chuyền bóng tiến bộ đạt 26.83%, cao hơn so với đối thủ, cho thấy khả năng đưa bóng lên phía trước.",
+        "Đội hình phòng ngự chặt chẽ với hull area phòng ngự 732.89 m², tạo ra sự khó khăn cho đối thủ trong việc xuyên phá.",
+        "Độ rộng đội hình khi có bóng (38.52m) lớn hơn khi không bóng (36.59m) 1.93m, giúp tạo khoảng trống khi tấn công."
+      ],
+      "diem_yeu": [
+        "Mất bóng 16 lần ở 1/3 cuối sân, với 11 lần High-Risk (68.75%), gây ra nhiều tình huống chuyển đổi nguy hiểm cho đối thủ.",
+        "Chỉ 10.26% số lần thu hồi bóng diễn ra ở phần sân đối phương (4 trên tổng số 39), cho thấy khả năng cướp bóng thấp ở khu vực tấn công.",
+        "Kiểm soát bóng chỉ 41.99%, hạn chế khả năng kiểm soát nhịp độ trận đấu."
+      ],
+      "khuyen_nghi_hlv": [
+        "Tập trung vào các bài tập ra quyết định và xử lý bóng dưới áp lực ở 1/3 cuối sân để giảm số lần mất bóng High-Risk.",
+        "Phát triển chiến thuật pressing tầm cao và các bài tập thu hồi bóng ở phần sân đối phương để tăng tỷ lệ recoveries."
+      ]
+    }
+  },
+  "danh_gia_cau_thu": {
+    "doi_1": {
+      "pressing_tot": {
+        "track_id": 7,
+        "ly_do": "Cầu thủ #7 dẫn đầu về điểm pressing với 10.36, thể hiện sự tích cực trong việc gây áp lực."
+      },
+      "width_tot": {
+        "track_id": 8,
+        "ly_do": "Cầu thủ #8 đóng góp nhiều nhất vào độ rộng đội hình với 79.85 điểm, giúp mở rộng không gian tấn công."
+      },
+      "can_cai_thien": {
+        "track_id": 1,
+        "khuyen_nghi": "Cầu thủ #1 cần cải thiện vị trí phòng ngự để tránh tạo khoảng trống cho đối thủ."
+      }
+    },
+    "doi_2": {
+      "pressing_tot": {
+        "track_id": 109,
+        "ly_do": "Cầu thủ #109 có điểm pressing cao nhất đội với 31.95, cho thấy nỗ lực trong việc gây áp lực."
+      },
+      "width_tot": {
+        "track_id": 104,
+        "ly_do": "Cầu thủ #104 đóng góp nhiều nhất vào độ rộng đội hình với 99.58 điểm, giúp tạo khoảng trống ở biên."
+      },
+      "can_cai_thien": {
+        "track_id": 109,
+        "khuyen_nghi": "Cầu thủ #109 cần cải thiện vị trí phòng ngự để duy trì sự chặt chẽ của hàng thủ."
+      }
+    }
+  },
+  "so_sanh_doi_dau": {
+    "pressing": "Công an Hà Nội có cường độ pressing tổng thể cao hơn đáng kể (PPDA 0.67) so với Thể Công Viettel (PPDA 5.25). Cả hai đội đều cho thấy cường độ pressing (theo proximity) giảm 55.36% từ nửa đầu video (0.56) xuống nửa sau (0.87).",
+    "doi_hinh": "Công an Hà Nội có hull area tấn công 683.65 m² và phòng ngự 768.91 m². Thể Công Viettel có hull area tấn công 741.07 m² và phòng ngự 732.89 m².",
+    "kiem_soat_bong": "Công an Hà Nội kiểm soát bóng 58.01%, trong khi Thể Công Viettel kiểm soát 41.99%.",
+    "chien_luoc_phong_ngu": "Công an Hà Nội duy trì hàng thủ thấp trung bình -17.01m, trong khi Thể Công Viettel lùi sâu hơn với trung bình -29.47m. Cả hai đội đều có xu hướng hàng thủ lùi sâu ('dropping').",
+    "su_dung_bien": "Công an Hà Nội có độ rộng trung bình 33.08m và giảm 2.07m khi không bóng. Thể Công Viettel có độ rộng trung bình 36.28m và tăng 1.93m khi có bóng.",
+    "tranh_chap": "Công an Hà Nội có tổng cộng 47 lần thu hồi bóng, với 25.53% ở phần sân đối phương. Thể Công Viettel có 39 lần thu hồi bóng, với chỉ 10.26% ở phần sân đối phương.",
+    "mat_bong": "Công an Hà Nội có 2 lần mất bóng ở 1/3 cuối sân, tất cả đều là High-Risk (100%), với khoảng cách trung bình đến khung thành 27.88m. Thể Công Viettel có 16 lần mất bóng ở 1/3 cuối sân, trong đó 11 lần High-Risk (68.75%), với khoảng cách trung bình đến khung thành 46.99m.",
+    "kien_tao": "Công an Hà Nội có 19.51% đường chuyền tiến bộ, trong khi Thể Công Viettel có 26.83%."
+  },
+  "ket_luan": "Công an Hà Nội đã kiểm soát thế trận với ưu thế về thời lượng kiểm soát bóng và cường độ pressing. Thể Công Viettel tập trung vào phòng ngự chặt chẽ và tìm kiếm cơ hội từ các pha chuyển đổi, tuy nhiên việc mất bóng nhiều ở 1/3 cuối sân là một điểm yếu cần khắc phục. Cả hai đội đều cần cải thiện khả năng duy trì cường độ pressing trong suốt trận đấu."
+}

@@ -1464,11 +1464,12 @@ class TacticalAnalyzer:
                                 continue
                             pos = info.get("position_transformed")
                             if pos is not None:
-                                def_ys.append(float(pos[0]))  # depth direction
+                                x = max(0.0, min(float(pos[0]), self.pitch_length))
+                                def_ys.append(x)  # depth along pitch
                     else:
                         # Fallback: 4 players with smallest depth (closest to own goal)
                         team_xs = [
-                            (float(info["position_transformed"][0]), tid)
+                            (max(0.0, min(float(info["position_transformed"][0]), self.pitch_length)), tid)
                             for tid, info in frame.items()
                             if info.get("team") == team_idx
                             and info.get("position_transformed") is not None
@@ -1517,10 +1518,12 @@ class TacticalAnalyzer:
             for w in windows:
                 counts[w["block_type"]] += 1
             dominant = max(counts, key=lambda k: counts[k])
+            overall_m = float(np.mean(all_h))
 
             result[f"team_{team_idx}"] = {
                 "windows":        windows,
-                "overall_avg_m":  round(float(np.mean(all_h)), 4),
+                "overall_avg_m":  round(overall_m, 4),
+                "overall_avg_pct": round(overall_m / self.pitch_length * 100, 2),
                 "half_1_avg_m":   round(avg1, 4),
                 "half_2_avg_m":   round(avg2, 4),
                 "trend":          trend,

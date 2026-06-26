@@ -159,6 +159,7 @@ class ReportBuilder:
                 "possession_pct": _r2(poss.get(tk, 0.0)),
                 "block_type":     dl.get("dominant_block", "mid_block"),
                 "block_height_m": _r2(dl.get("overall_avg_m", 0.0)),
+                "block_height_pct": _r2(dl.get("overall_avg_pct", 0.0)),
                 "width_style":    ww.get("dominant_style", "medium"),
                 "width_avg_m":    _r2(ww.get("overall_avg_m", 0.0)),
             }
