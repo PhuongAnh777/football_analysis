@@ -266,7 +266,9 @@ export default function UploadPage() {
               />
             </div>
           </div>
-          <p className="text-xs text-text-secondary">Nhập tên đội theo bảng tỉ số trong video (bắt buộc).</p>
+          <p className="text-xs text-text-secondary">
+            Nhập tên theo thứ tự bảng tỉ số (trái → phải). Hệ thống tự khớp đội qua vệt màu áo trên bảng tỉ số.
+          </p>
         </div>
 
         {/* Upload progress */}

@@ -286,7 +286,7 @@ Lưu ý quan trọng:
             for k, v in tn.items():
                 lines.append(f'  - {k}: "{v}"')
             team_names_block = (
-                "\n\nTên đội đã xác định từ bảng tỉ số trong video:\n"
+                "\n\nTên đội (đội 1 = trái bảng tỉ số, đội 2 = phải; đã khớp qua vệt màu áo):\n"
                 + "\n".join(lines)
                 + "\nHãy dùng đúng tên này (thay cho 'Đội 1'/'Đội 2') trong toàn bộ báo cáo."
             )

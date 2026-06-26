@@ -14,6 +14,8 @@ from trackers import Tracker, merge_player_tracks
 
 from team_assigner import TeamAssigner
 
+from utils.scoreboard_reader import detect_scoreboard_stripe_colors
+
 import cv2
 
 import numpy as np
@@ -175,6 +177,15 @@ def main():
         _fb = next((i for i, p in enumerate(tracks["players"]) if len(p) >= 2), 0)
         calib_data = [(video_frames[_fb], tracks["players"][_fb])]
     team_assigner.assign_team_color(calib_data)
+
+    stripe_left, stripe_right = detect_scoreboard_stripe_colors(
+        video_frames,
+        api_key=LLM_API_KEY or None,
+        model=LLM_MODEL,
+        base_url=LLM_BASE_URL,
+    )
+    if stripe_left is not None and stripe_right is not None:
+        team_assigner.align_to_scoreboard(stripe_left, stripe_right)
 
 
 
