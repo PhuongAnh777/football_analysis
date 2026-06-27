@@ -273,7 +273,7 @@ def generate_heatmap(
                          length=pitch_length, width=pitch_width)
 
             n_frames = len(player_positions[player_id])
-            ax.set_title(f'Cầu thủ {i + 1}  ({n_frames} frames)',
+            ax.set_title(f'ID {player_id}  ({n_frames} frames)',
                          fontsize=7.5, color=color, fontweight='bold', pad=3)
 
         # empty cells

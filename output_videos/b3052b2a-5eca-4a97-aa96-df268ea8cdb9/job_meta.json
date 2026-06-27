@@ -1,0 +1,10 @@
+{
+  "job_id": "b3052b2a-5eca-4a97-aa96-df268ea8cdb9",
+  "status": "error",
+  "error": "HTTPError: 503 Server Error: Service Unavailable for url: https://565e-34-148-133-227.ngrok-free.app/api/track/status/4410d257-f841-4cfe-9ce5-7ef1a7159265\nTraceback (most recent call last):\n  File \"c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\api\\main_api.py\", line 340, in _run_job_with_optional_colab\n    fetch_colab_tracking_stub(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^\n        video_path,\n        ^^^^^^^^^^^\n    ...<2 lines>...\n        on_progress=_on_colab_progress,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\api\\colab_tracking_client.py\", line 183, in fetch_colab_tracking_stub\n    status_resp.raise_for_status()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\phuon\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\requests\\models.py\", line 1028, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 503 Server Error: Service Unavailable for url: https://565e-34-148-133-227.ngrok-free.app/api/track/status/4410d257-f841-4cfe-9ce5-7ef1a7159265\n",
+  "error_log_path": "c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\output_videos\\b3052b2a-5eca-4a97-aa96-df268ea8cdb9\\error.log",
+  "input_path": "c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\input_videos\\input_video.mp4",
+  "input_md5": "1052059e36b552a3fa3d7c8d6949256d",
+  "input_filename": "Demo1 (1).mp4",
+  "input_size_bytes": 135419886
+}

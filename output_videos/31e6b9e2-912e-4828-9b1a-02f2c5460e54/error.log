@@ -1,0 +1,31 @@
+job_id: 31e6b9e2-912e-4828-9b1a-02f2c5460e54
+time: 2026-06-27 12:05:18 UTC
+source: colab
+step_key: tracking_remote
+========================================================================
+InvalidSchema: No connection adapters were found for 'hhttps://00a5-34-148-133-227.ngrok-free.app/api/health'
+Traceback (most recent call last):
+  File "c:\Users\phuon\Documents\DATN\football_analysis\api\main_api.py", line 340, in _run_job_with_optional_colab
+    fetch_colab_tracking_stub(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        video_path,
+        ^^^^^^^^^^^
+    ...<2 lines>...
+        on_progress=_on_colab_progress,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "c:\Users\phuon\Documents\DATN\football_analysis\api\colab_tracking_client.py", line 109, in fetch_colab_tracking_stub
+    health = requests.get(f"{base}/api/health", headers=_headers(), timeout=30)
+  File "C:\Users\phuon\AppData\Local\Programs\Python\Python314\Lib\site-packages\requests\api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+  File "C:\Users\phuon\AppData\Local\Programs\Python\Python314\Lib\site-packages\requests\api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\phuon\AppData\Local\Programs\Python\Python314\Lib\site-packages\requests\sessions.py", line 592, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\phuon\AppData\Local\Programs\Python\Python314\Lib\site-packages\requests\sessions.py", line 700, in send
+    adapter = self.get_adapter(url=request.url)
+  File "C:\Users\phuon\AppData\Local\Programs\Python\Python314\Lib\site-packages\requests\sessions.py", line 795, in get_adapter
+    raise InvalidSchema(f"No connection adapters were found for {url!r}")
+requests.exceptions.InvalidSchema: No connection adapters were found for 'hhttps://00a5-34-148-133-227.ngrok-free.app/api/health'

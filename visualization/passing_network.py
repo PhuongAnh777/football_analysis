@@ -262,12 +262,6 @@ def generate_passing_network(
     fig.patch.set_facecolor('#111827')
     axes = axes[0]
 
-    player_numbers = {
-        pid: idx + 1
-        for tid in teams_to_draw
-        for idx, pid in enumerate(sorted(team_players.get(tid, [])))
-    }
-
     for idx, draw_team_id in enumerate(teams_to_draw):
         ax = axes[idx]
         _draw_pitch(ax, length=pitch_length, width=pitch_width)
@@ -334,9 +328,9 @@ def generate_passing_network(
             size  = 180 + 700 * (inv / max_inv)
             ax.scatter(x, y, s=size, c=[node_color], zorder=4,
                        edgecolors='white', linewidths=1.8)
-            ax.text(x, y, str(player_numbers.get(player_id, '?')),
+            ax.text(x, y, str(player_id),
                     ha='center', va='center',
-                    fontsize=8, color='white', fontweight='bold', zorder=5)
+                    fontsize=7, color='white', fontweight='bold', zorder=5)
 
     plt.tight_layout(pad=0.5)
     plt.savefig(output_path, dpi=150, bbox_inches='tight',

@@ -113,6 +113,8 @@ html, body {
 /* ─── Print ─── */
 @media print {
   body { background: white !important; color: black !important; }
-  .no-print { display: none !important; }
+  .no-print,
+  aside { display: none !important; }
+  main { margin-left: 0 !important; }
   .card { border: 1px solid #ddd !important; break-inside: avoid; }
 }

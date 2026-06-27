@@ -29,6 +29,11 @@ Model YOLO custom: `models/best.pt` (đã có trong repo).
 uvicorn api.main_api:app --reload --port 8000
 ```
 
+```bash
+cd c:\Users\phuon\Documents\DATN\football_analysis
+python -m uvicorn api.main_api:app --reload --port 8000
+```
+
 **Terminal 2 — Frontend:**
 ```bash
 cd frontend

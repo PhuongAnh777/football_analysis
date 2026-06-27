@@ -62,9 +62,43 @@ def extract_passing_events(tracks: dict) -> list[dict]:
                         "receiver_id": track_id,
                         "passer_pos": passer_pos,
                         "receiver_pos": receiver_pos,
+                        "success": True,
                     }
                 )
             prev_carrier[team] = track_id
+
+    return events
+
+
+def extract_failed_pass_events(
+    tracks: dict,
+    team_ball_control: list[int],
+) -> list[dict]:
+    """Detect failed passes: possession leaves the team from the last carrier.
+
+  A pass is **successful** when a teammate receives the ball (see
+  ``extract_passing_events``).  A pass is **failed** when the ball carrier's
+  team loses possession to the opponent without a same-team reception.
+    """
+    events: list[dict] = []
+    n_frames = min(len(tracks.get("players", [])), len(team_ball_control))
+
+    for i in range(1, n_frames):
+        prev_team = team_ball_control[i - 1]
+        curr_team = team_ball_control[i]
+        if prev_team not in (1, 2) or curr_team in (prev_team, 0):
+            continue
+
+        frame = tracks["players"][i - 1]
+        for tid, data in frame.items():
+            if data.get("has_ball") and data.get("team") == prev_team:
+                events.append({
+                    "frame":     i - 1,
+                    "team":      prev_team,
+                    "passer_id": int(tid),
+                    "success":   False,
+                })
+                break
 
     return events
 
