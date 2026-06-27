@@ -56,18 +56,13 @@ function extractPlayers(results, idx) {
 function extractCharts(results) { return results?.charts || {} }
 function buildRadarScores(teamData) {
   if (!teamData) return {}
-  const radar = teamData.metrics?.radar_scores
-  if (radar) return { ...radar }
   const m = teamData.metrics || teamData
+  const radar = m.radar_scores || {}
   return {
-    kiem_soat_bong: m.possession ?? 0,
-    doi_hinh:       m.formation_adherence ?? 0,
-    pressing:       m.pressing_intensity ?? 0,
-    ky_luat:        m.turnovers_score ?? 0,
-    toc_do:         50,
-    on_dinh:        m.recoveries_score ?? 0,
-    phong_thu:      m.forward_passes_pct ?? 0,
-    do_rong:        m.width_score ?? 0,
+    kiem_soat_bong: Number(radar.kiem_soat_bong ?? m.possession ?? 0),
+    pressing:       Number(radar.pressing ?? m.pressing_intensity ?? 0),
+    toc_do:         Number(radar.toc_do ?? 50),
+    do_compact:     Number(radar.do_compact ?? m.compact_score ?? 50),
   }
 }
 

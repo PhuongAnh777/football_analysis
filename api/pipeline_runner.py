@@ -26,6 +26,7 @@ from utils.video_utils import ensure_browser_playable, transcode_to_browser_mp4
 from utils.pipeline_helpers import (
     assign_ball_to_tracks,
     extract_defensive_events,
+    extract_failed_pass_events,
     extract_passing_events,
 )
 from utils.scoreboard_reader import detect_scoreboard_stripe_colors
@@ -312,6 +313,7 @@ def execute_pipeline(
     speed_estimator = SpeedAndDistance_Estimator(fps=fps_int)
     speed_estimator.add_speed_and_distance_to_tracks(tracks)
     passing_events = extract_passing_events(tracks)
+    failed_pass_events = extract_failed_pass_events(tracks, team_ball_control)
     defensive_events = extract_defensive_events(tracks, team_ball_control)
 
     _notify(6, "tactical", _PIPELINE_STEPS[5][2])
@@ -329,6 +331,9 @@ def execute_pipeline(
 
     _dump_json(tactical_report, os.path.join(out_dir, "tactical_report.json"))
     _dump_json(scored_report, os.path.join(out_dir, "scored_report.json"))
+    _dump_json(passing_events, os.path.join(out_dir, "passing_events.json"))
+    _dump_json(failed_pass_events, os.path.join(out_dir, "failed_pass_events.json"))
+    _dump_json(team_ball_control, os.path.join(out_dir, "team_ball_control.json"))
 
     _notify(7, "report", _PIPELINE_STEPS[6][2])
     builder = ReportBuilder(window_frames=int(30 * fps_int))
@@ -434,6 +439,9 @@ def execute_pipeline(
         llm_eval=llm_eval or None,
         fps=fps,
         team_names=team_names or None,
+        tracks=tracks,
+        team_ball_control=team_ball_control,
+        failed_pass_events=failed_pass_events,
     )
 
     meta = match_report.get("meta", {})

@@ -73,19 +73,32 @@ function CategoryBlock({ cat, evalObj }) {
   )
 }
 
-function PlayerCard({ player, type = 'best', side = 'team1', teamName }) {
+function PlayerCard({ player, type = 'playmaker', side = 'team1', teamName }) {
   if (!player) return null
-  const isBest = type === 'best'
-  const roleLabel = player.position || player.highlights || (isBest ? 'Cầu thủ nổi bật' : 'Cần cải thiện')
+  const meta = {
+    playmaker: { icon: '🌟', title: 'Cầu thủ phát huy',  badge: 'emerald' },
+    bad_pass:  { icon: '⚠️', title: 'Chuyền bóng hỏng nhiều', badge: 'amber' },
+    best:      { icon: '⭐', title: 'Xuất sắc nhất',       badge: 'emerald' },
+  }[type] || { icon: '📈', title: 'Cầu thủ nổi bật', badge: 'amber' }
+
+  const trackId = player.track_id
+  const roleLabel = trackId != null
+    ? `ID #${trackId}${player.position ? ` · ${player.position}` : ''}`
+    : (player.position || player.highlights || meta.title)
+
+  const borderClass = meta.badge === 'emerald'
+    ? 'border-emerald-500/30 bg-emerald-500/5'
+    : 'border-amber-500/30 bg-amber-500/5'
+
   return (
-    <div className={`rounded-xl border p-5 space-y-3 ${isBest ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+    <div className={`rounded-xl border p-5 space-y-3 ${borderClass}`}>
       <div className="flex items-center gap-3">
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${
           side === 'team1' ? 'bg-blue-500/20' : 'bg-red-500/20'}`}>
-          {isBest ? '⭐' : '📈'}
+          {meta.icon}
         </div>
         <div>
-          <p className="font-semibold text-text-primary text-sm">{isBest ? 'Xuất sắc nhất' : 'Cần cải thiện'}</p>
+          <p className="font-semibold text-text-primary text-sm">{meta.title}</p>
           <p className="text-xs text-text-secondary">{teamName || (side === 'team1' ? 'Đội 1' : 'Đội 2')} · {roleLabel}</p>
         </div>
         {player.grade && <GradeChip grade={player.grade} size="sm" className="ml-auto" />}
@@ -232,13 +245,13 @@ export default function ReportPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">{t1Name}</p>
-                <PlayerCard player={notable.team1_best || notable.best_team1} type="best" side="team1" teamName={t1Name} />
-                <PlayerCard player={notable.team1_improve || notable.improve_team1} type="improve" side="team1" teamName={t1Name} />
+                <PlayerCard player={notable.team1_playmaker || notable.playmaker_team1} type="playmaker" side="team1" teamName={t1Name} />
+                <PlayerCard player={notable.team1_bad_pass || notable.bad_pass_team1 || notable.team1_improve || notable.improve_team1} type="bad_pass" side="team1" teamName={t1Name} />
               </div>
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">{t2Name}</p>
-                <PlayerCard player={notable.team2_best || notable.best_team2} type="best" side="team2" teamName={t2Name} />
-                <PlayerCard player={notable.team2_improve || notable.improve_team2} type="improve" side="team2" teamName={t2Name} />
+                <PlayerCard player={notable.team2_playmaker || notable.playmaker_team2} type="playmaker" side="team2" teamName={t2Name} />
+                <PlayerCard player={notable.team2_bad_pass || notable.bad_pass_team2 || notable.team2_improve || notable.improve_team2} type="bad_pass" side="team2" teamName={t2Name} />
               </div>
             </div>
           </Card>

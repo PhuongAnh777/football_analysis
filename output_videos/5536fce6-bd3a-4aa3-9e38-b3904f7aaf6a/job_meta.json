@@ -1,0 +1,10 @@
+{
+  "job_id": "5536fce6-bd3a-4aa3-9e38-b3904f7aaf6a",
+  "status": "error",
+  "error": "RuntimeError: Colab/ngrok offline (The endpoint c44d-34-16-165-170.ngrok-free.app is offline.).\n→ Mở lại tab Colab, chạy lại cell server (Cell 5).\n→ Copy URL ngrok mới vào .env (COLAB_TRACKING_URL=...).\n→ Restart backend: uvicorn api.main_api:app --reload --port 8000\n→ Giữ tab Colab mở trong suốt quá trình upload.\nTraceback (most recent call last):\n  File \"c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\api\\main_api.py\", line 249, in _run_job_with_optional_colab\n    fetch_colab_tracking_stub(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^\n        video_path,\n        ^^^^^^^^^^^\n    ...<2 lines>...\n        on_progress=_on_colab_progress,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\api\\colab_tracking_client.py\", line 111, in fetch_colab_tracking_stub\n    _raise_colab_http_error(health, \"/api/health\")\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\api\\colab_tracking_client.py\", line 68, in _raise_colab_http_error\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: Colab/ngrok offline (The endpoint c44d-34-16-165-170.ngrok-free.app is offline.).\n→ Mở lại tab Colab, chạy lại cell server (Cell 5).\n→ Copy URL ngrok mới vào .env (COLAB_TRACKING_URL=...).\n→ Restart backend: uvicorn api.main_api:app --reload --port 8000\n→ Giữ tab Colab mở trong suốt quá trình upload.\n",
+  "error_log_path": "c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\output_videos\\5536fce6-bd3a-4aa3-9e38-b3904f7aaf6a\\error.log",
+  "input_path": "c:\\Users\\phuon\\Documents\\DATN\\football_analysis\\input_videos\\input_video.mp4",
+  "input_md5": "1052059e36b552a3fa3d7c8d6949256d",
+  "input_filename": "Demo1 (1).mp4",
+  "input_size_bytes": 135419886
+}

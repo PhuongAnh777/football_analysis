@@ -60,7 +60,7 @@ _load_dotenv()
 from api.job_store import cleanup_old_jobs, create_job, get_job, jobs
 from api.job_persistence import load_job_meta, load_job_result
 from api.pipeline_runner import _convert_to_mp4, _job_output_dir, _job_stub_path, run_pipeline
-from api.result_adapter import enrich_teams_metrics
+from api.result_adapter import enrich_teams_metrics, enrich_players
 from api.error_log import job_error_log_path, save_job_error
 from utils.stub_io import remove_track_stub, video_fingerprint
 from utils.video_utils import ensure_browser_playable
@@ -74,6 +74,96 @@ def _load_scored_report(job_id: str) -> dict:
         return {}
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def _load_tactical_report(job_id: str) -> dict:
+    path = os.path.join(_OUTPUT_VIDEOS_ROOT, job_id, "tactical_report.json")
+    if not os.path.isfile(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _load_passing_events(job_id: str) -> list[dict]:
+    path = os.path.join(_OUTPUT_VIDEOS_ROOT, job_id, "passing_events.json")
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    return data if isinstance(data, list) else []
+
+
+def _load_team_ball_control(job_id: str) -> list[int]:
+    path = os.path.join(_OUTPUT_VIDEOS_ROOT, job_id, "team_ball_control.json")
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    return data if isinstance(data, list) else []
+
+
+def _load_failed_pass_events(job_id: str) -> list[dict]:
+    path = os.path.join(_OUTPUT_VIDEOS_ROOT, job_id, "failed_pass_events.json")
+    if not os.path.isfile(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    return data if isinstance(data, list) else []
+
+
+def _enrich_result_payload(result: dict, job_id: str) -> dict:
+    """Apply runtime enrichments to a stored or in-memory job result."""
+    match_report = result.get("match_report", {})
+    scored_report = _load_scored_report(job_id)
+    tactical_report = _load_tactical_report(job_id)
+    passing_events = _load_passing_events(job_id) or result.get("_passing_events", [])
+    failed_pass_events = _load_failed_pass_events(job_id) or result.get("_failed_pass_events", [])
+    team_ball_control = _load_team_ball_control(job_id) or result.get("_team_ball_control", [])
+
+    teams = enrich_teams_metrics(
+        result.get("teams", []),
+        match_report,
+        scored_report,
+        tactical_report,
+    )
+    players = enrich_players(
+        result.get("players", []),
+        match_report,
+        scored_report,
+        tactical_report,
+        passing_events=passing_events or None,
+        team_ball_control=team_ball_control or None,
+        failed_pass_events=failed_pass_events or None,
+        timeline=result.get("timeline", []),
+    )
+
+    from api.result_adapter import _build_notable_players, _pick_pass_notables
+
+    notable = dict(result.get("notable_players", {}))
+    has_pass_data = bool(passing_events) or any(
+        int(p.get("total_passes", 0)) > 0 for p in players
+    )
+    if has_pass_data:
+        for team_idx in (1, 2):
+            prefix = f"team{team_idx}"
+            playmaker, bad_pass = _pick_pass_notables(players, team_idx)
+            if playmaker:
+                notable[f"{prefix}_playmaker"] = playmaker
+            if bad_pass:
+                notable[f"{prefix}_bad_pass"] = bad_pass
+    elif not notable.get("team1_playmaker") and not notable.get("team2_playmaker"):
+        notable = _build_notable_players(
+            result.get("evaluation"),
+            match_report,
+            players,
+        ) or notable
+
+    return {
+        **result,
+        "teams": teams,
+        "players": players,
+        "notable_players": notable,
+    }
 
 
 _DEFAULT_TRACK_STUB = os.path.join(_PROJECT_ROOT, "stubs", "track_stubs.pkl")
@@ -418,24 +508,20 @@ async def results(job_id: str):
         if job_or_meta.get("status") != "done":
             raise HTTPException(status_code=404, detail=f"Job '{job_id}' not ready.")
         result = load_job_result(job_id, _OUTPUT_VIDEOS_ROOT) or {}
-        teams = enrich_teams_metrics(
-            result.get("teams", []),
-            result.get("match_report"),
-            _load_scored_report(job_id),
-        )
+        enriched = _enrich_result_payload(result, job_id)
         return {
             "job_id": job_id,
             "input_filename": job_or_meta.get("input_filename", ""),
             "input_md5": job_or_meta.get("input_md5"),
             "input_size_bytes": job_or_meta.get("input_size_bytes", 0),
-            "evaluation": result.get("evaluation", {}),
-            "match_report": result.get("match_report", {}),
-            "charts": result.get("charts", {}),
-            "teams": teams,
-            "players": result.get("players", []),
-            "timeline": result.get("timeline", []),
-            "notable_players": result.get("notable_players", {}),
-            "fps": result.get("fps", 24),
+            "evaluation": enriched.get("evaluation", {}),
+            "match_report": enriched.get("match_report", {}),
+            "charts": enriched.get("charts", {}),
+            "teams": enriched.get("teams", []),
+            "players": enriched.get("players", []),
+            "timeline": enriched.get("timeline", []),
+            "notable_players": enriched.get("notable_players", {}),
+            "fps": enriched.get("fps", 24),
             "video_url": f"/api/video/{job_id}",
         }
 
@@ -459,24 +545,20 @@ async def results(job_id: str):
         )
 
     result = job.result or {}
-    teams = enrich_teams_metrics(
-        result.get("teams", []),
-        result.get("match_report"),
-        _load_scored_report(job.job_id),
-    )
+    enriched = _enrich_result_payload(result, job.job_id)
     return {
         "job_id":           job.job_id,
         "input_filename":   job.input_filename,
         "input_md5":        job.input_md5,
         "input_size_bytes": job.input_size_bytes,
-        "evaluation":       result.get("evaluation", {}),
-        "match_report":     result.get("match_report", {}),
-        "charts":           result.get("charts", {}),
-        "teams":            teams,
-        "players":          result.get("players", []),
-        "timeline":         result.get("timeline", []),
-        "notable_players":  result.get("notable_players", {}),
-        "fps":              result.get("fps", 24),
+        "evaluation":       enriched.get("evaluation", {}),
+        "match_report":     enriched.get("match_report", {}),
+        "charts":           enriched.get("charts", {}),
+        "teams":            enriched.get("teams", []),
+        "players":          enriched.get("players", []),
+        "timeline":         enriched.get("timeline", []),
+        "notable_players":  enriched.get("notable_players", {}),
+        "fps":              enriched.get("fps", 24),
         "video_url":        f"/api/video/{job_id}",
     }
 

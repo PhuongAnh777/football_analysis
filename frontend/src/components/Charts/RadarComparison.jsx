@@ -5,13 +5,9 @@ import {
 
 const AXES = [
   { key: 'kiem_soat_bong', label: 'Kiểm soát bóng' },
-  { key: 'doi_hinh',       label: 'Đội hình' },
   { key: 'pressing',       label: 'Pressing' },
-  { key: 'ky_luat',        label: 'An toàn bóng' },
-  { key: 'toc_do',         label: 'Tốc độ' },
-  { key: 'on_dinh',        label: 'Thu hồi bóng' },
-  { key: 'phong_thu',      label: 'Xây dựng' },
-  { key: 'do_rong',        label: 'Độ rộng' },
+  { key: 'toc_do',         label: 'Tốc độ trung bình' },
+  { key: 'do_compact',     label: 'Độ compact đội hình' },
 ]
 
 function buildData(t1, t2) {
