@@ -16,6 +16,7 @@ frontend/.env.local
 # Video / output 
 # input_videos/
 output_videos/
+data/
 # runs/
 *.avi
 *.jpg
