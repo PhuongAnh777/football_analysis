@@ -8,6 +8,8 @@ from matplotlib.gridspec import GridSpec
 from scipy.stats import gaussian_kde
 from collections import defaultdict
 
+from utils.goalkeeper_utils import all_goalkeeper_ids
+
 # Full FIFA pitch dimensions (IFAB Law 1, international matches)
 PITCH_LENGTH = 105.0   # goal line → goal line (metres) — pos[0] axis
 PITCH_WIDTH  =  68.0   # touchline → touchline  (metres) — pos[1] axis
@@ -201,10 +203,11 @@ def generate_heatmap(
         Pitch dimensions matching the ViewTransformer calibration.
     """
     player_positions, player_team = _collect_player_data(tracks)
+    goalkeeper_ids = all_goalkeeper_ids(tracks)
 
     team_players: dict = {1: [], 2: []}
     for pid, tid in player_team.items():
-        if pid in player_positions:
+        if pid in player_positions and pid not in goalkeeper_ids:
             team_players[tid].append(pid)
 
     teams_to_draw = [team_id] if team_id in (1, 2) else [1, 2]
@@ -250,7 +253,7 @@ def generate_heatmap(
                  if draw_team_id in team_colors else fallback_color[draw_team_id])
         n = len(team_players[draw_team_id])
         ax_label.text(0.5, 0.5,
-                      f'TEAM {draw_team_id}  ·  {n} players',
+                      f'TEAM {draw_team_id}  ·  {n} outfield players',
                       ha='center', va='center',
                       fontsize=14, fontweight='bold', color=color,
                       transform=ax_label.transAxes)

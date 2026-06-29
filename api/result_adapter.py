@@ -12,6 +12,7 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from utils.pipeline_helpers import extract_failed_pass_events
+from utils.goalkeeper_utils import all_goalkeeper_ids
 
 
 _PITCH_LENGTH_M = 105.0
@@ -489,6 +490,10 @@ def _build_players(
         failed_pass_events,
     )
 
+    goalkeeper_ids: set[int] = set()
+    if tracks:
+        goalkeeper_ids = all_goalkeeper_ids(tracks)
+
     for team_str, team_raw in raw_scores.items():
         team_id    = int(team_str)
         team_chot  = cau_thu.get(f"team_{team_str}", {})
@@ -499,6 +504,8 @@ def _build_players(
         roster_items = sorted(team_raw.items(), key=lambda item: int(item[0]))
         for squad_num, (tid_str, raw) in enumerate(roster_items, start=1):
             tid = int(tid_str)
+            if tid in goalkeeper_ids:
+                continue
             tags: list[str] = []
             if tid in top_press:
                 tags.append("top_presser")

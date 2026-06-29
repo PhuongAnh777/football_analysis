@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from player_ball_assigner import PlayerBallAssigner
+from utils.goalkeeper_utils import all_goalkeeper_ids
 
 
 def assign_ball_to_tracks(tracks: dict) -> list[int]:
@@ -36,36 +37,62 @@ def assign_ball_to_tracks(tracks: dict) -> list[int]:
     return team_ball_control
 
 
-def extract_passing_events(tracks: dict) -> list[dict]:
-    """Detect pass events from has_ball flags."""
+def extract_passing_events(
+    tracks: dict,
+    goalkeeper_ids: set[int] | None = None,
+) -> list[dict]:
+    """Detect pass events from has_ball flags.
+
+    Goalkeeper track IDs are excluded (distribution / GK pickups are not passes).
+    """
+    if goalkeeper_ids is None:
+        goalkeeper_ids = all_goalkeeper_ids(tracks)
+
     events: list[dict] = []
     prev_carrier: dict[int, int | None] = {1: None, 2: None}
 
     for frame_idx, frame_data in enumerate(tracks["players"]):
+        carrier_id: int | None = None
+        carrier_team: int | None = None
+        carrier_data: dict | None = None
+
         for track_id, data in frame_data.items():
             if not data.get("has_ball"):
                 continue
-            team = data.get("team")
-            if team not in (1, 2):
-                continue
-            prev = prev_carrier[team]
-            if prev is not None and prev != track_id:
-                passer_pos = tracks["players"][frame_idx].get(prev, {}).get(
-                    "position_transformed"
-                )
-                receiver_pos = data.get("position_transformed")
-                events.append(
-                    {
-                        "frame": frame_idx,
-                        "team": team,
-                        "passer_id": prev,
-                        "receiver_id": track_id,
-                        "passer_pos": passer_pos,
-                        "receiver_pos": receiver_pos,
-                        "success": True,
-                    }
-                )
-            prev_carrier[team] = track_id
+            carrier_id = int(track_id)
+            carrier_team = data.get("team")
+            carrier_data = data
+            break
+
+        if carrier_id is None or carrier_team not in (1, 2) or carrier_data is None:
+            continue
+
+        if carrier_id in goalkeeper_ids:
+            prev_carrier[carrier_team] = None
+            continue
+
+        prev = prev_carrier[carrier_team]
+        if (
+            prev is not None
+            and prev != carrier_id
+            and int(prev) not in goalkeeper_ids
+        ):
+            passer_pos = tracks["players"][frame_idx].get(prev, {}).get(
+                "position_transformed"
+            )
+            receiver_pos = carrier_data.get("position_transformed")
+            events.append(
+                {
+                    "frame": frame_idx,
+                    "team": carrier_team,
+                    "passer_id": prev,
+                    "receiver_id": carrier_id,
+                    "passer_pos": passer_pos,
+                    "receiver_pos": receiver_pos,
+                    "success": True,
+                }
+            )
+        prev_carrier[carrier_team] = carrier_id
 
     return events
 

@@ -6,6 +6,8 @@ import matplotlib.patches as patches
 from collections import defaultdict
 import math
 
+from utils.goalkeeper_utils import all_goalkeeper_ids
+
 # Full FIFA pitch dimensions (IFAB Law 1, international matches)
 PITCH_LENGTH = 105.0   # goal line → goal line (metres) — pos[0] axis
 PITCH_WIDTH  =  68.0   # touchline → touchline  (metres) — pos[1] axis
@@ -128,12 +130,15 @@ def _is_on_pitch(x, y, length=PITCH_LENGTH, width=PITCH_WIDTH, margin=_PITCH_MAR
     )
 
 
-def _detect_passes(tracks):
+def _detect_passes(tracks, goalkeeper_ids: set[int] | None = None):
     """Scan ``has_ball`` flags and return a list of (from_id, to_id, team) tuples.
 
-    A pass is recorded when ball possession transfers between two players
-    of the same team within MAX_PASS_GAP_FRAMES frames.
+    A pass is recorded when ball possession transfers between two outfield
+    players of the same team within MAX_PASS_GAP_FRAMES frames.
     """
+    if goalkeeper_ids is None:
+        goalkeeper_ids = all_goalkeeper_ids(tracks)
+
     passes = []
     prev_player_id = None
     prev_team      = None
@@ -144,19 +149,30 @@ def _detect_passes(tracks):
         cur_team = None
         for player_id, info in frame_players.items():
             if info.get('has_ball', False):
-                cur_id   = player_id
+                cur_id   = int(player_id)
                 cur_team = info.get('team')
                 break
 
-        if cur_id is not None:
-            if (prev_player_id is not None
-                    and cur_id != prev_player_id
-                    and cur_team == prev_team
-                    and frames_without <= MAX_PASS_GAP_FRAMES):
+        if cur_id is not None and cur_team in (1, 2):
+            if cur_id in goalkeeper_ids:
+                prev_player_id = None
+                prev_team      = None
+                frames_without = 0
+            elif (
+                prev_player_id is not None
+                and cur_id != prev_player_id
+                and cur_team == prev_team
+                and prev_player_id not in goalkeeper_ids
+                and frames_without <= MAX_PASS_GAP_FRAMES
+            ):
                 passes.append((prev_player_id, cur_id, cur_team))
-            prev_player_id = cur_id
-            prev_team      = cur_team
-            frames_without = 0
+                prev_player_id = cur_id
+                prev_team      = cur_team
+                frames_without = 0
+            else:
+                prev_player_id = cur_id
+                prev_team      = cur_team
+                frames_without = 0
         else:
             frames_without += 1
 
@@ -231,7 +247,8 @@ def generate_passing_network(
     pitch_length, pitch_width : float
         Pitch dimensions matching the ViewTransformer calibration.
     """
-    passes       = _detect_passes(tracks)
+    passes        = _detect_passes(tracks)
+    goalkeeper_ids = all_goalkeeper_ids(tracks)
     avg_positions = _player_avg_positions(
         tracks, pitch_length=pitch_length, pitch_width=pitch_width,
     )
@@ -319,6 +336,8 @@ def generate_passing_network(
         ) or 1
 
         for player_id in players_in_team:
+            if player_id in goalkeeper_ids:
+                continue
             if player_id not in avg_positions:
                 continue
             x, y  = avg_positions[player_id]

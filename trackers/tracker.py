@@ -65,17 +65,263 @@ class Tracker:
                         position = get_foot_position(bbox)
                     tracks[object][frame_num][track_id]["position"] = position
         
-    def interpolate_ball_position(self, ball_position):
-        ball_positions = [x.get(1,{}).get("bbox",[None,None,None,None]) for x in ball_position]
-        df_ball_positions = pd.DataFrame(ball_positions, columns=["x1", "y1", "x2", "y2"])
+    # Gaps longer than this fall back to linear interpolation (unreliable physics bridge).
+    _MAX_PHYSICS_GAP_FRAMES = 45
+    # Image-plane speed (px/s) above which a gap is treated as ball-in-flight.
+    _PHYSICS_SPEED_THRESHOLD_PX_S = 450.0
 
-        # Interpolate missing values
+    @staticmethod
+    def _ball_bbox_row(frame_entry) -> list[float | None]:
+        raw = frame_entry.get(1, {}).get("bbox") if frame_entry else None
+        if raw is None or len(raw) != 4:
+            return [None, None, None, None]
+        return [float(v) for v in raw]
+
+    @staticmethod
+    def _bbox_from_center_halfsize(
+        center: np.ndarray, half_w: float, half_h: float
+    ) -> list[float]:
+        cx, cy = float(center[0]), float(center[1])
+        return [cx - half_w, cy - half_h, cx + half_w, cy + half_h]
+
+    @staticmethod
+    def _estimate_velocity_2d(
+        centers: np.ndarray, valid: np.ndarray, idx: int, fps: float
+    ) -> np.ndarray:
+        """Estimate image-plane velocity (px/s) from recent valid detections."""
+        if idx >= 1 and valid[idx - 1]:
+            return (centers[idx] - centers[idx - 1]) * fps
+        if idx >= 2 and valid[idx - 2]:
+            return (centers[idx] - centers[idx - 2]) * (fps / 2.0)
+        return np.zeros(2, dtype=float)
+
+    def _fill_center_gap_physics(
+        self,
+        centers: np.ndarray,
+        valid: np.ndarray,
+        left: int,
+        right: int,
+        fps: float,
+    ) -> None:
+        """Parabolic bridge: p(t)=p0+v0*dt+0.5*a*dt^2 with endpoints at left/right."""
+        p0 = centers[left].astype(float)
+        p1 = centers[right].astype(float)
+        dt_total = float(right - left)
+        v0 = self._estimate_velocity_2d(centers, valid, left, fps)
+        accel = 2.0 * (p1 - p0 - v0 * dt_total) / (dt_total ** 2)
+
+        for t in range(left + 1, right):
+            dt = float(t - left)
+            centers[t] = p0 + v0 * dt + 0.5 * accel * (dt ** 2)
+
+    def _fill_center_gap_linear(
+        self, centers: np.ndarray, left: int, right: int
+    ) -> None:
+        p0 = centers[left].astype(float)
+        p1 = centers[right].astype(float)
+        for t in range(left + 1, right):
+            alpha = (t - left) / float(right - left)
+            centers[t] = p0 + alpha * (p1 - p0)
+
+    @staticmethod
+    def _gap_speed_px_s(
+        centers: np.ndarray, valid: np.ndarray, left: int, right: int, fps: float
+    ) -> float:
+        """Peak image-plane speed estimate for a gap (px/s)."""
+        gap = right - left
+        if gap <= 0:
+            return 0.0
+        v_left = Tracker._estimate_velocity_2d(centers, valid, left, fps)
+        speed_left = float(np.linalg.norm(v_left))
+        speed_chord = float(np.linalg.norm(centers[right] - centers[left])) * fps / gap
+        v_right = Tracker._estimate_velocity_2d(centers, valid, right, fps)
+        speed_right = float(np.linalg.norm(v_right))
+        return max(speed_left, speed_chord, speed_right)
+
+    @staticmethod
+    def _kalman_fill_centers(
+        centers: np.ndarray,
+        valid: np.ndarray,
+        fps: float,
+        *,
+        measurement_noise: float = 6.0,
+        process_noise: float = 12.0,
+    ) -> np.ndarray:
+        """Constant-velocity Kalman filter: measure at detections, predict in gaps."""
+        n = len(centers)
+        out = centers.copy().astype(float)
+        dt = 1.0 / max(float(fps), 1.0)
+
+        f_mat = np.array(
+            [
+                [1.0, 0.0, dt, 0.0],
+                [0.0, 1.0, 0.0, dt],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+        h_mat = np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]])
+        q_mat = np.eye(4) * process_noise
+        q_mat[2, 2] = q_mat[3, 3] = process_noise * 2.5
+        r_mat = np.eye(2) * measurement_noise
+
+        state = np.zeros(4)
+        cov = np.eye(4) * 500.0
+        initialized = False
+
+        for t in range(n):
+            if initialized:
+                state = f_mat @ state
+                cov = f_mat @ cov @ f_mat.T + q_mat
+
+            if valid[t]:
+                z = centers[t].astype(float)
+                if not initialized:
+                    state = np.array([z[0], z[1], 0.0, 0.0])
+                    cov = np.eye(4) * 100.0
+                    initialized = True
+                else:
+                    innov = z - h_mat @ state
+                    s_mat = h_mat @ cov @ h_mat.T + r_mat
+                    gain = cov @ h_mat.T @ np.linalg.inv(s_mat)
+                    state = state + gain @ innov
+                    cov = (np.eye(4) - gain @ h_mat) @ cov
+                out[t] = state[:2]
+            elif initialized:
+                out[t] = state[:2]
+
+        return out
+
+    def _interpolate_ball_centers(
+        self,
+        centers: np.ndarray,
+        half_w: np.ndarray,
+        half_h: np.ndarray,
+        valid: np.ndarray,
+        valid_idx: np.ndarray,
+        fps: float,
+        *,
+        method: str,
+        physics_speed_threshold_px_s: float,
+    ) -> None:
+        """Fill missing center/size samples in-place between valid detections."""
+        n = len(centers)
+        first, last = int(valid_idx[0]), int(valid_idx[-1])
+
+        for t in range(0, first):
+            centers[t] = centers[first]
+            half_w[t] = half_w[first]
+            half_h[t] = half_h[first]
+        for t in range(last + 1, n):
+            centers[t] = centers[last]
+            half_w[t] = half_w[last]
+            half_h[t] = half_h[last]
+
+        if method == "kalman":
+            filled = self._kalman_fill_centers(centers, valid, fps)
+            for t in range(n):
+                if not valid[t]:
+                    centers[t] = filled[t]
+            return
+
+        for i in range(len(valid_idx) - 1):
+            left, right = int(valid_idx[i]), int(valid_idx[i + 1])
+            if right - left <= 1:
+                continue
+            gap = right - left
+
+            if gap > self._MAX_PHYSICS_GAP_FRAMES:
+                use_physics = False
+            elif method == "physics":
+                use_physics = True
+            elif method == "adaptive":
+                use_physics = (
+                    self._gap_speed_px_s(centers, valid, left, right, fps)
+                    >= physics_speed_threshold_px_s
+                )
+            else:
+                use_physics = False
+
+            if use_physics:
+                self._fill_center_gap_physics(centers, valid, left, right, fps)
+            else:
+                self._fill_center_gap_linear(centers, left, right)
+
+            for t in range(left + 1, right):
+                alpha = (t - left) / float(gap)
+                half_w[t] = half_w[left] + alpha * (half_w[right] - half_w[left])
+                half_h[t] = half_h[left] + alpha * (half_h[right] - half_h[left])
+
+    def interpolate_ball_position(
+        self,
+        ball_position,
+        fps: float = 24.0,
+        *,
+        method: str = "adaptive",
+        physics_speed_threshold_px_s: float | None = None,
+    ):
+        """Fill missing ball detections.
+
+        ``method="adaptive"`` (default): parabolic physics when estimated ball
+        speed exceeds *physics_speed_threshold_px_s* (flying), else linear
+        (rolling / slow).
+
+        ``method="physics"``: always use parabolic bridge for short gaps.
+
+        ``method="kalman"``: constant-velocity Kalman predict/update through gaps.
+
+        ``method="linear"``: legacy pandas linear interpolation on bbox corners.
+        """
+        if method == "linear":
+            return self._interpolate_ball_position_linear(ball_position)
+
+        if physics_speed_threshold_px_s is None:
+            physics_speed_threshold_px_s = self._PHYSICS_SPEED_THRESHOLD_PX_S
+
+        fps = max(float(fps), 1.0)
+        n = len(ball_position)
+        rows = [self._ball_bbox_row(entry) for entry in ball_position]
+        arr = np.array(rows, dtype=float)
+
+        valid = ~np.isnan(arr).any(axis=1)
+        if not valid.any():
+            return ball_position
+
+        centers = np.column_stack(
+            ((arr[:, 0] + arr[:, 2]) / 2.0, (arr[:, 1] + arr[:, 3]) / 2.0)
+        )
+        half_w = (arr[:, 2] - arr[:, 0]) / 2.0
+        half_h = (arr[:, 3] - arr[:, 1]) / 2.0
+
+        valid_idx = np.flatnonzero(valid)
+        self._interpolate_ball_centers(
+            centers,
+            half_w,
+            half_h,
+            valid,
+            valid_idx,
+            fps,
+            method=method,
+            physics_speed_threshold_px_s=float(physics_speed_threshold_px_s),
+        )
+
+        filled = []
+        for t in range(n):
+            bbox = self._bbox_from_center_halfsize(centers[t], half_w[t], half_h[t])
+            filled.append({1: {"bbox": bbox}})
+
+        return filled
+
+    def _interpolate_ball_position_linear(self, ball_position):
+        ball_positions = [
+            x.get(1, {}).get("bbox", [None, None, None, None]) for x in ball_position
+        ]
+        df_ball_positions = pd.DataFrame(
+            ball_positions, columns=["x1", "y1", "x2", "y2"]
+        )
         df_ball_positions = df_ball_positions.interpolate()
         df_ball_positions = df_ball_positions.bfill()
-
-        ball_positions = [{1: {"bbox": x}} for x in df_ball_positions.values.tolist()]
-
-        return ball_positions
+        return [{1: {"bbox": x}} for x in df_ball_positions.values.tolist()]
 
     def get_object_tracks(self, frames, read_from_stub=False, stub_path=None):
         if read_from_stub and stub_path is not None and os.path.exists(stub_path):
@@ -126,9 +372,12 @@ class Tracker:
                     continue
                 track_id = int(box.id[0])
 
-                # Goalkeeper counts as a field player
+                # Goalkeeper counts as a field player for tracking, but role is kept.
                 if cls_name in ("player", "goalkeeper"):
-                    tracks["players"][frame_num][track_id] = {"bbox": bbox}
+                    tracks["players"][frame_num][track_id] = {
+                        "bbox": bbox,
+                        "role": cls_name,
+                    }
                 elif cls_name == "referee":
                     tracks["referees"][frame_num][track_id] = {"bbox": bbox}
 

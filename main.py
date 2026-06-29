@@ -9,6 +9,7 @@ from utils.pipeline_helpers import (
     extract_passing_events,
 )
 from utils.stub_io import load_track_stub
+from utils.goalkeeper_utils import mark_goalkeepers_in_tracks
 
 from trackers import Tracker, merge_player_tracks
 
@@ -162,7 +163,7 @@ def main():
 
 
 
-    tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"])
+    tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"], fps=fps)
 
 
 
@@ -210,6 +211,13 @@ def main():
 
 
     tracks = merge_player_tracks(tracks)
+    gk_by_team = mark_goalkeepers_in_tracks(tracks)
+    if any(gk_by_team.values()):
+        print(
+            f"[GK] Goalkeeper track IDs — "
+            f"team 1: {sorted(gk_by_team.get(1, set())) or '—'}  |  "
+            f"team 2: {sorted(gk_by_team.get(2, set())) or '—'}"
+        )
 
     team_ball_control = assign_ball_to_tracks(tracks)
 

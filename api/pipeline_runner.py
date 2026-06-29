@@ -36,6 +36,7 @@ from utils.stub_io import (
     track_frame_count,
     video_fingerprint,
 )
+from utils.goalkeeper_utils import mark_goalkeepers_in_tracks
 from trackers import Tracker, merge_player_tracks
 from team_assigner import TeamAssigner
 from camera_movement_estimator import CameraMovementEstimator
@@ -255,7 +256,7 @@ def execute_pipeline(
     # ─────────────────────────────────────────────────────────────────────────
 
     _notify(4, "teams", _PIPELINE_STEPS[3][2])
-    tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"])
+    tracks["ball"] = tracker.interpolate_ball_position(tracks["ball"], fps=fps)
 
     team_assigner = TeamAssigner()
     calib_data: list = []
@@ -307,6 +308,14 @@ def execute_pipeline(
                 )
 
     tracks = merge_player_tracks(tracks)
+    gk_by_team = mark_goalkeepers_in_tracks(tracks)
+    if any(gk_by_team.values()):
+        print(
+            f"[GK] Goalkeeper track IDs — "
+            f"team 1: {sorted(gk_by_team.get(1, set())) or '—'}  |  "
+            f"team 2: {sorted(gk_by_team.get(2, set())) or '—'}",
+            flush=True,
+        )
     team_ball_control = assign_ball_to_tracks(tracks)
 
     _notify(5, "speed", _PIPELINE_STEPS[4][2])

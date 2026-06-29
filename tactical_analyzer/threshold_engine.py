@@ -16,6 +16,8 @@ from __future__ import annotations
 import numpy as np
 from typing import Any
 
+from utils.goalkeeper_utils import all_goalkeeper_ids
+
 # FIFA-standard pitch dimensions
 _PITCH_LENGTH  = 105.0   # full pitch length (metres)
 _PITCH_WIDTH   =  68.0   # full pitch width  (metres)
@@ -394,6 +396,7 @@ class ThresholdEngine:
             return {}
 
         R = self.R_pressing
+        goalkeeper_ids = all_goalkeeper_ids(tracks)
 
         # Formation line lookup
         player_line: dict[int, str] = {}
@@ -451,6 +454,8 @@ class ThresholdEngine:
                     carrier_pos[t] = info.get("position_transformed")
 
             for tid, info in frame.items():
+                if int(tid) in goalkeeper_ids:
+                    continue
                 t = info.get("team")
                 if t not in (1, 2):
                     continue
@@ -478,6 +483,8 @@ class ThresholdEngine:
         result: dict[str, dict] = {"1": {}, "2": {}}
 
         for tid, data in player_data.items():
+            if int(tid) in goalkeeper_ids:
+                continue
             team_id  = data["team"]
             by_frame = data["by_frame"]
             active_positions = [v["pos"] for v in by_frame.values() if v["pos"] is not None]
