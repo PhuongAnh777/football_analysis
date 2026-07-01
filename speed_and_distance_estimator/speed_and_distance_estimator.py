@@ -15,7 +15,9 @@ class SpeedAndDistance_Estimator:
 
             number_of_frames = len(object_tracks)
             for frame_num in range(0, number_of_frames, self.frame_window):
-                last_frame = min (frame_num + self.frame_window, number_of_frames - 1)
+                last_frame = min(frame_num + self.frame_window, number_of_frames - 1)
+                if last_frame <= frame_num:
+                    continue
 
                 for track_id,_ in object_tracks[frame_num].items():
                     if track_id not in object_tracks[last_frame]:
